@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime
 import pytz
 import os
+import re
 
 class Database:
     def __init__(self, db_path='backups.db'):
@@ -111,10 +112,28 @@ class Database:
         return device
     
     def update_device(self, device_id, **kwargs):
+        """Update device fields. Only allows updates to specific safe columns."""
+        # Whitelist of allowed columns to prevent SQL injection
+        allowed_columns = {'name', 'ip_address', 'device_type', 'protocol', 'port', 
+                          'username', 'password', 'enable_password', 'backup_command', 
+                          'provedor', 'active'}
+        
+        # Filter kwargs to only include allowed columns
+        safe_kwargs = {k: v for k, v in kwargs.items() if k in allowed_columns}
+        
+        if not safe_kwargs:
+            return
+        
+        # Validate device_id
+        try:
+            device_id = int(device_id)
+        except (ValueError, TypeError):
+            raise ValueError("ID do dispositivo inválido")
+        
         conn = self.get_connection()
         cursor = conn.cursor()
-        fields = ', '.join([f'{k} = ?' for k in kwargs.keys()])
-        values = list(kwargs.values()) + [device_id]
+        fields = ', '.join([f'{k} = ?' for k in safe_kwargs.keys()])
+        values = list(safe_kwargs.values()) + [device_id]
         cursor.execute(f'UPDATE devices SET {fields} WHERE id = ?', values)
         conn.commit()
         conn.close()
@@ -244,12 +263,53 @@ class Database:
         conn.close()
         return all_provedores
     
+    def _sanitize_input(self, value, max_length=255, allow_special_chars=False):
+        """Sanitize and validate user input to prevent SQL injection."""
+        if value is None:
+            return None
+        
+        # Convert to string and strip whitespace
+        value = str(value).strip()
+        
+        # Check for SQL injection patterns
+        sql_injection_patterns = [
+            r"(\bOR\b|\bAND\b)\s*\d+\s*=\s*\d+",  # OR 1=1, AND 1=1
+            r"(\bOR\b|\bAND\b)\s*['\"]?\d+['\"]?\s*=\s*['\"]?\d+['\"]?",  # OR '1'='1'
+            r"(\bUNION\b|\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b|\bCREATE\b|\bALTER\b)",  # SQL keywords
+            r";\s*--",  # SQL comment injection
+            r"(\bEXEC\b|\bEXECUTE\b)",  # Command execution
+        ]
+        
+        for pattern in sql_injection_patterns:
+            if re.search(pattern, value, re.IGNORECASE):
+                raise ValueError(f"Entrada inválida detectada: caracteres perigosos não permitidos")
+        
+        # Check length
+        if len(value) > max_length:
+            raise ValueError(f"Entrada muito longa. Máximo de {max_length} caracteres permitidos.")
+        
+        # Remove or allow special characters based on flag
+        if not allow_special_chars:
+            # Allow only alphanumeric, spaces, hyphens, underscores, and basic punctuation
+            if not re.match(r'^[a-zA-Z0-9\s\-_\.]+$', value):
+                # Remove dangerous characters but keep safe ones
+                value = re.sub(r'[^\w\s\-_\.]', '', value)
+        
+        return value
+    
     def add_provedor(self, name, description=None):
         """Add a new provedor to the provedores table."""
+        # Sanitize inputs
+        name = self._sanitize_input(name, max_length=100)
+        description = self._sanitize_input(description, max_length=500, allow_special_chars=True) if description else None
+        
+        if not name:
+            raise ValueError("Nome do provedor não pode estar vazio")
+        
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute('INSERT INTO provedores (name, description) VALUES (?, ?)', (name.strip(), description))
+            cursor.execute('INSERT INTO provedores (name, description) VALUES (?, ?)', (name, description))
             conn.commit()
             provedor_id = cursor.lastrowid
             conn.close()
@@ -268,9 +328,43 @@ class Database:
         return provedores
     
     def delete_provedor(self, provedor_id):
-        """Delete a provedor from the provedores table."""
+        """Delete a provedor from the provedores table by ID."""
+        # Validate provedor_id is an integer
+        try:
+            provedor_id = int(provedor_id)
+        except (ValueError, TypeError):
+            raise ValueError("ID do provedor inválido")
+        
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM provedores WHERE id = ?', (provedor_id,))
         conn.commit()
+        deleted = cursor.rowcount
         conn.close()
+        
+        if deleted == 0:
+            raise ValueError("Provedor não encontrado")
+        return deleted
+    
+    def delete_provedor_by_name(self, name):
+        """Delete a provedor from the provedores table by name (for cleanup of malicious entries).
+        Uses parameterized queries so it's safe even with special characters."""
+        if not name or not str(name).strip():
+            raise ValueError("Nome do provedor não pode estar vazio")
+        
+        # Basic validation - just check length, but don't sanitize (parameterized query protects us)
+        name = str(name).strip()
+        if len(name) > 500:  # Reasonable max length
+            raise ValueError("Nome muito longo")
+        
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        # Use parameterized query - safe even with SQL injection attempts
+        cursor.execute('DELETE FROM provedores WHERE name = ?', (name,))
+        conn.commit()
+        deleted = cursor.rowcount
+        conn.close()
+        
+        if deleted == 0:
+            raise ValueError(f"Provedor não encontrado")
+        return deleted
