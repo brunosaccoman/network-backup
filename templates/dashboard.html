@@ -278,7 +278,54 @@
     .status-dot.offline {
         background: #95a5a6;
     }
+
+    /* Filter styles */
+    #provedorFilter,
+    #backupProvedorFilter {
+        min-width: 200px;
+    }
+
+    #provedorFilter:focus,
+    #backupProvedorFilter:focus,
+    #backupIpSearch:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    #backupIpSearch::placeholder {
+        color: #999;
+    }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize filter for Devices table
+        const deviceFilter = new TableFilter({
+            filterId: 'device',
+            tableBodyId: 'devicesTableBody',
+            countSpanId: 'visibleCount',
+            totalCount: {{ devices| length }},
+        filters: {
+        provedor: true,
+        ip: false
+    }
+        });
+
+    // Initialize filter for Backups table
+    const backupFilter = new TableFilter({
+        filterId: 'backup',
+        tableBodyId: 'backupsTableBody',
+        countSpanId: 'visibleBackupCount',
+        totalCount: {{ total_backups }},
+    filters: {
+        provedor: true,
+            ip: true
+    }
+        });
+    });
+</script>
 {% endblock %}
 
 {% block main_container %}
@@ -326,7 +373,11 @@
     <div class="table-container">
         <div class="table-header">
             <h5><i class="fas fa-history"></i> Backups Recentes</h5>
-            <div class="table-actions">
+            <div class="table-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                {% set filter_id = 'backup' %}
+                {% set show_provedor_filter = true %}
+                {% set show_ip_search = true %}
+                {% include 'components/table_filters.html' %}
                 <button class="btn-clean" onclick="location.reload()">
                     <i class="fas fa-sync"></i> Atualizar
                 </button>
@@ -341,15 +392,17 @@
                     <th>ID</th>
                     <th>Dispositivo</th>
                     <th>Endereço IP</th>
+                    <th>Provedor/Cliente</th>
                     <th>Data/Hora</th>
                     <th>Tamanho</th>
                     <th>Status</th>
                     <th style="text-align: right;">Ações</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="backupsTableBody">
                 {% for backup in recent_backups %}
-                <tr>
+                <tr data-provedor="{{ backup.provedor if backup.provedor else 'Sem_Provedor' }}"
+                    data-ip="{{ backup.ip_address }}">
                     <td><strong>#{{ backup.id }}</strong></td>
                     <td>
                         <div class="device-status">
@@ -358,6 +411,7 @@
                         </div>
                     </td>
                     <td>{{ backup.ip_address }}</td>
+                    <td>{{ backup.provedor if backup.provedor else 'Sem_Provedor' }}</td>
                     <td>{{ backup.backup_date }}</td>
                     <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
                     <td>
@@ -381,7 +435,8 @@
             </tbody>
         </table>
         <div class="table-footer">
-            <div>Mostrando {{ recent_backups|length }} de {{ total_backups }} backups</div>
+            <div id="backupCount">Mostrando <span id="visibleBackupCount">{{ recent_backups|length }}</span> de {{
+                total_backups }} backups</div>
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
                 <button class="page-btn active">1</button>
@@ -395,7 +450,11 @@
     <div class="table-container" style="margin-top: 20px;">
         <div class="table-header">
             <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
-            <div class="table-actions">
+            <div class="table-actions" style="display: flex; gap: 10px; align-items: center;">
+                {% set filter_id = 'device' %}
+                {% set show_provedor_filter = true %}
+                {% set show_ip_search = false %}
+                {% include 'components/table_filters.html' %}
                 <button class="btn-primary-custom" onclick="location.href='/devices'">
                     <i class="fas fa-cog"></i> Gerenciar
                 </button>
@@ -406,15 +465,16 @@
                 <tr>
                     <th>Nome</th>
                     <th>Endereço IP</th>
+                    <th>Provedor/Cliente</th>
                     <th>Plataforma</th>
                     <th>Protocolo</th>
                     <th>Status</th>
                     <th style="text-align: right;">Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for device in devices[:10] %}
-                <tr>
+            <tbody id="devicesTableBody">
+                {% for device in devices %}
+                <tr data-provedor="{{ device.provedor if device.provedor else 'Sem_Provedor' }}">
                     <td>
                         <div class="device-status">
                             <span class="status-dot {{ 'online' if device.active else 'offline' }}"></span>
@@ -422,6 +482,7 @@
                         </div>
                     </td>
                     <td>{{ device.ip_address }}</td>
+                    <td>{{ device.provedor if device.provedor else 'Sem_Provedor' }}</td>
                     <td>{{ device.device_type|title }}</td>
                     <td>{{ device.protocol|upper }}</td>
                     <td>
@@ -444,7 +505,8 @@
             </tbody>
         </table>
         <div class="table-footer">
-            <div>Mostrando {{ devices[:10]|length }} de {{ devices|length }} dispositivos</div>
+            <div id="deviceCount">Mostrando <span id="visibleCount">{{ devices|length }}</span> de {{ devices|length }}
+                dispositivos</div>
         </div>
     </div>
 </div>

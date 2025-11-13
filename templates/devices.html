@@ -83,7 +83,8 @@
                     <i class="fas fa-building"></i> Provedor/Cliente
                 </label>
                 <input type="text" class="form-control" id="provedor" name="provedor"
-                    placeholder="Ex: Cliente_A, OLLA, SPEEDNET, Interno" value="Sem_Provedor">
+                    placeholder="Ex: Cliente_A, OLLA, SPEEDNET, Interno" value="Sem_Provedor" list="provedor-list">
+                <datalist id="provedor-list"></datalist>
                 <small class="form-text text-muted">
                     Nome do cliente ou provedor para organizar os backups
                 </small>
@@ -224,5 +225,21 @@
             showAlert('Erro: ' + error.message, 'danger');
         }
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch("/api/provedores")
+            .then(response => response.json())
+            .then(data => {
+                var datalist = document.getElementById("provedor-list");
+                datalist.innerHTML = "";
+                if (data.provedores) {
+                    data.provedores.forEach(function (prov) {
+                        var option = document.createElement("option");
+                        option.value = prov;
+                        datalist.appendChild(option);
+                    });
+                }
+            });
+    });
 </script>
 {% endblock %}
