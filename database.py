@@ -64,6 +64,15 @@ class Database:
             )
         ''')
         
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS provedores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
         conn.commit()
         conn.close()
     
@@ -216,10 +225,52 @@ class Database:
         conn.close()
 
     def get_provedores(self):
-        """Return a list of unique registered provedores (provider/cliente) from devices table."""
+        """Return a list of registered provedores from provedores table, plus any from devices."""
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT DISTINCT provedor FROM devices WHERE provedor IS NOT NULL AND provedor != "" ORDER BY provedor')
-        rows = cursor.fetchall()
+        
+        # Get from provedores table
+        cursor.execute('SELECT name FROM provedores ORDER BY name')
+        provedores_table = [row['name'] for row in cursor.fetchall()]
+        
+        # Get unique from devices table (for backward compatibility)
+        cursor.execute('SELECT DISTINCT provedor FROM devices WHERE provedor IS NOT NULL AND provedor != "" AND provedor != "Sem_Provedor" ORDER BY provedor')
+        devices_provedores = [row['provedor'] for row in cursor.fetchall() if row['provedor']]
+        
+        # Combine and remove duplicates
+        all_provedores = list(set(provedores_table + devices_provedores))
+        all_provedores.sort()
+        
         conn.close()
-        return [row['provedor'] for row in rows if row['provedor']]
+        return all_provedores
+    
+    def add_provedor(self, name, description=None):
+        """Add a new provedor to the provedores table."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('INSERT INTO provedores (name, description) VALUES (?, ?)', (name.strip(), description))
+            conn.commit()
+            provedor_id = cursor.lastrowid
+            conn.close()
+            return provedor_id
+        except sqlite3.IntegrityError:
+            conn.close()
+            raise ValueError(f"Provedor '{name}' já existe")
+    
+    def get_all_provedores(self):
+        """Get all provedores with their details."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM provedores ORDER BY name')
+        provedores = cursor.fetchall()
+        conn.close()
+        return provedores
+    
+    def delete_provedor(self, provedor_id):
+        """Delete a provedor from the provedores table."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM provedores WHERE id = ?', (provedor_id,))
+        conn.commit()
+        conn.close()
