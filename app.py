@@ -337,6 +337,39 @@ def api_provedores():
     provedores = db.get_provedores()
     return jsonify({"provedores": provedores})
 
+@app.route('/api/provedores/all')
+def api_provedores_all():
+    """Get all provedores with details."""
+    provedores = db.get_all_provedores()
+    return jsonify({"provedores": [dict(p) for p in provedores]})
+
+@app.route('/api/provedores/add', methods=['POST'])
+def api_provedores_add():
+    """Add a new provedor."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip() or None
+        
+        if not name:
+            return jsonify({'success': False, 'error': 'Nome do provedor é obrigatório'}), 400
+        
+        provedor_id = db.add_provedor(name, description)
+        return jsonify({'success': True, 'provedor_id': provedor_id})
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/provedores/<int:provedor_id>/delete', methods=['POST'])
+def api_provedores_delete(provedor_id):
+    """Delete a provedor."""
+    try:
+        db.delete_provedor(provedor_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
