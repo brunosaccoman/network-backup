@@ -87,12 +87,19 @@ def devices():
 @app.route('/devices/add', methods=['POST'])
 def add_device():
     try:
-        # Obter provedor do formulário
+        # Obter e validar provedor do formulário
         provedor = request.form.get('provedor', 'Sem_Provedor')
         if provedor:
             provedor = provedor.strip()
         if not provedor:
             provedor = 'Sem_Provedor'
+        
+        # Sanitize provedor input (basic validation)
+        try:
+            # Use the database sanitization method
+            provedor = db._sanitize_input(provedor, max_length=100)
+        except ValueError as e:
+            return jsonify({'success': False, 'error': f'Provedor inválido: {str(e)}'}), 400
         
         # Adicionar dispositivo COM provedor usando SQL direto
         conn = db.get_connection()
@@ -349,11 +356,18 @@ def api_provedores_add():
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
-        description = data.get('description', '').strip() or None
+        description = data.get('description')
+        
+        # Handle description - it can be None, empty string, or have a value
+        if description:
+            description = str(description).strip() or None
+        else:
+            description = None
         
         if not name:
             return jsonify({'success': False, 'error': 'Nome do provedor é obrigatório'}), 400
         
+        # Input validation is now handled in database.add_provedor()
         provedor_id = db.add_provedor(name, description)
         return jsonify({'success': True, 'provedor_id': provedor_id})
     except ValueError as e:
@@ -363,10 +377,29 @@ def api_provedores_add():
 
 @app.route('/api/provedores/<int:provedor_id>/delete', methods=['POST'])
 def api_provedores_delete(provedor_id):
-    """Delete a provedor."""
+    """Delete a provedor by ID."""
     try:
         db.delete_provedor(provedor_id)
         return jsonify({'success': True})
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/provedores/delete-by-name', methods=['POST'])
+def api_provedores_delete_by_name():
+    """Delete a provedor by name (for cleanup of malicious entries)."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'error': 'Nome do provedor é obrigatório'}), 400
+        
+        db.delete_provedor_by_name(name)
+        return jsonify({'success': True})
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
