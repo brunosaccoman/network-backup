@@ -19,7 +19,11 @@
 
 <div class="card">
     <h2>Gerenciar Dispositivos</h2>
-    <button class="btn btn-success" onclick="showModal('addDeviceModal')">➕ Adicionar Novo Dispositivo</button>
+    <div class="d-flex justify-content-start align-items-center gap-2 flex-wrap">
+        <button class="btn btn-success" onclick="showModal('addDeviceModal')">➕ Adicionar Novo Dispositivo</button>
+        <button class="btn btn-primary" onclick="showModal('manageProvedoresModal')" style="margin-left: 10px;">🏢
+            Adicionar Provedor</button>
+    </div>
 </div>
 <div class="card">
     <h2>Lista de Dispositivos</h2>
@@ -78,15 +82,16 @@
             <div class="form-group"><label>IP *</label><input type="text" name="ip_address" required></div>
 
             <!-- Campo Provedor/Cliente -->
-            <div class="mb-3">
-                <label for="provedor" class="form-label">
+            <div class="form-group">
+                <label for="provedor">
                     <i class="fas fa-building"></i> Provedor/Cliente
                 </label>
-                <input type="text" class="form-control" id="provedor" name="provedor"
-                    placeholder="Ex: Cliente_A, OLLA, SPEEDNET, Interno" value="Sem_Provedor" list="provedor-list">
-                <datalist id="provedor-list"></datalist>
-                <small class="form-text text-muted">
-                    Nome do cliente ou provedor para organizar os backups
+                <select name="provedor" id="provedor" required>
+                    <option value="Sem_Provedor" selected>Sem_Provedor</option>
+                    <!-- Provedores will be loaded dynamically -->
+                </select>
+                <small style="display: block; margin-top: 5px; color: #666; font-size: 0.85rem;">
+                    Selecione um provedor cadastrado ou use "Sem_Provedor"
                 </small>
             </div>
 
@@ -136,6 +141,40 @@
             <div class="form-group"><label>Porta</label><input type="number" id="editPort" required></div>
             <button type="submit" class="btn btn-success">💾 Atualizar</button>
         </form>
+    </div>
+</div>
+
+<!-- Modal Gerenciar Provedores -->
+<div id="manageProvedoresModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2>🏢 Gerenciar Provedores/Clientes</h2>
+            <span class="close" onclick="closeModal('manageProvedoresModal')">&times;</span>
+        </div>
+
+        <!-- Formulário para adicionar novo provedor -->
+        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+            <h3 style="margin-bottom: 10px; font-size: 16px;">Adicionar Novo Provedor</h3>
+            <form id="addProvedorForm" style="display: flex; gap: 10px; align-items: flex-end;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Nome do Provedor/Cliente *</label>
+                    <input type="text" id="newProvedorName" required placeholder="Ex: OLLA, SPEEDNET, Cliente_A">
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Descrição (opcional)</label>
+                    <input type="text" id="newProvedorDescription" placeholder="Descrição adicional">
+                </div>
+                <button type="submit" class="btn btn-success" style="white-space: nowrap;">➕ Adicionar</button>
+            </form>
+        </div>
+
+        <!-- Lista de provedores cadastrados -->
+        <div>
+            <h3 style="margin-bottom: 10px; font-size: 16px;">Provedores Cadastrados</h3>
+            <div id="provedoresList" style="max-height: 400px; overflow-y: auto;">
+                <p style="text-align: center; color: #999; padding: 20px;">Carregando...</p>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -226,20 +265,140 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    // Load provedores into the select dropdown
+    function loadProvedoresIntoSelect() {
+        const select = document.getElementById('provedor');
+        if (!select) return;
+
+        // Keep the first option (Sem_Provedor) and clear the rest
+        const firstOption = select.querySelector('option[value="Sem_Provedor"]');
+        select.innerHTML = '';
+        if (firstOption) {
+            select.appendChild(firstOption);
+        } else {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = 'Sem_Provedor';
+            defaultOption.textContent = 'Sem_Provedor';
+            defaultOption.selected = true;
+            select.appendChild(defaultOption);
+        }
+
         fetch("/api/provedores")
             .then(response => response.json())
             .then(data => {
-                var datalist = document.getElementById("provedor-list");
-                datalist.innerHTML = "";
-                if (data.provedores) {
+                if (data.provedores && data.provedores.length > 0) {
                     data.provedores.forEach(function (prov) {
-                        var option = document.createElement("option");
+                        const option = document.createElement("option");
                         option.value = prov;
-                        datalist.appendChild(option);
+                        option.textContent = prov;
+                        select.appendChild(option);
                     });
                 }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar provedores:', error);
             });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        loadProvedoresIntoSelect();
     });
+
+    // Provedores Management
+    async function loadProvedores() {
+        const listDiv = document.getElementById('provedoresList');
+        try {
+            const response = await fetch('/api/provedores/all');
+            const data = await response.json();
+            const provedores = data.provedores || [];
+
+            if (provedores.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Nenhum provedor cadastrado ainda.</p>';
+                return;
+            }
+
+            listDiv.innerHTML = provedores.map(p => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;">
+                    <div>
+                        <strong>${p.name}</strong>
+                        ${p.description ? `<br><small style="color: #666;">${p.description}</small>` : ''}
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteProvedor(${p.id}, '${p.name.replace(/'/g, "\\'")}')" style="padding: 4px 12px; font-size: 12px;">🗑️ Remover</button>
+                </div>
+            `).join('');
+        } catch (error) {
+            listDiv.innerHTML = `<p style="text-align: center; color: #e74c3c; padding: 20px;">Erro ao carregar: ${error.message}</p>`;
+        }
+    }
+
+    document.getElementById('addProvedorForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('newProvedorName').value.trim();
+        const description = document.getElementById('newProvedorDescription').value.trim() || null;
+
+        if (!name) {
+            showAlert('Nome do provedor é obrigatório', 'danger');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/provedores/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('Provedor adicionado com sucesso!', 'success');
+                document.getElementById('newProvedorName').value = '';
+                document.getElementById('newProvedorDescription').value = '';
+                loadProvedores();
+                loadProvedoresIntoSelect(); // Refresh the select dropdown
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    });
+
+    async function deleteProvedor(provedorId, provedorName) {
+        if (!confirm(`Tem certeza que deseja remover o provedor "${provedorName}"?\n\nNota: Isso não remove dispositivos associados a este provedor.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/provedores/${provedorId}/delete`, { method: 'POST' });
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('Provedor removido!', 'success');
+                loadProvedores();
+                loadProvedoresIntoSelect(); // Refresh the select dropdown
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    // Load provedores when modal opens
+    const originalShowModal = window.showModal || function (modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    };
+
+    window.showModal = function (modalId) {
+        originalShowModal(modalId);
+        if (modalId === 'manageProvedoresModal') {
+            loadProvedores();
+        } else if (modalId === 'addDeviceModal') {
+            // Refresh provedores dropdown when opening add device modal
+            loadProvedoresIntoSelect();
+        }
+    };
 </script>
 {% endblock %}
