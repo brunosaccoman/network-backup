@@ -1,514 +1,451 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sistema de Backup</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f7fa;
-            color: #333;
-        }
-        
-        /* Navbar */
-        .navbar {
-            background: #2c3e50;
-            padding: 12px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .navbar-brand {
-            color: #fff !important;
-            font-weight: 600;
-            font-size: 18px;
-        }
-        
-        .nav-link {
-            color: #ecf0f1 !important;
-            margin: 0 10px;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: #3498db !important;
-        }
-        
-        /* Container Principal */
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        /* Cards de Estatísticas */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 6px;
-            padding: 20px;
-            border: 1px solid #e0e6ed;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: box-shadow 0.2s;
-        }
-        
-        .stat-card:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            color: white;
-        }
-        
-        .stat-icon.blue { background: #3498db; }
-        .stat-icon.green { background: #27ae60; }
-        .stat-icon.red { background: #e74c3c; }
-        .stat-icon.orange { background: #f39c12; }
-        
-        .stat-info h3 {
-            font-size: 26px;
-            font-weight: 700;
-            margin: 0;
-            color: #2c3e50;
-        }
-        
-        .stat-info p {
-            font-size: 13px;
-            color: #7f8c8d;
-            margin: 0;
-        }
-        
-        /* Tabela de Backups */
-        .table-container {
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #e0e6ed;
-            overflow: hidden;
-        }
-        
-        .table-header {
-            padding: 20px 25px;
-            border-bottom: 1px solid #e0e6ed;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .table-header h5 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin: 0;
-        }
-        
-        .table-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn-clean {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 6px 14px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #555;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-clean:hover {
-            border-color: #3498db;
-            color: #3498db;
-        }
-        
-        .btn-primary-custom {
-            background: #3498db;
-            border: 1px solid #3498db;
-            padding: 6px 14px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary-custom:hover {
-            background: #2980b9;
-        }
-        
-        /* Tabela */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .data-table thead {
-            background: #f8f9fa;
-        }
-        
-        .data-table th {
-            padding: 12px 20px;
-            text-align: left;
-            font-size: 13px;
-            font-weight: 600;
-            color: #555;
-            border-bottom: 2px solid #e0e6ed;
-        }
-        
-        .data-table td {
-            padding: 14px 20px;
-            font-size: 13px;
-            color: #555;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .data-table tbody tr:hover {
-            background: #f8f9fb;
-        }
-        
-        .data-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        
-        /* Badges */
-        .badge-status {
-            padding: 4px 10px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .badge-failed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .badge-active {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-        
-        /* Botões de Ação */
-        .action-buttons {
-            display: flex;
-            gap: 6px;
-        }
-        
-        .btn-action {
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #555;
-        }
-        
-        .btn-action:hover {
-            border-color: #3498db;
-            color: #3498db;
-            background: #f0f8ff;
-        }
-        
-        .btn-action.danger:hover {
-            border-color: #e74c3c;
-            color: #e74c3c;
-            background: #fff5f5;
-        }
-        
-        /* Footer */
-        .table-footer {
-            padding: 15px 25px;
-            border-top: 1px solid #e0e6ed;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            color: #7f8c8d;
-        }
-        
-        .pagination {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .page-btn {
-            width: 32px;
-            height: 32px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 13px;
-        }
-        
-        .page-btn:hover {
-            border-color: #3498db;
-            color: #3498db;
-        }
-        
-        .page-btn.active {
-            background: #3498db;
-            border-color: #3498db;
-            color: white;
-        }
-        
-        /* Device Indicator */
-        .device-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-        
-        .status-dot.online {
-            background: #27ae60;
-            box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
-        }
-        
-        .status-dot.offline {
-            background: #95a5a6;
-        }
-    </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid" style="max-width: 1400px; margin: 0 auto;">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-network-wired"></i> Sistema de Backup de Rede
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link active" href="/">Dashboard</a>
-                <a class="nav-link" href="/devices">Dispositivos</a>
-                <a class="nav-link" href="/backups">Backups</a>
-                <a class="nav-link" href="/schedules">Agendamentos</a>
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard-specific styles only, no reset/bootstrap/icon includes */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 6px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue {
+        background: #3498db;
+    }
+
+    .stat-icon.green {
+        background: #27ae60;
+    }
+
+    .stat-icon.red {
+        background: #e74c3c;
+    }
+
+    .stat-icon.orange {
+        background: #f39c12;
+    }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-clean {
+        background: white;
+        border: 1px solid #ddd;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #555;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-clean:hover {
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .btn-primary-custom {
+        background: #3498db;
+        border: 1px solid #3498db;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary-custom:hover {
+        background: #2980b9;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+    }
+
+    .btn-action:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: #f0f8ff;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    .table-footer {
+        padding: 15px 25px;
+        border-top: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+    }
+
+    .page-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+
+    .page-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .device-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-dot.online {
+        background: #27ae60;
+        box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+    }
+
+    .status-dot.offline {
+        background: #95a5a6;
+    }
+</style>
+{% endblock %}
+
+{% block main_container %}
+<div class="main-container">
+    <!-- Cards de Estatísticas -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_devices }}</h3>
+                <p>Dispositivos Ativos</p>
             </div>
         </div>
-    </nav>
-
-    <!-- Container Principal -->
-    <div class="main-container">
-        
-        <!-- Cards de Estatísticas -->
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-icon blue">
-                    <i class="fas fa-server"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ total_devices }}</h3>
-                    <p>Dispositivos Ativos</p>
-                </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon green">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ successful_backups }}</h3>
-                    <p>Backups com Sucesso</p>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon red">
-                    <i class="fas fa-times-circle"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ failed_backups }}</h3>
-                    <p>Backups Falhados</p>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon orange">
-                    <i class="fas fa-database"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ total_size_gb }} GB</h3>
-                    <p>Espaço Utilizado</p>
-                </div>
+            <div class="stat-info">
+                <h3>{{ successful_backups }}</h3>
+                <p>Backups com Sucesso</p>
             </div>
         </div>
-
-        <!-- Tabela de Backups Recentes -->
-        <div class="table-container">
-            <div class="table-header">
-                <h5><i class="fas fa-history"></i> Backups Recentes</h5>
-                <div class="table-actions">
-                    <button class="btn-clean" onclick="location.reload()">
-                        <i class="fas fa-sync"></i> Atualizar
-                    </button>
-                    <button class="btn-primary-custom" onclick="location.href='/devices'">
-                        <i class="fas fa-plus"></i> Novo Backup
-                    </button>
-                </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="fas fa-times-circle"></i>
             </div>
-            
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Dispositivo</th>
-                        <th>Endereço IP</th>
-                        <th>Data/Hora</th>
-                        <th>Tamanho</th>
-                        <th>Status</th>
-                        <th style="text-align: right;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for backup in recent_backups %}
-                    <tr>
-                        <td><strong>#{{ backup.id }}</strong></td>
-                        <td>
-                            <div class="device-status">
-                                <span class="status-dot online"></span>
-                                {{ backup.device_name }}
-                            </div>
-                        </td>
-                        <td>{{ backup.ip_address }}</td>
-                        <td>{{ backup.backup_date }}</td>
-                        <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
-                        <td>
-                            <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
-                                {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
-                            </span>
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="action-buttons" style="justify-content: flex-end;">
-                                <a href="/backups/{{ backup.id }}/download" class="btn-action" title="Download">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                                <a href="/backups/{{ backup.id }}/view" class="btn-action" title="Visualizar" target="_blank">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            <div class="table-footer">
-                <div>Mostrando {{ recent_backups|length }} de {{ total_backups }} backups</div>
-                <div class="pagination">
-                    <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-                    <button class="page-btn active">1</button>
-                    <button class="page-btn">2</button>
-                    <button class="page-btn">3</button>
-                    <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
-                </div>
+            <div class="stat-info">
+                <h3>{{ failed_backups }}</h3>
+                <p>Backups Falhados</p>
             </div>
         </div>
-
-        <!-- Tabela de Dispositivos -->
-        <div class="table-container" style="margin-top: 20px;">
-            <div class="table-header">
-                <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
-                <div class="table-actions">
-                    <button class="btn-primary-custom" onclick="location.href='/devices'">
-                        <i class="fas fa-cog"></i> Gerenciar
-                    </button>
-                </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-database"></i>
             </div>
-            
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Endereço IP</th>
-                        <th>Plataforma</th>
-                        <th>Protocolo</th>
-                        <th>Status</th>
-                        <th style="text-align: right;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for device in devices[:10] %}
-                    <tr>
-                        <td>
-                            <div class="device-status">
-                                <span class="status-dot {{ 'online' if device.active else 'offline' }}"></span>
-                                <strong>{{ device.name }}</strong>
-                            </div>
-                        </td>
-                        <td>{{ device.ip_address }}</td>
-                        <td>{{ device.device_type|title }}</td>
-                        <td>{{ device.protocol|upper }}</td>
-                        <td>
-                            <span class="badge-status badge-{{ 'active' if device.active else 'failed' }}">
-                                {{ 'Ativo' if device.active else 'Inativo' }}
-                            </span>
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="action-buttons" style="justify-content: flex-end;">
-                                <a href="/devices/{{ device.id }}/backup" class="btn-action" title="Fazer Backup">
-                                    <i class="fas fa-sync"></i>
-                                </a>
-                                <a href="/devices/{{ device.id }}/edit" class="btn-action" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            <div class="table-footer">
-                <div>Mostrando {{ devices[:10]|length }} de {{ devices|length }} dispositivos</div>
+            <div class="stat-info">
+                <h3>{{ total_size_gb }} GB</h3>
+                <p>Espaço Utilizado</p>
             </div>
         </div>
-
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <!-- Tabela de Backups Recentes -->
+    <div class="table-container">
+        <div class="table-header">
+            <h5><i class="fas fa-history"></i> Backups Recentes</h5>
+            <div class="table-actions">
+                <button class="btn-clean" onclick="location.reload()">
+                    <i class="fas fa-sync"></i> Atualizar
+                </button>
+                <button class="btn-primary-custom" onclick="location.href='/devices'">
+                    <i class="fas fa-plus"></i> Novo Backup
+                </button>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Dispositivo</th>
+                    <th>Endereço IP</th>
+                    <th>Data/Hora</th>
+                    <th>Tamanho</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in recent_backups %}
+                <tr>
+                    <td><strong>#{{ backup.id }}</strong></td>
+                    <td>
+                        <div class="device-status">
+                            <span class="status-dot online"></span>
+                            {{ backup.device_name }}
+                        </div>
+                    </td>
+                    <td>{{ backup.ip_address }}</td>
+                    <td>{{ backup.backup_date }}</td>
+                    <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
+                    <td>
+                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
+                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <div class="action-buttons" style="justify-content: flex-end;">
+                            <a href="/backups/{{ backup.id }}/download" class="btn-action" title="Download">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <a href="/backups/{{ backup.id }}/view" class="btn-action" title="Visualizar"
+                                target="_blank">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="table-footer">
+            <div>Mostrando {{ recent_backups|length }} de {{ total_backups }} backups</div>
+            <div class="pagination">
+                <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+    <!-- Tabela de Dispositivos -->
+    <div class="table-container" style="margin-top: 20px;">
+        <div class="table-header">
+            <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
+            <div class="table-actions">
+                <button class="btn-primary-custom" onclick="location.href='/devices'">
+                    <i class="fas fa-cog"></i> Gerenciar
+                </button>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Endereço IP</th>
+                    <th>Plataforma</th>
+                    <th>Protocolo</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices[:10] %}
+                <tr>
+                    <td>
+                        <div class="device-status">
+                            <span class="status-dot {{ 'online' if device.active else 'offline' }}"></span>
+                            <strong>{{ device.name }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ device.ip_address }}</td>
+                    <td>{{ device.device_type|title }}</td>
+                    <td>{{ device.protocol|upper }}</td>
+                    <td>
+                        <span class="badge-status badge-{{ 'active' if device.active else 'failed' }}">
+                            {{ 'Ativo' if device.active else 'Inativo' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <div class="action-buttons" style="justify-content: flex-end;">
+                            <a href="/devices/{{ device.id }}/backup" class="btn-action" title="Fazer Backup">
+                                <i class="fas fa-sync"></i>
+                            </a>
+                            <a href="/devices/{{ device.id }}/edit" class="btn-action" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="table-footer">
+            <div>Mostrando {{ devices[:10]|length }} de {{ devices|length }} dispositivos</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

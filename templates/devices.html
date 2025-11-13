@@ -2,11 +2,21 @@
 {% block title %}Dispositivos{% endblock %}
 {% block extra_css %}
 <style>
-.action-buttons { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-.action-buttons .btn { padding: 0.5rem 0.8rem; font-size: 0.85rem; white-space: nowrap; }
+    .action-buttons {
+        display: flex;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+    }
+
+    .action-buttons .btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
 </style>
 {% endblock %}
 {% block content %}
+
 <div class="card">
     <h2>Gerenciar Dispositivos</h2>
     <button class="btn btn-success" onclick="showModal('addDeviceModal')">➕ Adicionar Novo Dispositivo</button>
@@ -16,7 +26,15 @@
     {% if devices %}
     <table>
         <thead>
-            <tr><th>Nome</th><th>IP</th><th>Tipo</th><th>Protocolo</th><th>Porta</th><th>Status</th><th>Ações</th></tr>
+            <tr>
+                <th>Nome</th>
+                <th>IP</th>
+                <th>Tipo</th>
+                <th>Protocolo</th>
+                <th>Porta</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
         </thead>
         <tbody>
             {% for device in devices %}
@@ -59,23 +77,17 @@
             <div class="form-group"><label>Nome *</label><input type="text" name="name" required></div>
             <div class="form-group"><label>IP *</label><input type="text" name="ip_address" required></div>
 
-                    <!-- Campo Provedor/Cliente -->
-                    <div class="mb-3">
-                        <label for="provedor" class="form-label">
-                            <i class="fas fa-building"></i> Provedor/Cliente
-                        </label>
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            id="provedor" 
-                            name="provedor" 
-                            placeholder="Ex: Cliente_A, OLLA, SPEEDNET, Interno"
-                            value="Sem_Provedor"
-                        >
-                        <small class="form-text text-muted">
-                            Nome do cliente ou provedor para organizar os backups
-                        </small>
-                    </div>
+            <!-- Campo Provedor/Cliente -->
+            <div class="mb-3">
+                <label for="provedor" class="form-label">
+                    <i class="fas fa-building"></i> Provedor/Cliente
+                </label>
+                <input type="text" class="form-control" id="provedor" name="provedor"
+                    placeholder="Ex: Cliente_A, OLLA, SPEEDNET, Interno" value="Sem_Provedor">
+                <small class="form-text text-muted">
+                    Nome do cliente ou provedor para organizar os backups
+                </small>
+            </div>
 
             <div class="form-group"><label>Tipo *</label>
                 <select name="device_type" required>
@@ -128,89 +140,89 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    try {
-        const response = await fetch('/devices/add', {method: 'POST', body: formData});
-        const data = await response.json();
-        if (data.success) {
-            showAlert('Dispositivo adicionado!', 'success');
-            closeModal('addDeviceModal');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('Erro: ' + data.error, 'danger');
+    document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        try {
+            const response = await fetch('/devices/add', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo adicionado!', 'success');
+                closeModal('addDeviceModal');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
         }
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
-    }
-});
+    });
 
-async function editDevice(id) {
-    try {
-        const response = await fetch('/devices/' + id + '/get');
-        const device = await response.json();
-        document.getElementById('editId').value = device.id;
-        document.getElementById('editName').value = device.name;
-        document.getElementById('editIp').value = device.ip_address;
-        document.getElementById('editProtocol').value = device.protocol;
-        document.getElementById('editPort').value = device.port;
-        showModal('editDeviceModal');
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
-    }
-}
-
-document.getElementById('editDeviceForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('editId').value;
-    const data = {
-        name: document.getElementById('editName').value,
-        ip_address: document.getElementById('editIp').value,
-        protocol: document.getElementById('editProtocol').value,
-        port: document.getElementById('editPort').value
-    };
-    try {
-        const response = await fetch('/devices/' + id + '/update', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        if (result.success) {
-            showAlert('Atualizado!', 'success');
-            closeModal('editDeviceModal');
-            setTimeout(() => location.reload(), 1500);
+    async function editDevice(id) {
+        try {
+            const response = await fetch('/devices/' + id + '/get');
+            const device = await response.json();
+            document.getElementById('editId').value = device.id;
+            document.getElementById('editName').value = device.name;
+            document.getElementById('editIp').value = device.ip_address;
+            document.getElementById('editProtocol').value = device.protocol;
+            document.getElementById('editPort').value = device.port;
+            showModal('editDeviceModal');
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
         }
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
     }
-});
 
-async function backupDevice(deviceId) {
-    if (!confirm('Backup agora?')) return;
-    try {
-        const response = await fetch('/backup/' + deviceId, {method: 'POST'});
-        const data = await response.json();
-        if (data.success) showAlert('Backup realizado!', 'success');
-        else showAlert('Erro: ' + data.error, 'danger');
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
-    }
-}
-
-async function deleteDevice(deviceId) {
-    if (!confirm('Remover permanentemente?')) return;
-    try {
-        const response = await fetch('/devices/' + deviceId + '/delete', {method: 'POST'});
-        const data = await response.json();
-        if (data.success) {
-            showAlert('Removido!', 'success');
-            setTimeout(() => location.reload(), 1500);
+    document.getElementById('editDeviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const data = {
+            name: document.getElementById('editName').value,
+            ip_address: document.getElementById('editIp').value,
+            protocol: document.getElementById('editProtocol').value,
+            port: document.getElementById('editPort').value
+        };
+        try {
+            const response = await fetch('/devices/' + id + '/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showAlert('Atualizado!', 'success');
+                closeModal('editDeviceModal');
+                setTimeout(() => location.reload(), 1500);
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
         }
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
+    });
+
+    async function backupDevice(deviceId) {
+        if (!confirm('Backup agora?')) return;
+        try {
+            const response = await fetch('/backup/' + deviceId, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) showAlert('Backup realizado!', 'success');
+            else showAlert('Erro: ' + data.error, 'danger');
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
     }
-}
+
+    async function deleteDevice(deviceId) {
+        if (!confirm('Remover permanentemente?')) return;
+        try {
+            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Removido!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
 </script>
 {% endblock %}
