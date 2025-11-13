@@ -3,6 +3,7 @@ from database import Database
 from backup_manager import BackupManager
 from scheduler import BackupScheduler
 import os
+import sqlite3
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
@@ -99,38 +100,52 @@ def add_device():
             # Use the database sanitization method
             provedor = db._sanitize_input(provedor, max_length=100)
         except ValueError as e:
-            return jsonify({'success': False, 'error': f'Provedor inválido: {str(e)}'}), 400
+            return jsonify({'success': False, 'error': f'Provedor inválido: {str(e)}'}), 422
+        
+        # Validate required fields
+        required_fields = ['name', 'ip_address', 'device_type', 'protocol', 'username', 'password']
+        missing_fields = [field for field in required_fields if not request.form.get(field)]
+        if missing_fields:
+            return jsonify({'success': False, 'error': f'Campos obrigatórios faltando: {", ".join(missing_fields)}'}), 400
         
         # Adicionar dispositivo COM provedor usando SQL direto
         conn = db.get_connection()
         cursor = conn.cursor()
         
-        cursor.execute('''
-            INSERT INTO devices (
-                name, ip_address, device_type, protocol, 
-                username, password, port, enable_password, 
-                backup_command, provedor, active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-        ''', (
-            request.form['name'],
-            request.form['ip_address'],
-            request.form['device_type'],
-            request.form['protocol'],
-            request.form['username'],
-            request.form['password'],
-            int(request.form.get('port', 22)),
-            request.form.get('enable_password'),
-            request.form.get('backup_command'),
-            provedor
-        ))
-        
-        device_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        return jsonify({'success': True, 'device_id': device_id})
+        try:
+            cursor.execute('''
+                INSERT INTO devices (
+                    name, ip_address, device_type, protocol, 
+                    username, password, port, enable_password, 
+                    backup_command, provedor, active
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            ''', (
+                request.form['name'],
+                request.form['ip_address'],
+                request.form['device_type'],
+                request.form['protocol'],
+                request.form['username'],
+                request.form['password'],
+                int(request.form.get('port', 22)),
+                request.form.get('enable_password'),
+                request.form.get('backup_command'),
+                provedor
+            ))
+            
+            device_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return jsonify({'success': True, 'device_id': device_id}), 201
+        except sqlite3.IntegrityError as e:
+            conn.close()
+            if 'UNIQUE constraint' in str(e):
+                return jsonify({'success': False, 'error': 'IP address já cadastrado'}), 409
+            return jsonify({'success': False, 'error': 'Erro de integridade: ' + str(e)}), 409
+    except (ValueError, TypeError) as e:
+        return jsonify({'success': False, 'error': f'Dados inválidos: {str(e)}'}), 422
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/devices/<int:device_id>/get')
 def get_device_data(device_id):
@@ -172,16 +187,24 @@ def update_device(device_id):
             updates.append('provedor = ?')
             values.append(provedor)
         
-        if updates:
-            values.append(device_id)
-            query = f"UPDATE devices SET {', '.join(updates)} WHERE id = ?"
-            cursor.execute(query, values)
-            conn.commit()
+        if not updates:
+            return jsonify({'success': False, 'error': 'Nenhum campo para atualizar'}), 400
         
+        values.append(device_id)
+        query = f"UPDATE devices SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, values)
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
+        
+        conn.commit()
         conn.close()
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({'success': False, 'error': f'Dados inválidos: {str(e)}'}), 422
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/devices/<int:device_id>/delete', methods=['POST'])
 def delete_device_permanent(device_id):
@@ -189,27 +212,40 @@ def delete_device_permanent(device_id):
         conn = db.get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM devices WHERE id = ?', (device_id,))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
+        
         conn.commit()
         conn.close()
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 204
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/backup/<int:device_id>', methods=['POST'])
 def backup_device(device_id):
     try:
+        # Check if device exists
+        device = db.get_device(device_id)
+        if not device:
+            return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
+        
         result = backup_manager.backup_device(device_id)
-        return jsonify(result)
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 422
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/backup/all', methods=['POST'])
 def backup_all():
     try:
         results = backup_manager.backup_all_devices()
-        return jsonify({'success': True, 'results': results})
+        return jsonify({'success': True, 'results': results}), 200
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/backups')
 def backups():
@@ -268,11 +304,13 @@ def add_schedule():
         schedule_id = db.add_schedule(device_id, frequency, time, day_of_week, day_of_month)
         schedule = db.get_schedule(schedule_id)
         scheduler.add_job(schedule)
-        return jsonify({'success': True, 'schedule_id': schedule_id})
+        return jsonify({'success': True, 'schedule_id': schedule_id}), 201
+    except (ValueError, TypeError) as e:
+        return jsonify({'success': False, 'error': f'Dados inválidos: {str(e)}'}), 422
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/schedules/<int:schedule_id>/get')
 def get_schedule_data(schedule_id):
@@ -306,23 +344,33 @@ def update_schedule(schedule_id):
         conn.close()
         
         schedule = db.get_schedule(schedule_id)
+        if not schedule:
+            return jsonify({'success': False, 'error': 'Agendamento não encontrado'}), 404
+        
         scheduler.remove_job(schedule_id)
         scheduler.add_job(schedule)
         
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({'success': False, 'error': f'Dados inválidos: {str(e)}'}), 422
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/schedules/<int:schedule_id>', methods=['DELETE'])
 def delete_schedule(schedule_id):
     try:
+        # Check if schedule exists
+        schedule = db.get_schedule(schedule_id)
+        if not schedule:
+            return jsonify({'success': False, 'error': 'Agendamento não encontrado'}), 404
+        
         db.delete_schedule(schedule_id)
         scheduler.remove_job(schedule_id)
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 204
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/stats')
 def api_stats():
@@ -369,9 +417,12 @@ def api_provedores_add():
         
         # Input validation is now handled in database.add_provedor()
         provedor_id = db.add_provedor(name, description)
-        return jsonify({'success': True, 'provedor_id': provedor_id})
+        return jsonify({'success': True, 'provedor_id': provedor_id}), 201
     except ValueError as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        error_msg = str(e)
+        if 'já existe' in error_msg.lower() or 'already exists' in error_msg.lower():
+            return jsonify({'success': False, 'error': error_msg}), 409
+        return jsonify({'success': False, 'error': error_msg}), 422
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -380,9 +431,12 @@ def api_provedores_delete(provedor_id):
     """Delete a provedor by ID."""
     try:
         db.delete_provedor(provedor_id)
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 204
     except ValueError as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        error_msg = str(e)
+        if 'não encontrado' in error_msg.lower() or 'not found' in error_msg.lower():
+            return jsonify({'success': False, 'error': error_msg}), 404
+        return jsonify({'success': False, 'error': error_msg}), 422
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -391,15 +445,20 @@ def api_provedores_delete_by_name():
     """Delete a provedor by name (for cleanup of malicious entries)."""
     try:
         data = request.get_json()
-        name = data.get('name', '').strip()
+        if not data:
+            return jsonify({'success': False, 'error': 'Dados não fornecidos'}), 400
         
+        name = data.get('name', '').strip()
         if not name:
             return jsonify({'success': False, 'error': 'Nome do provedor é obrigatório'}), 400
         
         db.delete_provedor_by_name(name)
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 204
     except ValueError as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
+        error_msg = str(e)
+        if 'não encontrado' in error_msg.lower() or 'not found' in error_msg.lower():
+            return jsonify({'success': False, 'error': error_msg}), 404
+        return jsonify({'success': False, 'error': error_msg}), 422
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
