@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Backup{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>{{ stats.total_devices }}</h3>
+        <p>Dispositivos Total</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.active_devices }}</h3>
+        <p>Dispositivos Ativos</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.total_backups }}</h3>
+        <p>Backups Realizados</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.active_schedules }}</h3>
+        <p>Agendamentos Ativos</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Ações Rápidas</h2>
+    <button class="btn btn-success" onclick="backupAll()">🔄 Backup de Todos os Dispositivos</button>
+    <a href="/devices" class="btn btn-primary">➕ Adicionar Dispositivo</a>
+    <a href="/schedules" class="btn btn-primary">📅 Novo Agendamento</a>
+</div>
+
+<div class="card">
+    <h2>Backups Recentes</h2>
+    {% if backups %}
+    <table>
+        <thead>
+            <tr>
+                <th>Dispositivo</th>
+                <th>IP</th>
+                <th>Data/Hora</th>
+                <th>Tamanho</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for backup in backups %}
+            <tr>
+                <td>{{ backup.device_name }}</td>
+                <td>{{ backup.ip_address }}</td>
+                <td>{{ backup.backup_date }}</td>
+                <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
+                <td>
+                    {% if backup.status == 'success' %}
+                    <span class="badge badge-success">Sucesso</span>
+                    {% else %}
+                    <span class="badge badge-danger">Falha</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/backups/{{ backup.id }}/download" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Download</a>
+                    <a href="/backups/{{ backup.id }}/view" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Visualizar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nenhum backup realizado ainda. <a href="/devices">Adicione um dispositivo</a> para começar!</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Próximos Agendamentos</h2>
+    {% if schedules %}
+    <table>
+        <thead>
+            <tr>
+                <th>Dispositivo</th>
+                <th>Frequência</th>
+                <th>Horário</th>
+                <th>Última Execução</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for schedule in schedules %}
+            {% if schedule.active %}
+            <tr>
+                <td>{{ schedule.device_name or 'Todos os dispositivos' }}</td>
+                <td>
+                    {% if schedule.frequency == 'daily' %}Diário{% endif %}
+                    {% if schedule.frequency == 'weekly' %}Semanal{% endif %}
+                    {% if schedule.frequency == 'monthly' %}Mensal{% endif %}
+                </td>
+                <td>{{ schedule.time }}</td>
+                <td>{{ schedule.last_run or 'Nunca' }}</td>
+                <td><span class="badge badge-success">Ativo</span></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nenhum agendamento configurado. <a href="/schedules">Crie um agendamento</a> para backups automáticos!</p>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function backupAll() {
+    if (!confirm('Deseja executar backup de todos os dispositivos?')) return;
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '⏳ Executando...';
+    
+    try {
+        const response = await fetch('/backup/all', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(`Backups concluídos! ${data.results.length} dispositivos processados.`, 'success');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showAlert('Erro ao executar backups: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Backup de Todos os Dispositivos';
+    }
+}
+</script>
+{% endblock %}

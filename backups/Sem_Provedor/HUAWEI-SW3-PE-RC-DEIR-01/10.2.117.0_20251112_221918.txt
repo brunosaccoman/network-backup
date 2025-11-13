@@ -1,0 +1,518 @@
+!Software Version V200R023C00SPC500
+#
+sysname SW3-PE-JIP-GRVLE-01
+#
+ipv6
+#
+as-notation plain
+#
+vlan batch 99 200 413 436 to 437 749 812
+#
+stp disable
+#
+authentication-profile name default_authen_profile
+ authentication ipv6-control enable
+authentication-profile name dot1x_authen_profile
+ authentication ipv6-control enable
+authentication-profile name dot1xmac_authen_profile
+ authentication ipv6-control enable
+authentication-profile name mac_authen_profile
+ authentication ipv6-control enable
+authentication-profile name multi_authen_profile
+ authentication ipv6-control enable
+authentication-profile name portal_authen_profile
+ authentication ipv6-control enable
+#
+http server-source -i MEth0/0/1
+#
+undo mac-address learning self-healing enable
+#
+set if-mib sample-interval 0
+#
+dhcp enable
+#
+capwap unknown-unicast cir 0
+#
+diffserv domain default
+#
+ip vpn-instance INTERNET
+ ipv4-family
+  route-distinguisher 266284:1
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+ ipv6-family
+  route-distinguisher 266284:1
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+#
+radius-server template default
+#
+bfd
+ mpls-passive
+#
+mpls lsr-id 10.2.117.0
+mpls
+ mpls te
+ mpls te auto-frr
+ mpls te bfd enable
+ mpls te bfd min-tx-interval 100 min-rx-interval 100 detect-multiplier 4
+ mpls te timer auto-bandwidth
+ mpls rsvp-te
+ mpls rsvp-te bfd all-interfaces enable
+ mpls rsvp-te bfd all-interfaces min-tx-interval 100 min-rx-interval 100 detect-multiplier 4
+ mpls rsvp-te hello
+ mpls te cspf
+#
+mpls l2vpn
+#
+vsi TrVlan_413_SUPTELCO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4023
+  vpn-target 266178:4023 import-extcommunity
+  vpn-target 266178:4023 export-extcommunity
+  site 4 range 20 default-offset 0
+#
+vsi TrVlan_436_IMPACTO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4045
+  vpn-target 266178:4045 import-extcommunity
+  vpn-target 266178:4045 export-extcommunity
+  site 4 range 20 default-offset 0
+#
+vsi TrVlan_437_IMPACTO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4046
+  vpn-target 266178:4046 import-extcommunity
+  vpn-target 266178:4046 export-extcommunity
+  site 2 range 20 default-offset 0
+#
+mpls ldp
+#
+#
+mpls ldp remote-peer 10.2.102.0
+ remote-ip 10.2.102.0
+#
+mpls ldp remote-peer 10.2.113.0
+ remote-ip 10.2.113.0
+#
+pki realm default
+ certificate-check none
+#
+free-rule-template name default_free_rule
+#
+portal-access-profile name portal_access_profile
+#
+drop-profile default
+#
+aaa
+ authentication-scheme default
+  authentication-mode local
+ authentication-scheme radius
+  authentication-mode radius
+ authorization-scheme default
+  authorization-mode local
+ accounting-scheme default
+  accounting-mode none
+ local-aaa-user password policy administrator
+  password history record number 0
+  password expire 0
+ domain default
+  authentication-scheme radius
+  accounting-scheme default
+  radius-server default
+ domain default_admin
+  authentication-scheme default
+  accounting-scheme default
+ local-user admin password irreversible-cipher $1c$(_b#%'1*YA$`lo^:vsdcJ"O+jNPmt.$:`3eK.7+29$UzgDa|8l%$
+ local-user admin privilege level 15
+ local-user admin ftp-directory flash:
+ local-user admin service-type telnet terminal ssh ftp x25-pad http
+ local-user zabbix password irreversible-cipher $1c$ivhw<f^E'H$`UNi(Vsc_1x#ae+F4zgFjO$~DjpMs0xR`46FBO3>$
+ local-user zabbix privilege level 15
+ local-user zabbix service-type ssh
+ local-user zabbix user-type netmanager
+ local-user jheisson password irreversible-cipher $1a$'GO{@^9"~P$w*j\:H`_ZGh=3q*}'\3P}WPQ9xrUM(8^+OK0FE8A$
+ local-user jheisson privilege level 15
+ local-user jheisson service-type telnet ssh
+ local-user jheisson user-type netmanager
+#
+interface Vlanif1
+ ip address dhcp-alloc
+#
+interface Vlanif99
+ description GERENCIA
+ ip address 10.2.117.1 255.255.255.0
+ ospf enable 10 area 0.0.0.0
+#
+interface Vlanif200
+ description LINK-IMPACTO-NET-JIPA
+ ip binding vpn-instance INTERNET
+ ip address 10.80.3.77 255.255.255.252
+ statistic enable both
+#
+interface Vlanif413
+ l2 binding vsi TrVlan_413_SUPTELCO_REDE_NEUTRA
+ statistic enable both
+#
+interface Vlanif436
+ description IMPACTONET-PPPOE
+ l2 binding vsi TrVlan_436_IMPACTO_REDE_NEUTRA
+#
+interface Vlanif437
+ description IMPACTONET-MGMT
+ l2 binding vsi TrVlan_437_IMPACTO_REDE_NEUTRA
+#
+interface Vlanif749
+ description LINK-SUPER-TELECOM
+ ip binding vpn-instance INTERNET
+ ip address 100.118.1.77 255.255.255.252
+ statistic enable both
+#
+interface Vlanif812
+ description LINK-SUPER-TELECOM-V6
+ ip binding vpn-instance INTERNET
+ ipv6 enable
+ ipv6 address 2804:3568:2A1:7::1/64
+ ipv6 address auto link-local
+ statistic enable both
+#
+interface MEth0/0/1
+ ip address 192.168.1.253 255.255.255.0
+#
+load-balance-profile LB
+ mpls field smac dmac top-label 2nd-label 3rd-label sip dip vlan sport protocol l4-sport l4-dport
+#
+interface Eth-Trunk2
+ undo portswitch
+ description PNM_RDLN_CNT_PEA
+ ip address 10.100.1.25 255.255.255.252
+ ospf cost 5
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 102400000
+ mpls te bandwidth bc0 102400000
+ mpls rsvp-te
+ mpls ldp
+ mode lacp
+#
+interface Eth-Trunk10
+ undo portswitch
+ description AGG:SW3-PE-JIP-OLLA-01{200GE}
+ ip address 10.22.4.170 255.255.255.248
+ ospf cost 5
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 20000000
+ mpls te bandwidth bc0 20000000
+ mpls rsvp-te
+ mpls ldp
+ mode lacp
+ load-balance enhanced profile LB
+#
+interface Eth-Trunk11
+ undo portswitch
+ description AGG:SW3-PE-RDLN-CEN-01{100GE}
+ ip address 10.22.4.177 255.255.255.248
+ ospf cost 1
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 20000000
+ mpls te bandwidth bc0 20000000
+ mpls rsvp-te
+ mpls ldp
+ mode lacp
+#
+interface Eth-Trunk12
+ undo portswitch
+ description AGG:SW3-PE-RC-CAPELASO-01{10G}
+ ip address 10.22.5.2 255.255.255.248
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 20000000
+ mpls te bandwidth bc0 20000000
+ mpls rsvp-te
+ mpls ldp
+ mode lacp
+#
+interface Eth-Trunk13
+ undo portswitch
+ description RTR-PE-RC-CEN-01-NE8000-F1A
+ ip address 10.22.5.118 255.255.255.248
+ ospf cost 11
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 20000000
+ mpls te bandwidth bc0 20000000
+ mpls rsvp-te
+ mpls ldp
+ mode lacp
+#
+interface XGigabitEthernet0/0/1
+ description CH01-SW3-PE-RDLN-CEN-01-BKB{10G}
+ eth-trunk 2
+#
+interface XGigabitEthernet0/0/2
+#
+interface XGigabitEthernet0/0/3
+#
+interface XGigabitEthernet0/0/4
+#
+interface XGigabitEthernet0/0/5
+ description CH-01-SW3-RC-CAPELASO-01
+ eth-trunk 12
+#
+interface XGigabitEthernet0/0/6
+#
+interface XGigabitEthernet0/0/7
+#
+interface XGigabitEthernet0/0/8
+#
+interface XGigabitEthernet0/0/9
+#
+interface XGigabitEthernet0/0/10
+#
+interface XGigabitEthernet0/0/11
+#
+interface XGigabitEthernet0/0/12
+#
+interface XGigabitEthernet0/0/13
+#
+interface XGigabitEthernet0/0/14
+ undo negotiation auto
+ description LINK-VITOR-IMPACTO-NET
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 200 436 to 437
+ qos lr outbound cir 716800 cbs 89600000
+ qos lr inbound cir 716800 cbs 89600000
+#
+interface XGigabitEthernet0/0/15
+ description LINK-SUPER-TELECOM
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 413 749 812
+#
+interface XGigabitEthernet0/0/16
+#
+interface XGigabitEthernet0/0/17
+#
+interface XGigabitEthernet0/0/18
+#
+interface XGigabitEthernet0/0/19
+#
+interface XGigabitEthernet0/0/20
+#
+interface XGigabitEthernet0/0/21
+#
+interface XGigabitEthernet0/0/22
+#
+interface XGigabitEthernet0/0/23
+#
+interface XGigabitEthernet0/0/24
+ description RB:GERENCIA
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 99
+#
+interface 100GE0/0/1
+ fec mode rs
+ description CH01-SW3-PE-JIP-OLLA-01-ROTA-OLLA
+ eth-trunk 10
+#
+interface 100GE0/0/2
+ fec mode rs
+ description CH02-SW3-PE-JIP-OLLA-01-ROTA-RODOANEL
+ eth-trunk 10
+#
+interface 100GE0/0/3
+ eth-trunk 13
+#
+interface 100GE0/0/4
+ fec mode rs
+ description CH01-SW3-PE-RDLN-CEN-01
+ eth-trunk 11
+#
+interface 100GE0/0/5
+#
+interface 100GE0/0/6
+#
+interface NULL0
+#
+interface LoopBack0
+ ip address 10.2.117.0 255.255.255.255
+ ospf enable 10 area 0.0.0.0
+#
+bgp 266284
+ router-id 10.2.117.0
+ undo default ipv4-unicast
+ group MPBGP-RR internal
+ peer MPBGP-RR description ROUTES-REFLECTOR
+ peer MPBGP-RR connect-interface LoopBack0
+ peer 10.2.102.0 as-number 266284
+ peer 10.2.102.0 group MPBGP-RR
+ peer 10.2.102.0 description RTR-PE-PBW-CEN-01
+ peer 10.2.113.0 as-number 266284
+ peer 10.2.113.0 group MPBGP-RR
+ peer 10.2.113.0 description RTR-PE-CBA-CEN-01
+ peer 10.2.127.0 as-number 266284
+ peer 10.2.127.0 group MPBGP-RR
+ peer 10.2.132.0 as-number 266284
+ peer 10.2.132.0 group MPBGP-RR
+ #
+ ipv4-family unicast
+  undo synchronization
+  undo peer MPBGP-RR enable
+  undo peer 10.2.102.0 enable
+  undo peer 10.2.113.0 enable
+  undo peer 10.2.127.0 enable
+  undo peer 10.2.132.0 enable
+ #
+ l2vpn-ad-family
+  policy vpn-target
+  signaling vpls
+  signaling vpws
+  peer MPBGP-RR enable
+  peer MPBGP-RR advertise-community
+  peer 10.2.127.0 enable
+  peer 10.2.127.0 group MPBGP-RR
+  peer 10.2.132.0 enable
+  peer 10.2.132.0 group MPBGP-RR
+ #
+ ipv4-family vpnv4
+  policy vpn-target
+  peer MPBGP-RR enable
+  peer MPBGP-RR advertise-community
+  peer 10.2.102.0 enable
+  peer 10.2.102.0 group MPBGP-RR
+  peer 10.2.113.0 enable
+  peer 10.2.113.0 group MPBGP-RR
+ #
+ ipv4-family vpn-instance INTERNET
+  import-route direct
+  import-route static
+ #
+ ipv6-family vpnv6
+  policy vpn-target
+  peer MPBGP-RR enable
+  peer MPBGP-RR advertise-community
+  peer 10.2.102.0 enable
+  peer 10.2.102.0 group MPBGP-RR
+  peer 10.2.113.0 enable
+  peer 10.2.113.0 group MPBGP-RR
+ #
+ ipv6-family vpn-instance INTERNET
+  import-route direct
+  import-route static
+#
+ospf 10 router-id 10.2.117.0
+ silent-interface LoopBack0
+ silent-interface Vlanif99
+ opaque-capability enable
+ graceful-restart
+ bandwidth-reference 400000
+ enable traffic-adjustment advertise
+ frr
+  loop-free-alternate
+ area 0.0.0.0
+  mpls-te enable
+#
+undo icmp name timestamp-request receive
+#
+ip route-static vpn-instance INTERNET 138.97.145.176 255.255.255.240 100.118.1.78 description ROTA-SUPER-TELECOM
+ip route-static vpn-instance INTERNET 192.144.64.164 255.255.255.252 100.118.1.78 description ROTA-SUPER-TELECOM
+ip route-static vpn-instance INTERNET 200.80.118.16 255.255.255.252 10.80.3.78
+#
+ipv6 route-static vpn-instance INTERNET 2804:3BE4:6090:: 48 2804:3568:2A1:7::2 description ROTA-SUPER-TELECOM
+#
+snmp-agent
+snmp-agent local-engineid 800007DB03D86D17A328F0
+snmp-agent community read cipher %^%#8s!=O`*TkJ>EY^2X0Nt(."Q*S98T!KMH8#5z^j8FCb_v>)VN>Wxt$k*9v'-7@.u;J2V+c.LV}dWe\Y<4%^%#
+snmp-agent sys-info version v2c v3
+undo snmp-agent protocol source-status all-interface
+snmp-agent protocol source-interface LoopBack0
+undo snmp-agent protocol source-status ipv6 all-interface
+#
+stelnet server enable
+ssh user admin
+ssh user admin authentication-type password
+ssh user admin service-type all
+ssh user admin authorization-cmd aaa
+ssh user jheisson
+ssh user jheisson authentication-type password
+ssh user jheisson service-type all
+ssh user jheisson authorization-cmd aaa
+ssh user zabbix
+ssh user zabbix authentication-type password
+ssh user zabbix service-type stelnet
+ssh server-source all-interface
+ssh server cipher aes256_ctr aes128_ctr
+ssh server hmac sha2_256
+ssh server key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh client cipher aes256_ctr aes128_ctr
+ssh client hmac sha2_256
+ssh client key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh server dh-exchange min-len 2048
+ssh server publickey rsa_sha2_512 rsa_sha2_256
+#
+user-interface con 0
+ authentication-mode password
+ set authentication password cipher $1c$&Q}QEG;f.N$4|<07Y;}N88:H1;-F^><6S`-QaEzlOz#gV4TS^VE$
+user-interface vty 0 4
+ authentication-mode aaa
+ history-command max-size 100
+ screen-length 0
+user-interface vty 16 20
+ authentication-mode aaa
+ history-command max-size 100
+ screen-length 0
+#
+wlan
+ traffic-profile name default
+ security-profile name default
+ security-profile name default-wds
+ security-profile name default-mesh
+ ssid-profile name default
+ vap-profile name default
+ wds-profile name default
+ mesh-handover-profile name default
+ mesh-profile name default
+ regulatory-domain-profile name default
+ air-scan-profile name default
+ rrm-profile name default
+  smart-roam snr-margin high-level-margin 15 low-level-margin 10
+ radio-2g-profile name default
+ radio-5g-profile name default
+ wids-spoof-profile name default
+ wids-whitelist-profile name default
+ wids-profile name default
+ ap-system-profile name default
+ port-link-profile name default
+ wired-port-profile name default
+ ap-group name default
+  radio 2
+   frequency 5g
+ provision-ap
+#
+dot1x-access-profile name dot1x_access_profile
+#
+mac-access-profile name mac_access_profile
+#
+ops
+#
+remote-unit
+#
+return

@@ -1,0 +1,724 @@
+!Software Version V800R022C00SPC600
+!Last configuration was updated at 2025-11-02 10:31:38-04:00 by jheisson
+!Last configuration was saved at 2025-11-02 10:55:33-04:00 by jheisson
+!kms_feature --
+#
+sysname RTR-PE-RC-CEN-01
+#
+undo FTP server-source all-interface
+undo FTP ipv6 server-source all-interface
+#
+info-center loghost source LoopBack0
+info-center loghost 172.18.5.143 port 5115
+#
+service-template template-default0
+#
+service-template template-default1
+#
+service-template template-default2
+#
+service-template template-default3
+#
+service-template template-default4
+#
+ntp-service server source-interface all disable
+ntp-service ipv6 server source-interface all disable
+#
+rsa peer-public-key 10.2.0.7
+ public-key-code begin
+ 3082010A
+  02820101
+    00B8BF6F EB14ADEA 1CD25C79 1F7EB1C7 8A3A9E5E 7AF2B28D B6A4693B DF8D50E3
+    DCD503C6 DD2B21EB 15ADABCC 38F7D491 EF9CE62B 206F2AE6 9F5A9718 FBC1651F
+    B0012972 5CB916DC 2CC0451A 612073A5 799B2998 5FC9092A A1AECBE6 6849C343
+    789595A8 C3B4D370 B1DFF317 84D87E42 55F44E76 061DD78C 80B8B3D7 C854CEE5
+    2E01E639 DB70B0F0 6309DC84 5E926F81 F1B8A194 0B8B0333 7ECD013E E91C4FF2
+    5D33CAFB 372C9C54 14D703C5 CC013607 748AE39F 085B6238 A0E67045 2786C48B
+    DE928BF7 AA7A55EE 783FC35F 50F33491 F3D59929 74D1F2F1 6C0DD013 82592020
+    316BBBA9 AD5A466A C6FBCC0A 3B1C9578 BCEFC326 B369CFC4 C0E5BF59 2290C691
+    FB
+  0203
+    010001
+ public-key-code end
+ peer-public-key end
+#
+rsa peer-public-key 10.90.0.8
+ public-key-code begin
+ 3082010A
+  02820101
+    00B12EDE 0FCE3B08 5996DCFA 0E5C4AC6 53C0F914 96529F41 BB414033 BF1CE730
+    B921B129 2A10B54B 76149856 26AAB69A C4C8E319 A25145DD 977A6AF9 7AC27946
+    009A4AA0 C77601FA F3EFB62E AB438806 3577AF15 B7CDA065 24D900B7 E56EEDC0
+    EC74F0AB 1251D1F5 F4C1690F EA5D327F 3BED03BE AAFC34C0 C64028FF 34920722
+    1A79B12C 658657FA 6E4C196A 4D9C8613 46CDA742 55CCF499 05972AF9 C2B1F5D1
+    94194AA2 E1841BA7 8DDCAF71 1BE59C78 2197CA08 6B55602A 7941C62C E4D84DED
+    DAA7035D 8D351CE0 84A01E99 15870784 ECC800FB 430E5BE0 A3741CE7 18BE9C8F
+    9FF7AD87 B2C6B68F 6FB51881 2C15A30E E143A77B 808485D3 C17774E9 E464B105
+    49
+  0203
+    010001
+ public-key-code end
+ peer-public-key end
+#
+rsa peer-public-key 2804:3568:220:4::2
+ public-key-code begin
+ 3082018A
+  02820181
+    00B4853C EDC24651 4ADFA546 D37B6018 A4820D59 9BD7EBBB EB2D8808 4861C801
+    652F28D2 1730E61B 6AA79843 3F015714 00484224 BC680B60 25422CAF E7EF9767
+    3AD2AD90 D8359CC6 DF41E2B5 F480879D 54CF52EC 2D123459 3A6B13F0 B1FF7F85
+    AF454381 B27BAE76 712653A2 9C522DF2 6E48A2EB FB871050 72A39764 2C9509B7
+    2AFD7FB9 6391B5C7 FBB84CB4 40473F49 A6D9A7D9 28D2A49C 3F013798 926B024E
+    1FBAC8B2 CE158137 C3DF99EA A14517CA 19CF1DA6 6AF7CC2E F667A725 25D9EEB7
+    589A994D 8541C83B 7DC415F2 E0BA07C2 0EF616C9 C69F93EB 260AE9DC 386E9285
+    A464001A 6BE65EF3 0AD44AA1 6F8205B2 D1008020 233683D7 97C56A82 36F44645
+    6C4195E3 E162DF99 9945EBC0 69748E71 3ECB76AA 7F9B88AF 72A2023C E090C34A
+    F80A76FB 1B9E0190 164D321E BE69BE1E A37E545F 6DD7CA26 58FB2E9B F4BC3D40
+    C5D7BC3A 7A4EE43D E8D6DE83 841A33C9 A8E3C27F E5E3D970 246F389D AF711144
+    6A3576E3 63EBE981 5DE0C0C5 7BD9E449 1789E066 42A67DCC ECB25C54 1BFC6DAA
+    35
+  0203
+    010001
+ public-key-code end
+ peer-public-key end
+#
+undo icmp name timestamp-reply send
+#
+as-notation plain
+#
+undo telnet server-source all-interface
+undo telnet ipv6 server-source all-interface
+#
+ip vpn-instance INTERNET
+ ipv4-family
+  route-distinguisher 266284:1
+  apply-label per-instance
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+ ipv6-family
+  route-distinguisher 266284:1
+  apply-label per-instance
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+#
+bfd
+ mpls-passive
+#
+mpls lsr-id 10.2.127.0
+#
+mpls
+ mpls te
+ mpls te auto-frr
+ mpls te timer auto-bandwidth 
+ mpls te bfd enable
+ mpls te bfd min-tx-interval 100 min-rx-interval 100 detect-multiplier 4
+ mpls rsvp-te
+ mpls rsvp-te bfd all-interfaces enable
+ mpls rsvp-te bfd all-interfaces min-tx-interval 100 min-rx-interval 100 detect-multiplier 4
+ mpls rsvp-te hello
+ mpls te cspf
+#
+mpls l2vpn
+#
+vsi Tr-VLAN-3670-DUXNET
+ pwsignal ldp
+  vsi-id 3670
+  peer 10.2.113.0
+#
+vsi Tr_Vlan821-CREDISIS
+ pwsignal ldp
+  vsi-id 821
+  peer 10.2.124.0
+  peer 10.2.125.0
+#
+bridge-domain 10
+#
+mpls ldp
+ #
+ ipv4-family
+#
+mpls ldp remote-peer 10.2.113.0
+ remote-ip 10.2.113.0
+#
+mpls ldp remote-peer 10.2.125.0
+ remote-ip 10.2.125.0
+#
+dhcp server request-packet all-interface disable
+#
+aaa
+ local-user jheisson password irreversible-cipher $1c$#kwgWYK-RA$=b=DXYo8=M.gctD`*Z-Xo-fl/)W:nPR0n0=["*b:$
+ local-user jheisson service-type ssh
+ local-user jheisson level 3
+ local-user jheisson state block fail-times 3 interval 5
+ local-user jheisson user-group manage-ug
+ local-user zabbix password irreversible-cipher $1c$d5y5ClXD)F$xp>|%JilT4V~F`8szp+GQ'`37djVBE(cGj7oV-n;$
+ local-user zabbix service-type ssh
+ local-user zabbix level 3
+ local-user zabbix state block fail-times 3 interval 5
+ #
+ authentication-scheme default0
+ #
+ authentication-scheme default1
+ #
+ authentication-scheme default
+  authentication-mode local
+ #
+ authorization-scheme default
+ #
+ accounting-scheme default0
+ #
+ accounting-scheme default1
+ #
+ domain default0
+ #
+ domain default1
+ #
+ domain default_admin
+#
+interface Vbdif10
+#
+interface Eth-Trunk0.143
+ vlan-type dot1q 143
+ description DOWNSTREAN-EUCATUR
+ ip binding vpn-instance INTERNET
+ ipv6 enable
+ ipv6 address 2804:3568:2A1:6::1/64
+ ipv6 address auto link-local
+#
+interface Eth-Trunk0.821
+ vlan-type dot1q 821
+#
+interface Eth-Trunk0.822
+ vlan-type dot1q 822
+ description OLLA_CREDISIS
+ mpls l2vc 10.90.0.8 822
+#
+interface Eth-Trunk0.830
+ vlan-type dot1q 830
+ description ID-LINK
+ ip binding vpn-instance INTERNET
+ ip address 172.28.0.105 255.255.255.252
+ statistic enable
+#
+interface Eth-Trunk0.1006
+ vlan-type dot1q 1006
+ bandwidth 100000
+ ip address 10.22.5.17 255.255.255.248
+ statistic enable
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls ldp
+#
+interface Eth-Trunk2.813
+ vlan-type dot1q 813
+ description CL_WEBNORTE_NOVA_UNIAO
+ ip binding vpn-instance INTERNET
+ ipv6 enable
+ ip address 172.28.0.89 255.255.255.252
+ ip address 172.28.0.93 255.255.255.252 sub
+ ipv6 address 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:149/126
+ ipv6 address 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:161/126
+ ipv6 address auto link-local
+ statistic enable
+#
+interface Eth-Trunk10.1005
+ vlan-type dot1q 1005
+ description SW3-PE-NT-OLLA-01
+ ip address 10.22.5.10 255.255.255.248
+ statistic enable
+ ospf cost 10
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls ldp
+#
+interface Eth-Trunk11
+ description SW3-PE-JIP-GRVLE-01
+ ip address 10.22.5.117 255.255.255.248
+ ospf cost 11
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mode lacp-static
+ mpls
+ mpls ldp
+ statistic enable
+#
+interface GigabitEthernet0/0/0
+ undo shutdown
+#
+interface 100GE0/1/48.3670
+ vlan-type dot1q 3670
+ description DOWNSTREAN-DUXNET
+ ip binding vpn-instance INTERNET
+ ipv6 enable
+ ip address 10.80.4.85 255.255.255.252
+ ipv6 address 2804:3568:2A1:5::1/64 anycast
+ ipv6 address auto link-local
+ statistic enable
+#
+interface 100GE0/1/51
+ undo shutdown
+ eth-trunk 11
+#
+interface LoopBack0
+ ip address 10.2.127.0 255.255.255.255
+ ospf enable 10 area 0.0.0.0
+#
+interface Virtual-Ethernet0/1/102.824
+ vlan-type dot1q 824
+ description OLLA-CREDISIS
+ statistic enable
+ l2 binding vsi Tr_Vlan821-CREDISIS
+#
+interface Virtual-Ethernet0/1/201.200
+ vlan-type dot1q 200
+ ip binding vpn-instance INTERNET
+ ipv6 enable
+ ip address 10.80.3.141 255.255.255.252
+ ipv6 address 2804:3568:220:4::1/64
+ statistic enable
+#
+interface Virtual-Ethernet0/1/202.824
+ vlan-type dot1q 824
+#
+interface NULL0
+#
+bgp 266284
+ undo default ipv4-unicast
+ private-4-byte-as enable
+ peer 10.2.102.0 as-number 266284
+ peer 10.2.102.0 bfd min-tx-interval 100 min-rx-interval 100
+ peer 10.2.102.0 bfd enable
+ peer 10.2.113.0 as-number 266284
+ peer 10.2.113.0 connect-interface LoopBack0
+ peer 10.2.113.0 bfd min-tx-interval 100 min-rx-interval 100
+ peer 10.2.113.0 bfd enable
+ peer 10.2.117.0 as-number 266284
+ peer 10.2.117.0 connect-interface LoopBack0
+ peer 10.2.124.0 as-number 266284
+ peer 10.2.125.0 as-number 266284
+ peer 10.2.126.0 as-number 266284
+ peer 10.2.128.0 as-number 266284
+ peer 10.2.129.0 as-number 266284
+ peer 10.2.130.0 as-number 266284
+ group SW3-PE internal
+ peer SW3-PE connect-interface LoopBack0
+ #
+ ipv4-family unicast
+  undo synchronization
+  undo peer 10.2.102.0 enable
+  undo peer 10.2.113.0 enable
+  undo peer 10.2.117.0 enable
+  undo peer 10.2.124.0 enable
+  undo peer 10.2.125.0 enable
+  undo peer 10.2.126.0 enable
+  undo peer 10.2.128.0 enable
+  undo peer 10.2.129.0 enable
+  undo peer 10.2.130.0 enable
+  peer SW3-PE enable
+ #
+ l2vpn-ad-family
+  undo policy vpn-target
+  signaling vpls
+  signaling vpws
+  peer SW3-PE enable
+  peer SW3-PE reflect-client
+  peer SW3-PE advertise-community
+  peer 10.2.117.0 enable
+  peer 10.2.117.0 group SW3-PE
+  peer 10.2.124.0 enable
+  peer 10.2.124.0 group SW3-PE
+  peer 10.2.125.0 enable
+  peer 10.2.125.0 group SW3-PE
+  peer 10.2.126.0 enable
+  peer 10.2.126.0 group SW3-PE
+  peer 10.2.128.0 enable
+  peer 10.2.128.0 group SW3-PE
+  peer 10.2.129.0 enable
+  peer 10.2.129.0 group SW3-PE
+  peer 10.2.130.0 enable
+  peer 10.2.130.0 group SW3-PE
+ #
+ ipv4-family vpnv4
+  undo policy vpn-target
+  peer 10.2.102.0 enable
+  peer 10.2.102.0 route-policy OUT-MPBGP-PARCIAL export
+  peer 10.2.102.0 advertise-community
+  peer 10.2.113.0 enable
+  peer 10.2.113.0 route-policy OUT-MPBGP-PARCIAL export
+  peer 10.2.113.0 advertise-community
+  peer SW3-PE enable
+  peer SW3-PE route-policy OUT-MPBGP-PARCIAL export
+  peer SW3-PE reflect-client
+  peer SW3-PE advertise-community
+  peer 10.2.124.0 enable
+  peer 10.2.124.0 group SW3-PE
+  peer 10.2.125.0 enable
+  peer 10.2.125.0 group SW3-PE
+  peer 10.2.126.0 enable
+  peer 10.2.126.0 group SW3-PE
+  peer 10.2.128.0 enable
+  peer 10.2.128.0 group SW3-PE
+  peer 10.2.129.0 enable
+  peer 10.2.129.0 group SW3-PE
+  peer 10.2.130.0 enable
+  peer 10.2.130.0 group SW3-PE
+ #
+ ipv4-family vpn-instance INTERNET
+  import-route direct
+  import-route static
+  auto-frr
+  peer 10.80.3.142 as-number 266178
+  peer 10.80.3.142 route-policy IN-REDECOMPLETA-V4 import
+  peer 10.80.4.86 as-number 264137
+  peer 10.80.4.86 fake-as 266178
+  peer 10.80.4.86 description DUXNET
+  peer 10.80.4.86 connect-interface 10.80.4.85
+  peer 10.80.4.86 ip-prefix FULL-ROUTING export
+  peer 10.80.4.86 route-policy IN-DOWNSTREAN-DUXNET-V4 import
+  peer 172.28.0.90 as-number 269664
+  peer 172.28.0.90 fake-as 266178
+  peer 172.28.0.90 description AS269664-WEBNORTE
+  peer 172.28.0.90 route-policy AS269664-WEBNORTE-Import-V4 import
+  peer 172.28.0.90 route-policy AS269664-WEBNORTE-Export-V4 export
+  peer 172.28.0.94 as-number 269567
+  peer 172.28.0.94 fake-as 266178
+  peer 172.28.0.94 description AS269567-WEBNORTE
+  peer 172.28.0.94 route-policy AS269664-WEBNORTE-Import-V4 import
+  peer 172.28.0.94 route-policy AS269664-WEBNORTE-Export-V4 export
+ #
+ ipv6-family vpnv6
+  undo policy vpn-target
+  peer 10.2.113.0 enable
+  peer 10.2.113.0 advertise-community
+  peer SW3-PE enable
+  peer SW3-PE route-policy OUT-MPBGP-PARCIAL-V6 export
+  peer SW3-PE reflect-client
+  peer SW3-PE advertise-community
+  peer 10.2.102.0 enable
+  peer 10.2.102.0 group SW3-PE
+  peer 10.2.124.0 enable
+  peer 10.2.124.0 group SW3-PE
+  peer 10.2.125.0 enable
+  peer 10.2.125.0 group SW3-PE
+  peer 10.2.126.0 enable
+  peer 10.2.126.0 group SW3-PE
+  peer 10.2.128.0 enable
+  peer 10.2.128.0 group SW3-PE
+  peer 10.2.129.0 enable
+  peer 10.2.129.0 group SW3-PE
+  peer 10.2.130.0 enable
+  peer 10.2.130.0 group SW3-PE
+ #
+ ipv6-family vpn-instance INTERNET
+  import-route direct
+  auto-frr
+  peer 2804:3568:220:4::2 as-number 266178
+  peer 2804:3568:220:4::2 description DOWNSTREN-RC
+  peer 2804:3568:220:4::2 connect-interface 2804:3568:220:4::1
+  peer 2804:3568:220:4::2 route-policy IN-REDECOMPLETA-V6 import
+  peer 2804:3568:220:4::2 advertise-community
+  peer 2804:3568:220:4::2 advertise-ext-community
+  peer 2804:3568:2A1:5::2 as-number 264137
+  peer 2804:3568:2A1:5::2 fake-as 266178
+  peer 2804:3568:2A1:5::2 description DUXNET
+  peer 2804:3568:2A1:5::2 ebgp-max-hop 255
+  peer 2804:3568:2A1:5::2 connect-interface 2804:3568:2A1:5::1
+  peer 2804:3568:2A1:5::2 ipv6-prefix FULL-ROUTING export
+  peer 2804:3568:2A1:5::2 route-policy IN-DOWNSTREAN-DUXNET-V6 import
+  peer 2804:3568:2A1:6::2 as-number 274524
+  peer 2804:3568:2A1:6::2 fake-as 266178
+  peer 2804:3568:2A1:6::2 description DOWNSTREAM-EUCATUR
+  peer 2804:3568:2A1:6::2 connect-interface 2804:3568:2A1:6::1
+  peer 2804:3568:2A1:6::2 route-policy IN-DOWNSTREAN-EUCATUR-V6 import
+  peer 2804:3568:2A1:6::2 route-policy OUT-DOWNSTREAN-EUCATUR-V6 export
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:14A as-number 269664
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:14A fake-as 266178
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:14A description CL_WEBNORTE_NOVA_UNIA
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:14A route-policy AS269664-WEBNORTE-Import-V6 import
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:14A route-policy AS269664-WEBNORTE-Export-V6 export
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:162 as-number 269567
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:162 fake-as 266178
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:162 description AS269567_WEBNORTE_NOVA_UNIAO
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:162 route-policy AS269664-WEBNORTE-Import-V6 import
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:162 route-policy AS269664-WEBNORTE-Export-V6 export
+ #
+ ipv4-family vpn-target
+#
+ospf 10 router-id 10.2.127.0
+ silent-interface LoopBack0
+ opaque-capability enable
+ graceful-restart
+ bandwidth-reference 400000
+ enable traffic-adjustment advertise
+ frr
+  loop-free-alternate
+ area 0.0.0.0
+  mpls-te enable
+#
+route-policy AS269664-WEBNORTE-Export-V4 permit node 10
+ if-match ip-prefix FULL-ROUTING-V4
+ apply as-path 266178 additive
+#
+route-policy AS269664-WEBNORTE-Export-V4 deny node 600
+#
+route-policy AS269664-WEBNORTE-Export-V6 permit node 10
+ if-match ipv6 address prefix-list FULL-ROUTING-V6
+#
+route-policy AS269664-WEBNORTE-Export-V6 deny node 600
+#
+route-policy AS269664-WEBNORTE-Import-V4 permit node 10
+ if-match ip-prefix AS269664-WEBNORTE
+ apply as-path 266178 additive
+ apply local-preference 1500
+ apply community 26284:450 26284:455 26284:470 26284:11344 26284:9092 26284:1010
+#
+route-policy AS269664-WEBNORTE-Import-V4 deny node 600
+#
+route-policy AS269664-WEBNORTE-Import-V6 permit node 10
+ if-match ipv6 address prefix-list AS269664-WEBNORTE
+ apply as-path 266178 additive
+ apply local-preference 1500
+ apply community 26284:450 26284:455 26284:470 26284:11344 26284:9090 26284:1010 26284:9050
+#
+route-policy AS269664-WEBNORTE-Import-V6 deny node 600
+#
+route-policy IN-DOWNSTREAN-DUXNET-V4 permit node 10
+ if-match ip-prefix DUXNET
+ apply as-path 266178 additive
+ apply local-preference 1500
+ apply community 26284:450 26284:455 26284:470 26284:11344 26284:1015 26284:9096
+#
+route-policy IN-DOWNSTREAN-DUXNET-V6 permit node 10
+ if-match ipv6 address prefix-list DUXNET
+ apply as-path 266178 additive
+ apply local-preference 1500
+ apply community 26284:450 26284:455 26284:470 26284:11344 26284:1015 26284:9096
+#
+route-policy IN-DOWNSTREAN-EUCATUR-V6 permit node 10
+ if-match ipv6 address prefix-list EUCATUR-V6
+ apply as-path 266178 additive
+ apply local-preference 1000
+ apply community 26284:450 26284:455 26284:470 26284:11344 26284:9090 26284:9050
+#
+route-policy IN-DOWNSTREAN-EUCATUR-V6 deny node 500
+#
+route-policy IN-REDECOMPLETA-V4 permit node 5
+ if-match community-filter RC
+ apply local-preference 1000
+ apply community 26284:460 26284:470 26284:11344 26284:100 26284:9092 26284:9053 26284:1011 additive
+#
+route-policy IN-REDECOMPLETA-V4 permit node 10
+ if-match ip-prefix REDECOMPLETA
+ apply local-preference 1000
+ apply community 26284:460 26284:470 26284:11344 26284:100 26284:9092 26284:9053 26284:1011 additive
+#
+route-policy IN-REDECOMPLETA-V4 deny node 500
+#
+route-policy IN-REDECOMPLETA-V6 permit node 10
+ if-match community-filter RC
+ apply local-preference 1000
+ apply community 26284:460 26284:470 26284:11344 26284:450 26284:9091 26284:1011 26284:9053 additive
+#
+route-policy IN-REDECOMPLETA-V6 permit node 20
+ if-match ipv6 address prefix-list RC-INTERNO
+ apply community 26284:460 26284:470 26284:11344 26284:450 26284:9091 26284:1011 26284:9053 additive
+#
+route-policy IN-REDECOMPLETA-V6 deny node 500
+#
+route-policy OUT-DOWNSTREAN-EUCATUR-V6 permit node 10
+ if-match ipv6 address prefix-list ROTA-DEFAULT
+#
+route-policy OUT-DOWNSTREAN-EUCATUR-V6 deny node 500
+#
+route-policy OUT-MPBGP-PARCIAL permit node 2
+ if-match ip-prefix BlackHole
+ if-match community-filter BlackHole
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL permit node 3
+ if-match ip-prefix DEFAULT-ROUTE-V4
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL permit node 10
+ if-match community-filter IGP
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL permit node 30
+ if-match community-filter Parcial-Routing
+ if-match extcommunity-filter VRF-INTERNET
+ if-match protocol bgp
+#
+route-policy OUT-MPBGP-PARCIAL permit node 35
+ description CLINTES-TRANSITO
+ if-match community-filter CLIENTES-TRANSITO
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL permit node 40
+ if-match ip-prefix ROTA-INTERNA
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL deny node 50
+ if-match community-filter NO-EXPORT-VRF
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL deny node 60
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL permit node 70
+ description ACEITA-TODAS-VRFS
+#
+route-policy OUT-MPBGP-PARCIAL deny node 500
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 3
+ if-match ipv6 address prefix-list ROTA-DEFAULT
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 10
+ if-match community-filter IGP
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 30
+ if-match community-filter Parcial-Routing
+ if-match extcommunity-filter VRF-INTERNET
+ if-match protocol bgp
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 35
+ description CLINTES-TRANSITO
+ if-match community-filter CLIENTES-TRANSITO
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 40
+ if-match ipv6 address prefix-list ROTA-INTERNA
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 45
+ if-match ipv6 address prefix-list NORTETEL-INTERNO
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 deny node 50
+ if-match community-filter NO-EXPORT-VRF
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 deny node 60
+ if-match extcommunity-filter VRF-INTERNET
+#
+route-policy OUT-MPBGP-PARCIAL-V6 permit node 70
+ description ACEITA-TODAS-VRFS
+#
+route-policy OUT-MPBGP-PARCIAL-V6 deny node 500
+#
+ip ip-prefix AS269664-WEBNORTE description 168.195.91.0 24 description AS265430-CL-WEBNORTE
+ip ip-prefix AS269664-WEBNORTE index 10 permit 45.191.23.0 24
+ip ip-prefix AS269664-WEBNORTE index 15 permit 168.195.91.0 24
+ip ip-prefix AS269664-WEBNORTE index 20 permit 45.188.13.0 24
+ip ip-prefix BlackHole index 10 permit 0.0.0.0 0 greater-equal 32 less-equal 32
+ip ip-prefix DEFAULT-ROUTE-V4 index 10 permit 0.0.0.0 0
+ip ip-prefix DUXNET index 10 permit 138.97.96.0 22 greater-equal 22 less-equal 24
+ip ip-prefix DUXNET index 20 permit 170.0.220.0 22 greater-equal 22 less-equal 24
+ip ip-prefix FULL-ROUTING index 10 permit 0.0.0.0 0 less-equal 24
+ip ip-prefix FULL-ROUTING-V4 index 10 permit 0.0.0.0 0 greater-equal 8 less-equal 24
+ip ip-prefix REDECOMPLETA index 10 permit 192.144.64.0 22 greater-equal 22 less-equal 24
+ip ip-prefix REDECOMPLETA index 20 permit 138.97.144.0 22 greater-equal 22 less-equal 24
+ip ip-prefix REDECOMPLETA index 30 permit 138.97.96.0 22 greater-equal 22 less-equal 24
+ip ip-prefix REDECOMPLETA index 40 permit 170.0.220.0 22 greater-equal 22 less-equal 24
+ip ip-prefix REDECOMPLETA index 50 permit 190.123.68.0 22 greater-equal 22 less-equal 24
+ip ip-prefix REDECOMPLETA index 60 permit 164.163.164.0 22 greater-equal 22 less-equal 24
+ip ip-prefix REDECOMPLETA index 70 permit 179.48.60.0 22 greater-equal 22 less-equal 24
+ip ip-prefix ROTA-INTERNA index 10 permit 0.0.0.0 0 greater-equal 25 less-equal 32
+ip community-filter advanced BlackHole index 10 permit 26284:666
+ip community-filter advanced CLIENTES-TRANSITO index 10 permit 26284:450
+ip community-filter advanced CLIENTES-TRANSITO index 20 permit 26284:455
+ip community-filter advanced CLIENTES-TRANSITO index 30 permit 26284:465
+ip community-filter advanced CLIENTES-TRANSITO index 40 permit 26284:470
+ip community-filter advanced CLIENTES-TRANSITO index 50 permit 26284:1344
+ip community-filter advanced CLIENTES-TRANSITO index 60 permit 26284:11344
+ip community-filter advanced CLIENTES-TRANSITO index 70 permit 26284:26284
+ip community-filter advanced IGP index 10 permit 26284:669
+ip community-filter advanced NO-EXPORT-VRF index 10 permit 26284:667
+ip community-filter advanced Parcial-Routing index 10 permit 26284:668
+ip community-filter advanced RC index 10 permit 26178:1010
+ip community-filter advanced RC index 20 permit 26178:1011
+ip community-filter advanced RC index 30 permit 26178:1012
+ip community-filter advanced RC index 40 permit 26178:1013
+ip community-filter advanced RC index 50 permit 26178:1014
+ip community-filter advanced RC index 60 permit 26178:1015
+ip extcommunity-filter advanced VRF-INTERNET index 10 permit 266284:1
+#
+ip route-static vpn-instance INTERNET 192.144.67.112 255.255.255.255 172.28.0.106 description ID-LINK-REDE-NEUTRA-E-LINK
+#
+ip ipv6-prefix AS269664-WEBNORTE description 2804:3400:8000:: 34 AS265430-CL-WEBNORTE
+ip ipv6-prefix AS269664-WEBNORTE index 10 permit 2804:6800:C000:: 34 greater-equal 34 less-equal 48
+ip ipv6-prefix AS269664-WEBNORTE index 15 permit 2804:3400:8000:: 34 greater-equal 34 less-equal 48
+ip ipv6-prefix AS269664-WEBNORTE index 20 permit 2804:668C:8000:: 40 greater-equal 40 less-equal 48
+ip ipv6-prefix DUXNET index 10 permit 2804:2304:: 32 greater-equal 32 less-equal 48
+ip ipv6-prefix EUCATUR-V6 index 10 permit 2801:81:150:: 48 greater-equal 48 less-equal 48
+ip ipv6-prefix FULL-ROUTING index 10 permit :: 0 greater-equal 32 less-equal 48
+ip ipv6-prefix FULL-ROUTING-V6 index 10 permit :: 0 less-equal 48
+ip ipv6-prefix NORTETEL-INTERNO index 10 permit 2804:3568:: 32 greater-equal 32 less-equal 128
+ip ipv6-prefix RC-INTERNO index 10 permit :: 0 greater-equal 49 less-equal 128
+ip ipv6-prefix ROTA-DEFAULT index 10 permit :: 0
+ip ipv6-prefix ROTA-INTERNA index 10 permit :: 0 greater-equal 49 less-equal 128
+#
+snmp-agent
+snmp-agent local-engineid 800007DB0374E9BFBFC43302
+snmp-agent community read cipher %^%#JRI9Ycw(RQkv@6To{B82tpfIC.OZQUpnS,4t%;<YFga\7G"o:$Wg%|@rQ,h.VtWa3zqjV.UO"T=EWo=L%^%# alias __CommunityAliasName_01_60206
+#
+snmp-agent sys-info version v2c v3
+#
+snmp-agent protocol source-interface LoopBack0
+undo snmp-agent protocol source-status all-interface
+undo snmp-agent protocol source-status ipv6 all-interface
+#
+undo snmp-agent proxy protocol source-status all-interface
+undo snmp-agent proxy protocol source-status ipv6 all-interface
+#
+stelnet server enable
+ssh server rsa-key min-length 3072
+ssh user jheisson
+ssh user jheisson authentication-type password
+ssh user jheisson service-type all
+ssh user zabbix
+ssh user zabbix authentication-type password
+ssh user zabbix service-type stelnet
+ssh server-source -i LoopBack0
+undo ssh server-source all-interface
+undo ssh ipv6 server-source all-interface
+ssh authorization-type default aaa
+#
+ssh server cipher aes256_gcm aes128_gcm aes256_ctr aes192_ctr aes128_ctr
+ssh server hmac sha2_512 sha2_256
+ssh server key-exchange dh_group_exchange_sha256
+#
+ssh server publickey rsa_sha2_256 rsa_sha2_512
+#
+ssh server dh-exchange min-len 3072
+#
+ssh client first-time enable
+ssh client peer 10.2.0.7 assign rsa-key 10.2.0.7
+ssh client peer 10.90.0.8 assign rsa-key 10.90.0.8
+ssh client peer 2804:3568:220:4::2 assign rsa-key 2804:3568:220:4::2
+#
+ssh client publickey rsa_sha2_256 rsa_sha2_512
+#
+ssh client cipher aes256_gcm aes128_gcm aes256_ctr aes192_ctr aes128_ctr
+ssh client hmac sha2_512 sha2_256
+ssh client key-exchange dh_group_exchange_sha256
+#
+user-interface maximum-vty 21
+#
+user-interface vty 0
+ screen-length 0
+#
+user-interface vty 1 20
+ authentication-mode aaa
+ screen-length 0
+ protocol inbound ssh
+#
+local-aaa-server
+#
+return

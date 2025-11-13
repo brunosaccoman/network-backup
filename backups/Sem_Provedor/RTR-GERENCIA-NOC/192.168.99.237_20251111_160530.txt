@@ -1,0 +1,781 @@
+# 2025-11-11 16:05:29 by RouterOS 7.18.2
+# system id = szlMSUvCAHK
+#
+/interface bridge
+add name=Lo0 port-cost-mode=short protocol-mode=none
+/interface ethernet
+set [ find default-name=ether1 ] advertise=10M-baseT-half,10M-baseT-full,100M-baseT-half,100M-baseT-full,1G-baseT-half,1G-baseT-full,2.5G-baseT,5G-baseT,10G-baseT comment=VRF-INTERNET disable-running-check=no
+set [ find default-name=ether2 ] advertise=10M-baseT-half,10M-baseT-full,100M-baseT-half,100M-baseT-full,1G-baseT-half,1G-baseT-full,2.5G-baseT,5G-baseT,10G-baseT comment=VRF-GERENCIA disable-running-check=no
+set [ find default-name=ether3 ] advertise=10M-baseT-half,10M-baseT-full,100M-baseT-half,100M-baseT-full,1G-baseT-half,1G-baseT-full,2.5G-baseT,5G-baseT,10G-baseT comment=VLAN-950 disable-running-check=no
+set [ find default-name=ether4 ] advertise=10M-baseT-half,10M-baseT-full,100M-baseT-half,100M-baseT-full,1G-baseT-half,1G-baseT-full,2.5G-baseT,5G-baseT,10G-baseT comment=VLAN951 disable-running-check=no
+set [ find default-name=ether5 ] advertise=10M-baseT-half,10M-baseT-full,100M-baseT-half,100M-baseT-full,1G-baseT-half,1G-baseT-full,2.5G-baseT,5G-baseT,10G-baseT comment=VLAN952 disable-running-check=no
+set [ find default-name=ether6 ] advertise=10M-baseT-half,10M-baseT-full,100M-baseT-half,100M-baseT-full,1G-baseT-half,1G-baseT-full,2.5G-baseT,5G-baseT,10G-baseT comment=VLAN853 disable-running-check=no
+set [ find default-name=ether7 ] comment=VLAN949 disable-running-check=no
+set [ find default-name=ether8 ] comment=VLAN958 disable-running-check=no
+set [ find default-name=ether9 ] comment=VLAN959 disable-running-check=no
+set [ find default-name=ether10 ] comment=VLAN152 disable-running-check=no
+set [ find default-name=ether11 ] comment="VLAN960 OPENOBSERVER" disable-running-check=no
+set [ find default-name=ether13 ] comment=VLAN962-OPENVPN disable-running-check=no
+set [ find default-name=ether12 ] comment=VLAN963-JUMPSERVER disable-running-check=no name=ether14
+/interface l2tp-client
+add comment=noc@ruralnetnivaldo connect-to=131.100.220.19 disabled=no max-mru=1400 max-mtu=1400 name=l2tp-out1 use-ipsec=yes user=noc@ruralnetnivaldo
+add comment=noc@ruralnetdiego connect-to=131.108.198.2 disabled=no name=l2tp-out2 use-ipsec=yes user=noc@ruralnetdiego
+add comment=noc@milleniumnet connect-to=131.108.196.34 disabled=no name=l2tp-out3 use-ipsec=yes user=noc@milleniumnet
+add comment=noc@startnet connect-to=201.218.162.0 disabled=no name=l2tp-out4 use-ipsec=yes user=noc@startnet
+add comment=noc@meganet connect-to=187.84.159.0 disabled=no name=l2tp-out5 use-ipsec=yes user=noc@meganet
+add comment=noc@rikanet connect-to=45.70.205.4 disabled=no name=l2tp-out7 use-ipsec=yes user=noc@rikanet
+add comment=noc@linknet connect-to=45.235.114.93 disabled=no name=l2tp-out8 use-ipsec=yes user=noc@linknet
+add comment=noc@universo connect-to=201.218.162.15 disabled=no name=l2tp-out9 use-ipsec=yes user=noc@universo
+add comment=noc@delta connect-to=45.172.52.30 disabled=no name=l2tp-out10 user=noc@delta
+add comment=noc@rionet connect-to=179.191.5.1 disabled=no name=l2tp-out11 use-ipsec=yes user=noc@rionet
+add comment=noc@globalnet connect-to=200.80.118.8 disabled=no name=l2tp-out12 use-ipsec=yes user=noc@globalnet
+add comment=noc@brazilnet connect-to=179.191.6.254 disabled=no name=l2tp-out13 use-ipsec=yes user=noc@brazilnet
+/interface wireguard
+add listen-port=13234 mtu=1420 name=wireguard1
+add listen-port=13235 mtu=1420 name=wireguard2
+/disk
+set slot1 slot=slot1
+/interface list
+add name=PROVEDORES
+/interface lte apn
+set [ find default=yes ] ip-type=ipv4 use-network-apn=no
+/interface wireless security-profiles
+set [ find default=yes ] supplicant-identity=MikroTik
+/routing ospf instance
+add disabled=no name=default-v2 redistribute=connected router-id=192.168.99.30
+/routing ospf area
+add disabled=no instance=default-v2 name=backbone-v2
+/dude
+set enabled=yes
+/ip firewall connection tracking
+set enabled=yes udp-timeout=10s
+/ip settings
+set max-neighbor-entries=8192
+/ipv6 settings
+set disable-ipv6=yes max-neighbor-entries=8192 soft-max-neighbor-entries=8191
+/interface l2tp-server server
+set default-profile=default enabled=yes use-ipsec=required
+/interface list member
+add interface=*E list=PROVEDORES
+add interface=*D list=PROVEDORES
+add interface=*F list=PROVEDORES
+add interface=*11 list=PROVEDORES
+/interface ovpn-server server
+add auth=sha1,md5 mac-address=FE:15:94:F5:DC:72 name=ovpn-server1
+/interface vxlan vteps
+add disabled=yes interface=*D remote-ip=201.218.162.0
+add disabled=yes interface=*E remote-ip=131.108.196.34
+add disabled=yes interface=*F remote-ip=131.108.198.2
+add disabled=yes interface=*11 remote-ip=131.100.220.19
+/interface wireguard peers
+add allowed-address=0.0.0.0/0 client-endpoint=192.168.99.250 client-keepalive=10s interface=wireguard1 name=JONATHAN persistent-keepalive=10s private-key="IPkZ3jDc5FpW8jv6cqumI0LFbk3THgNyJK8MvmADgGA=" public-key="OpTG/9daAtzND8pgLp1WQ3+XsZwlhG0Q9TkSFXfbhzo="
+add allowed-address=0.0.0.0/0 client-endpoint=192.168.99.66 client-keepalive=10s interface=wireguard2 name=VPN-NOC-BRUNO persistent-keepalive=10s private-key=" WDFB5GKxLnSXClpb3xLPHUlJ7+d0Lo7IEGk/x8kGAGE=" public-key="9X8qh82yjIDyCFoOiraMKC4bXPcFBp5DEGZQNtFoMg0="
+add allowed-address=0.0.0.0/0 client-endpoint=192.168.99.251 client-keepalive=10s interface=wireguard1 name=VICTOR persistent-keepalive=10s public-key="rMPjzFvRLqqMtOc3BTnAI8JPleowRMzLc0T/IyMkpls="
+add allowed-address=0.0.0.0/0 client-address=192.168.99.254/32 client-dns=8.8.8.8 comment=MAC-JHEISSON endpoint-address=170.79.86.44 interface=wireguard1 name=MAC-JHEISSON persistent-keepalive=10s preshared-key="8CV0C0y8fO+5rc76/Ps2tWjqMAOCDotF80csKt3yrFY=" private-key="aBGt7GNufAcDtVeLxh0SlcJ1kjGjAkxvRbBAC9ah3VU=" public-key="Yi6j4ESCVA4C8jTt9W/L+ZWv6CySlYrJT6D+aEppqhE="
+/ip address
+add address=192.168.99.26/30 interface=ether1 network=192.168.99.24
+add address=192.168.99.30/30 interface=ether2 network=192.168.99.28
+add address=200.80.119.234 interface=Lo0 network=200.80.119.234
+add address=170.79.86.44 interface=Lo0 network=170.79.86.44
+add address=170.79.84.5 interface=Lo0 network=170.79.84.5
+add address=192.168.99.1/30 comment=M86 interface=ether3 network=192.168.99.0
+add address=192.168.99.5/30 comment=M84 interface=ether4 network=192.168.99.4
+add address=192.168.99.9/30 comment=M118 interface=ether5 network=192.168.99.8
+add address=192.168.99.13/30 comment=M119 interface=ether6 network=192.168.99.12
+add address=192.168.99.249/29 interface=wireguard1 network=192.168.99.248
+add address=192.168.99.41/30 interface=ether7 network=192.168.99.40
+add address=192.168.99.17/30 comment=M85-VLAN-958 interface=ether8 network=192.168.99.16
+add address=192.168.99.21/30 comment=M87-VLAN-959 interface=ether9 network=192.168.99.20
+add address=192.168.99.53/30 interface=ether11 network=192.168.99.52
+add address=192.168.99.49/30 interface=ether10 network=192.168.99.48
+add address=192.168.99.61/29 disabled=yes interface=*21 network=192.168.99.56
+add address=200.80.118.151 interface=Lo0 network=200.80.118.151
+add address=192.168.99.65/30 interface=wireguard2 network=192.168.99.64
+add address=192.168.99.69/30 interface=ether13 network=192.168.99.68
+add address=200.80.119.21/30 interface=ether13 network=200.80.119.20
+add address=192.168.99.241/30 interface=ether14 network=192.168.99.240
+add address=192.168.99.237/30 interface=ether14 network=192.168.99.236
+add address=192.168.99.233/30 interface=ether14 network=192.168.99.232
+/ip dhcp-client
+add interface=ether1
+/ip dns
+set servers=8.8.8.8
+/ip firewall address-list
+add address=192.168.99.2 list=NAT-170.79.86.44
+add address=192.168.99.6 list=NAT-170.79.84.8
+add address=192.168.99.10 disabled=yes list=NAT-200.80.118.234
+add address=192.168.99.14 list=NAT-200.80.119.234
+add address=192.168.99.18 list=NAT-170.79.85.226
+add address=192.168.99.22 list=NAT-170.79.87.101
+add address=192.168.99.248/29 list=CONSULTORES
+add address=192.168.99.52/30 list=NAT-170.79.85.226
+add address=192.168.99.106 list=NAT-170.79.85.226
+add address=192.168.99.56/29 list=NAT-170.79.85.226
+add address=192.168.99.10 list=NAT-200.80.118.151
+add address=192.168.99.64/30 disabled=yes list=CONSULTORES
+add address=192.168.99.68/30 list=NAT-170.79.85.226
+add address=10.0.0.0/8 list=LIBERADO
+add address=172.16.0.0/12 list=LIBERADO
+add address=192.168.0.0/16 list=LIBERADO
+add address=170.79.84.0/22 list=LIBERADO
+add address=200.80.116.0/22 list=LIBERADO
+add address=201.218.160.0/22 list=LIBERADO
+add address=45.172.52.0/22 list=LIBERADO
+add address=131.100.220.0/22 list=LIBERADO
+add address=179.63.159.32/28 list=LIBERADO
+add address=187.84.159.0/29 list=LIBERADO
+add address=192.168.99.238 list=NAT-200.80.119.234
+add address=192.168.99.232/30 list=NAT-200.80.119.234
+/ip firewall filter
+add action=accept chain=forward disabled=yes out-interface-list=PROVEDORES src-address-list=CONSULTORES
+add action=drop chain=forward disabled=yes out-interface-list=PROVEDORES
+add action=accept chain=forward dst-address=200.80.119.22 dst-port=1194 protocol=udp
+add action=accept chain=forward dst-address=200.80.119.22 dst-port=443 protocol=tcp
+add action=accept chain=forward dst-address=200.80.119.22 dst-port=22 protocol=tcp
+add action=accept chain=forward dst-port=1194 protocol=udp src-address=200.80.119.22
+add action=accept chain=forward dst-port=443 protocol=tcp src-address=200.80.119.22
+add action=drop chain=forward disabled=yes dst-address=200.80.119.22 src-address-list=!LIBERADO
+add action=drop chain=forward disabled=yes dst-address=200.80.119.22 dst-address-list=!LIBERADO
+add action=fasttrack-connection chain=forward hw-offload=yes
+/ip firewall nat
+add action=masquerade chain=srcnat src-address=192.168.99.248/29
+add action=masquerade chain=srcnat src-address=200.80.119.22
+add action=masquerade chain=srcnat src-address=192.168.99.242
+add action=masquerade chain=srcnat src-address=192.168.99.234
+add action=netmap chain=srcnat disabled=yes out-interface=ether1 src-address=192.168.99.238 to-addresses=200.80.118.151
+add action=masquerade chain=srcnat src-address=192.168.99.64/30
+add action=masquerade chain=srcnat src-address=192.168.98.0/24
+add action=masquerade chain=srcnat dst-address=10.2.17.100
+add action=dst-nat chain=dstnat comment="CAMERA TORRE APEDIA" dst-address=170.79.86.44 dst-port=65001 protocol=tcp to-addresses=10.2.83.134 to-ports=554
+add action=masquerade chain=srcnat comment="CAMERA TORRE APEDIA" dst-address=10.2.83.134
+add action=dst-nat chain=dstnat comment="Acesso Rolim Net" disabled=yes dst-address=170.79.86.44 dst-port=65000 protocol=tcp to-addresses=10.2.17.100 to-ports=8291
+add action=masquerade chain=srcnat disabled=yes src-address=192.168.99.50
+add action=netmap chain=srcnat out-interface=ether1 src-address-list=NAT-170.79.84.8 to-addresses=170.79.84.5
+add action=netmap chain=srcnat out-interface=ether1 src-address-list=NAT-200.80.118.151 to-addresses=200.80.118.151
+add action=netmap chain=srcnat out-interface=ether1 src-address-list=NAT-200.80.119.234 to-addresses=200.80.119.234
+add action=netmap chain=srcnat out-interface=ether1 src-address-list=NAT-170.79.85.226 to-addresses=170.79.85.226
+add action=netmap chain=srcnat out-interface=ether1 src-address-list=NAT-170.79.87.101 to-addresses=170.79.87.101
+add action=netmap chain=srcnat disabled=yes out-interface=ether1 src-address-list=NAT-200.80.118.234 to-addresses=200.80.118.234
+/ip ipsec profile
+set [ find default=yes ] dpd-interval=2m dpd-maximum-failures=5
+/ip route
+add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=192.168.99.25 pref-src=170.79.86.44 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET dst-address=172.24.192.0/18 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.79.2.0/23 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.101.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.116.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.71.36.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.5.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.13.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.15.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.23.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.27.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.31.31.0/24 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.116.128/26 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.116.192/27 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=198.18.1.0/27 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET dst-address=10.0.99.0/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.101.16/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.101.48/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.101.144/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.101.160/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.113.0/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.116.0/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.116.16/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.38.1.112/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.90.128/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.90.240/28 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.101.32/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.105.0/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.105.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.105.16/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.113.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.113.16/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.116.208/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.130.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.71.44.0/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.16.35.0/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.16.35.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.50.0/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.50.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.0/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.16/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.24/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.32/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.72/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.96/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.104/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.120/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.128/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.136/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.144/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.152/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.160/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.176/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.224/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.64.232/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.16/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.32/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.40/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.96/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.136/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.144/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.152/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.168/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.184/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.192/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.200/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.65.240/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.48/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.56/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.72/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.88/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.96/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.104/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.112/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.152/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.160/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.176/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.192/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.200/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.216/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.224/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.232/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.66.240/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.0/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.16/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.32/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.56/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.64/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.152/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.168/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.208/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.67.240/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.8/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.16/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.32/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.40/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.80/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.88/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.96/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.104/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.136/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.152/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.160/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.168/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.176/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=172.24.68.184/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET disabled=yes distance=1 dst-address=192.168.64.0/29 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET dst-address=192.168.90.152/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.90.160/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.90.232/29 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.100.12/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.100.16/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.0.100.20/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.50.4.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.50.5.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.50.9.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.73.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.75.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.76.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.77.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.78.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.80.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.121.1.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=24.152.31.104/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.145.4/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.145.8/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.145.16/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.145.32/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=192.168.145.48/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET dst-address=10.5.9.0/30 gateway=172.24.68.209
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.2.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.0.0/18 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.133.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.134.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.137.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.138.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.141.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.142.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.143.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.146.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.160.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=192.168.192.0/24 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.0.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.0.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.1.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.1.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.2.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.2.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.4.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.4.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.5.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.5.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.20.9.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.0.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.0.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.1.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.2.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.2.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.3.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.3.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.4.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.4.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.5.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.5.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.6.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.6.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.7.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.13.0/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.28.13.128/25 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.196.1.0/30 gateway=10.6.2.5
+add comment="PROVEDOR MILLENIUMNET" dst-address=10.255.255.4/30 gateway=10.6.2.5
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.0.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.13.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.20.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.24.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO disabled=yes distance=1 dst-address=192.168.26.0/24 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.29.0/24 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.32.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.33.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.34.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.35.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.36.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.37.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.39.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.42.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.44.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.47.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.51.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.53.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.54.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.55.0/24 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.64.32/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.64.40/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.64.56/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.64.80/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.65.16/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.65.32/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.65.40/29 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.41.24/30 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.41.28/30 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.41.32/30 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.41.44/30 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.41.48/30 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=131.108.198.32/32 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=131.108.198.33/32 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=172.21.255.2/32 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.0.0.168/32 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.10.0/32 gateway=192.168.41.177
+add comment=PROVEDOR-RURALNET-DIEGO dst-address=192.168.16.0/32 gateway=192.168.41.177
+add comment=RURALNET-NIVALDO dst-address=10.1.1.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.4.1.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.5.2.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.0.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.1.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.2.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.4.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.5.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.6.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.8.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.9.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.10.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.11.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.12.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.13.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.14.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.15.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.17.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.18.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.19.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.20.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.21.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.22.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.23.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.24.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.25.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.230.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.64.231.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.63.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.200.0/24 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.24/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.32/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.64/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.72/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.80/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.104/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.112/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.120/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.128/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.136/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.168/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.184/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.1.0/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.1.8/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.1.24/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.1.40/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.2.16/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.10.0/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.10.8/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO disabled=yes distance=1 dst-address=192.168.33.0/29 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO dst-address=192.168.90.8/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.90.16/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.90.24/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.91.16/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.91.24/29 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.1.200/30 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.8.0.12/30 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO disabled=yes distance=1 dst-address=131.100.220.0/30 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=yes distance=1 dst-address=192.168.52.0/30 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO dst-address=10.5.2.248/31 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.0.0.167/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.1/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.2/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.3/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.4/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.5/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.7/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.10/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.12/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.13/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.14/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=10.32.0.16/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO dst-address=10.32.0.18/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.19/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.20/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.21/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.254/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=10.32.0.255/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=52.52.190.97/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=192.168.32.1/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO dst-address=200.160.7.186/32 gateway=10.0.0.41
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.91.0/29 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.63.34/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.73.50/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.40/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.153.54/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=yes distance=1 dst-address=10.255.255.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.0.233.202/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=yes distance=1 dst-address=10.255.255.7/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.67.194/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.67.122/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.67.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.0.104.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.64.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.59.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.250.250.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.66.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.60.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.61.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.64.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=yes distance=1 dst-address=192.168.67.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=yes distance=1 dst-address=192.168.68.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.69.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=yes distance=1 dst-address=192.168.70.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=yes distance=1 dst-address=192.168.71.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.80.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.81.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.82.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.83.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.90.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.95.242/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.95.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.64.210/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.0.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.9.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.10.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.11.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.12.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.13.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.14.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.16.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.21.37.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=192.168.17.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.151.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.150.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.77.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=10.1.103.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=10.240.0.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.64.100/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.67.192/29 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=10.1.104.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=10.1.105.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.152.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.4.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=172.31.100.2/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.2.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.30.0.46/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.17.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=172.16.6.12/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.10.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.3.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.12.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.25.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.20.1.226/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.8.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.5.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.6.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.7.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.30.0.38/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.22.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.23.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.21.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.11.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.13.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no dst-address=10.192.170.0/24 gateway=100.121.254.1 routing-table=main suppress-hw-offload=no
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.171.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.172.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.173.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.174.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.176.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.177.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.179.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.181.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.100.12/30 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.100.16/30 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.100.20/30 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.100.24/30 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=yes distance=1 dst-address=10.255.255.3/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.255.4/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.255.7/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=100.121.7.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=100.121.9.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.227.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.241.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.242.0/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.243.0/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.247.0/29 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.169.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.80.0.18/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.21.2.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.20.30.30/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.35.0.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.32.0.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.33.0.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.1.6/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.20.30.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.19.0.0/24 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.1.62/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.16.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.20.2.0/24 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.31.255.0/24 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.128.2/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.64.34/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.127.2/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.65.0/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.64.138/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=10.120.0.2/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.81.2/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=yes distance=1 dst-address=192.168.82.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.67.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=10.10.10.20/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=yes distance=1 dst-address=192.168.77.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.67.253/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.73.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.74.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.75.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=yes distance=1 dst-address=192.168.83.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.71.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.70.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.68.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.78.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.66.0/24 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=192.168.210.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=192.168.211.0/24 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=100.121.1.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.172.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.16.50.0/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.171.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.240.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.247.10/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.170.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=100.121.0.0/24 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.169.0/24 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.95.243/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.52.0/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.15.0/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.20.0.226/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=172.31.100.5/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.20.3.82/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.64.202/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.25.0/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.21.15.0/24 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.20.30.0/24 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.68.193/29 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.19.0/24 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no dst-address=10.2.200.0/24 gateway=10.30.10.1 routing-table=main suppress-hw-offload=no
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.20.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.59.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.64.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.0/29 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.8/29 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.16/29 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.40/29 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.88/29 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.202.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.203.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.204.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.210.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.28.0/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.70.8/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.236/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.255.255.1/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add disabled=no dst-address=10.80.4.82/32 gateway=192.168.99.29 routing-table=main suppress-hw-offload=no
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.68.216/29 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.41.98/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.233/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.85.6/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.67.254/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.68.240/29 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.80.0.26/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.41.150/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.41.142/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.100.2/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.83.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.72/29 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=yes distance=1 dst-address=192.168.100.2/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment="PROVEDOR MILLENIUMNET" disabled=no distance=1 dst-address=192.168.130.0/24 gateway=10.6.2.5 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.91.34/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.20.16.170/32 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=192.168.247.18/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.31.0.0/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-BRAZILNET disabled=yes distance=1 dst-address=192.168.100.2/32 gateway=10.20.0.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-BRAZILNET disabled=no distance=1 dst-address=10.20.0.1/32 gateway=10.20.0.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-BRAZILNET disabled=no distance=1 dst-address=10.20.0.218/32 gateway=10.20.0.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-BRAZILNET disabled=no distance=1 dst-address=10.20.0.18/32 gateway=10.20.0.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.39/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=10.5.2.252/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.42/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.38/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.1.58/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.91.42/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-UNIVERSO-ONLINE disabled=no distance=1 dst-address=10.192.200.10/32 gateway=100.121.254.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.50/32 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.201.51/32 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.225.0/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.42/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.225.2/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=10.2.201.82/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=10.2.201.90/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.74/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment="PROVEDOR MILLENIUMNET" disabled=no distance=1 dst-address=10.28.2.0/24 gateway=10.6.2.5 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.34/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.64.233/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.31.31.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.9.248/29 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=yes distance=1 dst-address=192.168.100.2/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.88/29 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.19/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.24.129/25 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=10.0.4.2/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.64.50/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.153.58/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.86.0/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.0.116.106/28 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.0.116.106/28 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=yes distance=1 dst-address=172.18.0.0/24 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.1.42/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.19.0/24 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.16/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.13/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.17/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.113/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.42/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.122/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=yes distance=1 dst-address=192.168.82.0/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.21.0/24 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.21.21.2/32 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=192.168.99.2/32 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=192.168.115.2/32 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-I9TELECOM disabled=no distance=1 dst-address=172.21.21.10/32 gateway=172.21.38.128 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add disabled=no dst-address=100.75.1.12/25 gateway=10.6.2.5 routing-table=main suppress-hw-offload=no
+add disabled=no dst-address=100.75.1.12/24 gateway=10.6.2.5 routing-table=main suppress-hw-offload=no
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.0.88/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.80.0.1/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.33.1/24 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add disabled=no dst-address=10.7.2.1/24 gateway=192.168.41.177 routing-table=main suppress-hw-offload=no
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.231/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.235/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.80.0.10/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.66.90/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.66.98/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=198.18.1.10/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.90.2/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.90.3/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=10.0.0.186/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=100.64.3.225/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=10.32.0.0/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=192.168.59.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=192.168.86.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIONET disabled=no distance=1 dst-address=192.168.87.0/32 gateway=10.2.1.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment="PROVEDOR MILLENIUMNET" disabled=no distance=1 dst-address=192.168.100.229/32 gateway=10.6.2.5 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.170.0/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.24.2.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.228.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.229.0/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.230.0/24 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=92.168.86.34/29 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=192.168.86.40/29 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=192.168.86.32/29 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.230/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.1.2/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.16.1.1/32 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.71.3/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-MEGANET disabled=no distance=1 dst-address=192.168.71.2/32 gateway=192.168.95.113 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.91.35/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=192.168.90.1/24 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=10.90.0.10/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.8.100/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.212.5/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-DELTACONNEX disabled=no distance=1 dst-address=172.31.1.0/24 gateway=10.50.50.0 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add disabled=no dst-address=10.129.128.0/24 gateway=200.80.119.22 routing-table=main suppress-hw-offload=no
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.64.211/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RIKANET disabled=no distance=1 dst-address=192.168.224.146/32 gateway=10.50.3.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-RURALNET-DIEGO disabled=no distance=1 dst-address=192.168.64.115/32 gateway=192.168.41.177 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.5/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment="PROVEDOR MILLENIUMNET" disabled=no distance=1 dst-address=100.75.1.12/32 gateway=10.6.2.5 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment="PROVEDOR MILLENIUMNET" disabled=no distance=1 dst-address=100.87.10.39/32 gateway=10.6.2.5 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-BRAZILNET disabled=no distance=1 dst-address=10.20.0.242/32 gateway=10.20.0.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-BRAZILNET disabled=no distance=1 dst-address=10.20.0.234/32 gateway=10.20.0.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.3/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=172.24.67.74/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.24/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-STARTNET disabled=no distance=1 dst-address=10.255.255.18/32 gateway=172.24.68.209 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=192.168.30.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=10.0.0.27/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.207.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=192.168.29.0/24 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-GLOBALNET disabled=no distance=1 dst-address=10.2.205.0/32 gateway=10.30.10.1 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=PROVEDOR-LINKNET disabled=no distance=1 dst-address=10.27.0.34/32 gateway=10.20.1.125 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.91.51/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add comment=RURALNET-NIVALDO disabled=no distance=1 dst-address=192.168.91.50/32 gateway=10.0.0.41 routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+/ip service
+set telnet disabled=yes
+set www disabled=yes
+set ssh port=65111
+set api disabled=yes
+set winbox port=8292
+set api-ssl disabled=yes
+/ip ssh
+set strong-crypto=yes
+/routing bfd configuration
+add disabled=no interfaces=all min-rx=200ms min-tx=200ms multiplier=5
+/routing ospf interface-template
+add area=backbone-v2 auth-id=1 auth-key="" cost=10 disabled=no interfaces=ether2 networks=192.168.99.28/30 priority=1 type=ptp use-bfd=no
+/system clock
+set time-zone-name=America/Porto_Velho
+/system identity
+set name=ROUTER-GERENCIA
+/system note
+set show-at-login=no
+/system ntp client
+set enabled=yes
+/system ntp server
+set enabled=yes use-local-clock=yes
+/system ntp client servers
+add address=201.49.148.135
+add address=200.186.125.195
+add address=200.20.186.76

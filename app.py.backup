@@ -1,0 +1,227 @@
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
+from database import Database
+from backup_manager import BackupManager
+from scheduler import BackupScheduler
+import os
+from datetime import datetime
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui-altere-em-producao'
+
+db = Database()
+backup_manager = BackupManager()
+scheduler = BackupScheduler()
+
+@app.route('/')
+def index():
+    devices = db.get_all_devices()
+    recent_backups = db.get_backups(limit=10)
+    schedules = db.get_schedules()
+    stats = {
+        'total_devices': len(devices),
+        'active_devices': len([d for d in devices if d['active']]),
+        'total_backups': len(db.get_backups(limit=1000)),
+        'active_schedules': len([s for s in schedules if s['active']])
+    }
+    return render_template('index.html', devices=devices, backups=recent_backups, schedules=schedules, stats=stats)
+
+@app.route('/devices')
+def devices():
+    all_devices = db.get_all_devices(active_only=False)
+    return render_template('devices.html', devices=all_devices)
+
+@app.route('/devices/add', methods=['POST'])
+def add_device():
+    try:
+        device_id = db.add_device(
+            name=request.form['name'],
+            ip_address=request.form['ip_address'],
+            device_type=request.form['device_type'],
+            protocol=request.form['protocol'],
+            username=request.form['username'],
+            password=request.form['password'],
+            port=int(request.form.get('port', 22)),
+            enable_password=request.form.get('enable_password'),
+            backup_command=request.form.get('backup_command')
+        )
+        return jsonify({'success': True, 'device_id': device_id})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/devices/<int:device_id>/get')
+def get_device_data(device_id):
+    device = db.get_device(device_id)
+    if device:
+        return jsonify(dict(device))
+    return jsonify({'error': 'Not found'}), 404
+
+@app.route('/devices/<int:device_id>/update', methods=['POST'])
+def update_device(device_id):
+    try:
+        data = request.get_json()
+        updates = {}
+        if 'name' in data: updates['name'] = data['name']
+        if 'ip_address' in data: updates['ip_address'] = data['ip_address']
+        if 'device_type' in data: updates['device_type'] = data['device_type']
+        if 'protocol' in data: updates['protocol'] = data['protocol']
+        if 'port' in data: updates['port'] = int(data['port'])
+        if 'username' in data: updates['username'] = data['username']
+        if 'password' in data and data['password']: updates['password'] = data['password']
+        db.update_device(device_id, **updates)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/devices/<int:device_id>/delete', methods=['POST'])
+def delete_device_permanent(device_id):
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM devices WHERE id = ?', (device_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/devices/<int:device_id>', methods=['DELETE'])
+def delete_device(device_id):
+    try:
+        db.delete_device(device_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/backup/<int:device_id>', methods=['POST'])
+def backup_device(device_id):
+    try:
+        result = backup_manager.backup_device(device_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/backup/all', methods=['POST'])
+def backup_all():
+    try:
+        results = backup_manager.backup_all_devices()
+        return jsonify({'success': True, 'results': results})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/backups')
+def backups():
+    device_id = request.args.get('device_id', type=int)
+    all_backups = db.get_backups(device_id=device_id, limit=100)
+    return render_template('backups.html', backups=all_backups)
+
+@app.route('/backups/<int:backup_id>/download')
+def download_backup(backup_id):
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT filename, file_path FROM backups WHERE id = ?', (backup_id,))
+    result = cursor.fetchone()
+    conn.close()
+    if result and os.path.exists(result['file_path']):
+        return send_file(result['file_path'], as_attachment=True, download_name=result['filename'])
+    return jsonify({'error': 'Backup não encontrado'}), 404
+
+@app.route('/backups/<int:backup_id>/view')
+def view_backup(backup_id):
+    content = backup_manager.get_backup_file(backup_id)
+    if content:
+        return render_template('view_backup.html', content=content, backup_id=backup_id)
+    return jsonify({'error': 'Backup não encontrado'}), 404
+
+@app.route('/schedules')
+def schedules_page():
+    all_schedules = db.get_schedules(active_only=False)
+    all_devices = db.get_all_devices()
+    return render_template('schedules.html', schedules=all_schedules, devices=all_devices)
+
+@app.route('/schedules/add', methods=['POST'])
+def add_schedule():
+    try:
+        device_id = request.form.get('device_id', type=int) or None
+        frequency = request.form['frequency']
+        time = request.form['time']
+        day_of_week = request.form.get('day_of_week', type=int)
+        day_of_month = request.form.get('day_of_month', type=int)
+        schedule_id = db.add_schedule(device_id, frequency, time, day_of_week, day_of_month)
+        schedule = db.get_connection().execute('SELECT * FROM schedules WHERE id = ?', (schedule_id,)).fetchone()
+        scheduler.add_job(schedule)
+        return jsonify({'success': True, 'schedule_id': schedule_id})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/schedules/<int:schedule_id>', methods=['DELETE'])
+def delete_schedule(schedule_id):
+    try:
+        db.delete_schedule(schedule_id)
+        scheduler.remove_job(schedule_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/api/stats')
+def api_stats():
+    devices = db.get_all_devices()
+    backups = db.get_backups(limit=1000)
+    schedules = db.get_schedules()
+    stats = {
+        'total_devices': len(devices),
+        'active_devices': len([d for d in devices if d['active']]),
+        'total_backups': len(backups),
+        'successful_backups': len([b for b in backups if b['status'] == 'success']),
+        'failed_backups': len([b for b in backups if b['status'] == 'failed']),
+        'active_schedules': len([s for s in schedules if s['active']]),
+        'next_jobs': scheduler.get_jobs()
+    }
+    return jsonify(stats)
+
+if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
+    app.run(host='0.0.0.0', port=port, debug=debug)
+
+@app.route('/schedules/<int:schedule_id>/get')
+def get_schedule_data(schedule_id):
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM schedules WHERE id = ?', (schedule_id,))
+    schedule = cursor.fetchone()
+    conn.close()
+    if schedule:
+        return jsonify(dict(schedule))
+    return jsonify({'error': 'Not found'}), 404
+
+@app.route('/schedules/<int:schedule_id>/update', methods=['POST'])
+def update_schedule(schedule_id):
+    try:
+        data = request.get_json()
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        device_id = data.get('device_id')
+        if device_id == '':
+            device_id = None
+        
+        cursor.execute('''
+            UPDATE schedules 
+            SET device_id = ?, frequency = ?, time = ?, 
+                day_of_week = ?, day_of_month = ?
+            WHERE id = ?
+        ''', (device_id, data['frequency'], data['time'], 
+              data.get('day_of_week'), data.get('day_of_month'), schedule_id))
+        
+        conn.commit()
+        conn.close()
+        
+        # Recarregar agendamento no scheduler
+        schedule = db.get_connection().execute('SELECT * FROM schedules WHERE id = ?', (schedule_id,)).fetchone()
+        scheduler.remove_job(schedule_id)
+        scheduler.add_job(schedule)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400

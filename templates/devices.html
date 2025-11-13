@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Dispositivos{% endblock %}
+{% block extra_css %}
+<style>
+.action-buttons { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.action-buttons .btn { padding: 0.5rem 0.8rem; font-size: 0.85rem; white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Gerenciar Dispositivos</h2>
+    <button class="btn btn-success" onclick="showModal('addDeviceModal')">➕ Adicionar Novo Dispositivo</button>
+</div>
+<div class="card">
+    <h2>Lista de Dispositivos</h2>
+    {% if devices %}
+    <table>
+        <thead>
+            <tr><th>Nome</th><th>IP</th><th>Tipo</th><th>Protocolo</th><th>Porta</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td>{{ device.name }}</td>
+                <td>{{ device.ip_address }}</td>
+                <td>{{ device.device_type }}</td>
+                <td>{{ device.protocol|upper }}</td>
+                <td>{{ device.port }}</td>
+                <td>
+                    {% if device.active %}
+                    <span class="badge badge-success">Ativo</span>
+                    {% else %}
+                    <span class="badge badge-danger">Inativo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="backupDevice({{ device.id }})">🔄 Backup</button>
+                        <button class="btn btn-primary" onclick="editDevice({{ device.id }})">✏️ Editar</button>
+                        <button class="btn btn-danger" onclick="deleteDevice({{ device.id }})">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nenhum dispositivo cadastrado.</p>
+    {% endif %}
+</div>
+
+<div id="addDeviceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Adicionar Dispositivo</h2>
+            <span class="close" onclick="closeModal('addDeviceModal')">&times;</span>
+        </div>
+        <form id="addDeviceForm">
+            <div class="form-group"><label>Nome *</label><input type="text" name="name" required></div>
+            <div class="form-group"><label>IP *</label><input type="text" name="ip_address" required></div>
+
+                    <!-- Campo Provedor/Cliente -->
+                    <div class="mb-3">
+                        <label for="provedor" class="form-label">
+                            <i class="fas fa-building"></i> Provedor/Cliente
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="provedor" 
+                            name="provedor" 
+                            placeholder="Ex: Cliente_A, OLLA, SPEEDNET, Interno"
+                            value="Sem_Provedor"
+                        >
+                        <small class="form-text text-muted">
+                            Nome do cliente ou provedor para organizar os backups
+                        </small>
+                    </div>
+
+            <div class="form-group"><label>Tipo *</label>
+                <select name="device_type" required>
+                    <option value="">Selecione...</option>
+                    <option value="ubiquiti_airos">Ubiquiti</option>
+                    <option value="mimosa">Mimosa</option>
+                    <option value="intelbras_radio">Intelbras</option>
+                    <option value="cisco_ios">Cisco</option>
+                    <option value="huawei">Huawei</option>
+                    <option value="mikrotik_routeros">MikroTik</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Protocolo *</label>
+                <select name="protocol" required>
+                    <option value="ssh">SSH</option>
+                    <option value="http">HTTP</option>
+                    <option value="https">HTTPS</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Porta</label><input type="number" name="port" value="22"></div>
+            <div class="form-group"><label>Usuário *</label><input type="text" name="username" required></div>
+            <div class="form-group"><label>Senha *</label><input type="password" name="password" required></div>
+            <button type="submit" class="btn btn-success">💾 Salvar</button>
+        </form>
+    </div>
+</div>
+
+<div id="editDeviceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Editar Dispositivo</h2>
+            <span class="close" onclick="closeModal('editDeviceModal')">&times;</span>
+        </div>
+        <form id="editDeviceForm">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>Nome *</label><input type="text" id="editName" required></div>
+            <div class="form-group"><label>IP *</label><input type="text" id="editIp" required></div>
+            <div class="form-group"><label>Protocolo *</label>
+                <select id="editProtocol" required>
+                    <option value="ssh">SSH</option>
+                    <option value="http">HTTP</option>
+                    <option value="https">HTTPS</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Porta</label><input type="number" id="editPort" required></div>
+            <button type="submit" class="btn btn-success">💾 Atualizar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+        const response = await fetch('/devices/add', {method: 'POST', body: formData});
+        const data = await response.json();
+        if (data.success) {
+            showAlert('Dispositivo adicionado!', 'success');
+            closeModal('addDeviceModal');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('Erro: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+});
+
+async function editDevice(id) {
+    try {
+        const response = await fetch('/devices/' + id + '/get');
+        const device = await response.json();
+        document.getElementById('editId').value = device.id;
+        document.getElementById('editName').value = device.name;
+        document.getElementById('editIp').value = device.ip_address;
+        document.getElementById('editProtocol').value = device.protocol;
+        document.getElementById('editPort').value = device.port;
+        showModal('editDeviceModal');
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+}
+
+document.getElementById('editDeviceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const data = {
+        name: document.getElementById('editName').value,
+        ip_address: document.getElementById('editIp').value,
+        protocol: document.getElementById('editProtocol').value,
+        port: document.getElementById('editPort').value
+    };
+    try {
+        const response = await fetch('/devices/' + id + '/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.success) {
+            showAlert('Atualizado!', 'success');
+            closeModal('editDeviceModal');
+            setTimeout(() => location.reload(), 1500);
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+});
+
+async function backupDevice(deviceId) {
+    if (!confirm('Backup agora?')) return;
+    try {
+        const response = await fetch('/backup/' + deviceId, {method: 'POST'});
+        const data = await response.json();
+        if (data.success) showAlert('Backup realizado!', 'success');
+        else showAlert('Erro: ' + data.error, 'danger');
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+}
+
+async function deleteDevice(deviceId) {
+    if (!confirm('Remover permanentemente?')) return;
+    try {
+        const response = await fetch('/devices/' + deviceId + '/delete', {method: 'POST'});
+        const data = await response.json();
+        if (data.success) {
+            showAlert('Removido!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+}
+</script>
+{% endblock %}

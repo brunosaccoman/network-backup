@@ -1,0 +1,230 @@
+!Software Version V200R011C10SPC600
+#
+sysname SW3-PE-AYP-TULDIA-01
+#
+info-center loghost source LoopBack0
+info-center loghost 172.18.5.143 port 5115
+#
+as-notation plain
+#
+vlan batch 10 20 40 50 250
+#
+stp disable
+#
+authentication-profile name default_authen_profile
+authentication-profile name dot1x_authen_profile
+authentication-profile name mac_authen_profile
+authentication-profile name portal_authen_profile
+authentication-profile name dot1xmac_authen_profile
+authentication-profile name multi_authen_profile
+#
+telnet server enable
+telnet server-source -i LoopBack0
+#
+http server-source -i LoopBack0
+#
+diffserv domain default
+#
+radius-server template default
+#
+mpls lsr-id 10.90.1.6
+mpls
+#
+mpls ldp
+#
+#
+pki realm default
+#
+free-rule-template name default_free_rule
+#
+portal-access-profile name portal_access_profile
+#
+drop-profile default
+#
+aaa
+ authentication-scheme default
+ authentication-scheme radius
+  authentication-mode radius
+ authorization-scheme default
+ accounting-scheme default
+ local-aaa-user password policy administrator 
+  password history record number 0
+  password expire 0
+ domain default
+  authentication-scheme radius
+  radius-server default
+ domain default_admin
+  authentication-scheme default
+ local-user admin password irreversible-cipher $1a$i+#q.4ey.3$PMNQ4pup`T#X_CIW:7:0r~^H#bs8"GoW0t'sY:N4$
+ local-user admin privilege level 15
+ local-user admin ftp-directory flash:
+ local-user admin service-type telnet terminal ssh ftp x25-pad http
+ local-user zabbix password irreversible-cipher $1a$r(ud:uLC/)$M8&uU~kE*TCVDT".-qm,ed)/(J7B]!\c:)Rzw$^U$
+ local-user zabbix privilege level 15
+ local-user zabbix service-type ssh
+ local-user monitoramento password irreversible-cipher $1a$**0:L]wv=!$TVgK)YS2L65vX5,,q]`-)9t[T]w_kFFMB|.cUp{>$
+ local-user monitoramento privilege level 15
+ local-user monitoramento service-type ssh
+#
+interface Vlanif1
+#
+interface Vlanif10
+ ip address 10.100.1.42 255.255.255.252
+ ospf network-type p2p
+ mpls
+ mpls ldp
+#
+interface Vlanif20
+ ip address 10.100.1.45 255.255.255.252
+ ospf network-type p2p
+ mpls
+ mpls ldp
+#
+interface Vlanif40
+ description GERENCIA
+ ip address 10.70.17.1 255.255.255.0
+#
+interface MEth0/0/1
+#
+load-balance-profile LB1
+ ipv4 field sip
+ mpls field top-label 2nd-label sip dip
+#
+interface Eth-Trunk1
+ description SW3-PE-AYP-CNT-01
+ port link-type hybrid
+ port hybrid pvid vlan 10
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 50 250
+ port hybrid untagged vlan 10
+ mode lacp
+ load-balance enhanced profile LB1
+#
+interface Eth-Trunk2
+ description SW3-PE-CNZ-CNT-01
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 20 50
+ load-balance enhanced profile LB1
+#
+interface GigabitEthernet0/0/1
+#
+interface GigabitEthernet0/0/2
+ undo negotiation auto
+ description REDUNDACIA-SOLENILDO
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 250
+#
+interface GigabitEthernet0/0/3
+#
+interface GigabitEthernet0/0/4
+#
+interface GigabitEthernet0/0/5
+#
+interface GigabitEthernet0/0/6
+#
+interface GigabitEthernet0/0/7
+#
+interface GigabitEthernet0/0/8
+#
+interface GigabitEthernet0/0/9
+#
+interface GigabitEthernet0/0/10
+#
+interface GigabitEthernet0/0/11
+#
+interface GigabitEthernet0/0/12
+#
+interface GigabitEthernet0/0/13
+#
+interface GigabitEthernet0/0/14
+#
+interface GigabitEthernet0/0/15
+#
+interface GigabitEthernet0/0/16
+#
+interface GigabitEthernet0/0/17
+#
+interface GigabitEthernet0/0/18
+#
+interface GigabitEthernet0/0/19
+#
+interface GigabitEthernet0/0/20
+#
+interface GigabitEthernet0/0/21
+#
+interface GigabitEthernet0/0/22
+#
+interface GigabitEthernet0/0/23
+#
+interface GigabitEthernet0/0/24
+#
+interface GigabitEthernet0/0/25
+#
+interface GigabitEthernet0/0/26
+#
+interface GigabitEthernet0/0/27
+#
+interface GigabitEthernet0/0/28
+ port link-type hybrid
+ port hybrid pvid vlan 40
+ undo port hybrid vlan 1
+ port hybrid untagged vlan 40
+#
+interface XGigabitEthernet0/0/1
+ description SW3-PE-AYP-CEM-01(10G){CH01}
+ eth-trunk 1
+#
+interface XGigabitEthernet0/0/2
+ description SW3-PE-AYP-CEM-01(10G){CH02}
+ eth-trunk 1
+#
+interface XGigabitEthernet0/0/3
+ description SW3-PE-CNZ-CEN-01-CH1[XGIGABIT0/0/1]{10G}
+ eth-trunk 2
+#
+interface XGigabitEthernet0/0/4
+ description SW3-PE-CNZ-CEN-01-CH2[XGIGABIT0/0/2]{10G}
+ eth-trunk 2
+#
+interface NULL0
+#
+interface LoopBack0
+ ip address 10.90.1.6 255.255.255.255
+#
+ospf 10 router-id 10.90.1.6
+ area 0.0.0.0
+  network 10.70.17.0 0.0.0.255
+  network 10.90.1.6 0.0.0.0
+  network 10.100.1.40 0.0.0.3
+#
+snmp-agent
+snmp-agent local-engineid 800007DB03883FD3C3A050
+snmp-agent community read cipher %^%#6c9]~dt5@L{Vli0;p3~,9DO<E|{=&1N)R)F,]"@0n'4>Y7h:2Oo~6wAU-+~;xV8/I`gUS61Y'm(PQ^TW%^%#
+snmp-agent sys-info location TUTILANDIA
+snmp-agent sys-info version v2c v3
+snmp-agent protocol source-interface LoopBack0
+#
+stelnet ipv4 server enable
+stelnet ipv6 server enable
+ssh user monitoramento
+ssh user monitoramento authentication-type password
+ssh user monitoramento service-type stelnet
+ssh user zabbix
+ssh user zabbix authentication-type password
+ssh user zabbix service-type stelnet
+ssh server-source -i LoopBack0
+#
+user-interface con 0
+ authentication-mode aaa
+user-interface vty 0 4
+ authentication-mode aaa
+ protocol inbound all
+user-interface vty 16 20
+#
+dot1x-access-profile name dot1x_access_profile
+#
+mac-access-profile name mac_access_profile
+#
+return

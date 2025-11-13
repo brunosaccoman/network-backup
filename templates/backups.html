@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Backups{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Histórico de Backups</h2>
+    {% if backups %}
+    <table>
+        <thead><tr><th>ID</th><th>Dispositivo</th><th>IP</th><th>Data/Hora</th><th>Tamanho</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+            {% for backup in backups %}
+            <tr>
+                <td>{{ backup.id }}</td>
+                <td>{{ backup.device_name }}</td>
+                <td>{{ backup.ip_address }}</td>
+                <td>{{ backup.backup_date }}</td>
+                <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
+                <td>{% if backup.status == 'success' %}<span class="badge badge-success">✓ Sucesso</span>{% else %}<span class="badge badge-danger">✗ Falha</span>{% endif %}</td>
+                <td>
+                    {% if backup.status == 'success' %}
+                    <a href="/backups/{{ backup.id }}/download" class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;">⬇️ Download</a>
+                    <a href="/backups/{{ backup.id }}/view" class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;">👁️ Ver</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nenhum backup encontrado.</p>
+    {% endif %}
+</div>
+{% endblock %}

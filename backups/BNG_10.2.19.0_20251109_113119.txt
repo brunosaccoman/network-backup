@@ -1,0 +1,1511 @@
+!Software Version V800R024C00SPC500
+!Last configuration was updated at 2025-11-09 04:30:06+00:00 by _OPS_
+!Last configuration was saved at 2025-10-15 05:59:12+00:00 by jheisson
+!kms_feature --
+#
+sysname RTR-BNG-PBW-CEN-01
+#
+set neid 7ae8d4
+#
+undo FTP server-source all-interface
+undo FTP ipv6 server-source all-interface
+#
+ssl policy router_default
+ ssl minimum version tls1.2
+ cipher-suite exclude key-exchange rsa
+ cipher-suite exclude cipher mode cbc
+ cipher-suite exclude hmac sha1
+ diffie-hellman modulus 3072
+ binding cipher-suite-customization default_cipher_suite
+ ecdh group nist
+ signature algorithm-list rsa-pss-rsae-sha256 rsa-pss-rsae-sha384 rsa-pss-rsae-sha512
+#
+ssl cipher-suite-list default_cipher_suite
+ set cipher-suite tls12_ck_dhe_rsa_with_aes_128_gcm_sha256
+ set cipher-suite tls12_ck_dhe_rsa_with_aes_256_gcm_sha384
+ set cipher-suite tls12_ck_ecdhe_rsa_with_aes_128_gcm_sha256
+ set cipher-suite tls12_ck_ecdhe_rsa_with_aes_256_gcm_sha384
+ set cipher-suite tls13_aes_128_gcm_sha256
+ set cipher-suite tls13_aes_256_gcm_sha384
+ set cipher-suite tls13_aes_128_ccm_sha256
+#
+service-template template-default0
+#
+service-template template-default1
+#
+service-template template-default2
+#
+service-template template-default3
+#
+service-template template-default4
+#
+ntp-service server disable
+ntp-service ipv6 server disable
+ntp-service server source-interface all disable
+ntp-service ipv6 server source-interface all disable
+ntp-service unicast-peer 170.79.86.44 vpn-instance INTERNET
+#
+dhcp snooping enable
+#
+dhcp server identifier dest-ip
+#
+undo icmp name timestamp-reply send
+#
+as-notation plain
+#
+undo telnet server enable
+undo telnet ipv6 server enable
+undo telnet server-source all-interface
+undo telnet ipv6 server-source all-interface
+#
+radius-attribute framed-ip-address encapsulation-method version2
+radius-attribute delegated-ipv6-prefix encapsulation-method version2
+#
+diffserv domain default
+#
+diffserv domain 5p3d
+#
+vsm on-board-mode disable
+#
+soc
+#
+ip vpn-instance BLOQUEIO
+ ipv4-family
+#
+ip vpn-instance INTERNET
+ ipv4-family
+  route-distinguisher 266284:1
+  apply-label per-instance
+  ip frr
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+ ipv6-family
+  route-distinguisher 266284:1
+  apply-label per-instance
+  ipv6 frr
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+#
+ip vpn-instance __LOCAL_OAM_VPN__
+ ipv4-family
+ ipv6-family
+#
+ip dcn vpn-instance __dcn_vpn__
+ ipv4-family
+#
+radius-server group ixcprovedor
+ radius-server shared-key-cipher %^%#!{%@CM3.G'V#xp%'J=JPUq-v+LQSQ6N1Yi>jBaHT%^%#
+ radius-server shared-key-cipher %^%#30G)R*|>nN&%E+KN1aUC5aHp)>Jj>5i^U6CYDB/F%^%# authentication 170.79.87.16 source ip-address 10.2.19.0 1812 weight 0
+ radius-server shared-key-cipher %^%#>`/gVDh5)PYAC;#}/N0DDk<\XQcb)Mnmp'(B6M.Z%^%# accounting 170.79.87.16 source ip-address 10.2.19.0 1813 weight 0
+ radius-server source interface LoopBack0
+ radius-server nas-ip-address 10.2.19.0
+ radius-server attribute translate
+ radius-server user-name original
+ radius-server user-name trust-server-request 
+ radius-attribute include HW-Auth-Type
+ radius-attribute include Reply-Message coa-nak
+ radius-attribute include edsg-service-name accounting-request
+ radius-attribute include Event-Timestamp accounting-on accounting-off 
+ radius-attribute disable CISCO-AVPair receive
+ radius-attribute translate extend HW-Auth-Type vendor-specific 2011 109 access-request account 
+ radius-attribute assign hw-mng-ipv6 pppoe motm 
+ radius-attribute case-sensitive qos-profile-name
+ radius-attribute apply user-name match user-type ipoe
+ radius-attribute apply framed-ipv6-pool match pool-type
+ radius-attribute service-type value outbound user-type ipoe 
+ radius-attribute hw-user-password simple coa-request
+#
+radius local-ip 10.2.19.0
+undo radius local-ip all
+radius-server authorization 170.79.87.16 destination-port 3799 shared-key-cipher %^%#g3|}$);V]Dm$jy/O;gtTXs>X0R*!~Fuu_\6m>KJ,%^%# server-group ixcprovedor
+#
+service-location 1
+ location slot 5
+#
+service-instance-group CGNAT
+ service-location 1
+#
+nat instance CGNAT id 10
+ port-range 1024 extended-port-range 512 extended-times 3
+ service-instance-group CGNAT
+ nat address-group CGNAT group-id 1 vpn-instance INTERNET
+  section 1 170.79.87.64 mask 28
+  section 2 170.79.85.96 mask 28
+  section 4 170.79.86.224 mask 28
+  section 5 170.79.86.176 mask 29
+  section 6 170.79.86.160 mask 28
+  section 7 170.79.86.240 mask 28
+  section 8 170.79.85.0 mask 28
+  section 9 170.79.85.16 mask 28
+  section 10 170.79.87.80 mask 29
+  section 11 170.79.85.48 mask 28
+  section 12 170.79.85.112 mask 28
+ nat address-group BLOQUEIO group-id 10 vpn-instance BLOQUEIO
+  section 10 192.168.30.0 mask 24
+ nat outbound 3000 address-group CGNAT
+ nat outbound 3004 address-group BLOQUEIO
+ undo nat log radius enable
+ nat log host 192.168.99.54 5515 source 10.2.19.0 1000
+ nat alg all
+ undo pcp enable
+ nat filter mode full-cone 5-tuple-session
+ nat log session enable syslog
+ nat log user enable
+ port-reuse enable
+ nat log session port-reservation
+#
+bfd
+#
+mpls lsr-id 10.2.19.0
+#
+mpls
+ mpls te
+ mpls rsvp-te
+ mpls te cspf
+#
+mpls l2vpn
+#
+vsi Tr-505-TORRES
+ description PPPOE-TORRES-REDE-RADIO
+ pwsignal ldp
+  vsi-id 505
+  flow-label both
+  peer 10.2.4.0
+  peer 10.2.20.0
+  peer 10.2.25.0
+  peer 10.2.30.0
+  peer 10.2.31.0
+  peer 10.2.32.0
+  peer 10.2.38.0
+  peer 10.2.39.0
+  peer 10.2.44.0
+  peer 10.2.45.0
+  peer 10.2.55.0
+  peer 10.2.57.0
+  peer 10.2.59.0
+  peer 10.2.61.0
+  peer 10.2.64.0
+  peer 10.2.68.0
+  peer 10.2.71.0
+  peer 10.2.74.0
+  peer 10.2.78.0
+  peer 10.2.91.0
+  peer 10.2.119.0
+  peer 10.2.120.0
+  peer 10.2.121.0
+  peer 10.90.0.7
+  peer 10.90.1.0
+  peer 10.90.1.1
+  peer 10.90.1.2
+  peer 10.90.1.3
+  peer 10.90.2.6
+  traffic-statistics enable
+ mtu 2000
+ encapsulation ethernet
+#
+vsi Tr-AGUAS-DE-PIMENTA
+ pwsignal ldp
+  vsi-id 210
+#
+vsi Tr-POSTO-SIMONE
+ pwsignal ldp
+  vsi-id 701
+#
+bridge-domain 99
+ description GERENCIA
+#
+mpls ldp
+ #
+ ipv4-family
+#
+mpls ldp remote-peer 10.2.133.0
+ remote-ip 10.2.133.0
+#
+mpls ldp remote-peer 10.2.4.0
+ remote-ip 10.2.4.0
+#
+mpls ldp remote-peer 10.2.123.0
+ remote-ip 10.2.123.0
+#
+mpls ldp remote-peer 10.90.0.2
+ remote-ip 10.90.0.2
+#
+mpls ldp remote-peer 10.2.73.0
+ remote-ip 10.2.73.0
+#
+mpls ldp remote-peer 10.2.122.0
+ remote-ip 10.2.122.0
+#
+mpls ldp remote-peer 10.90.0.0
+ remote-ip 10.90.0.0
+#
+mpls ldp remote-peer 10.90.0.6
+ remote-ip 10.90.0.6
+#
+mpls ldp remote-peer 10.2.112.0
+ remote-ip 10.2.112.0
+#
+mpls ldp remote-peer 10.2.110.0
+ remote-ip 10.2.110.0
+#
+mpls ldp remote-peer 10.2.31.0
+ remote-ip 10.2.31.0
+#
+mpls ldp remote-peer 10.2.44.0
+ remote-ip 10.2.44.0
+#
+mpls ldp remote-peer 10.2.61.0
+ remote-ip 10.2.61.0
+#
+mpls ldp remote-peer 10.2.120.0
+ remote-ip 10.2.120.0
+#
+mpls ldp remote-peer 10.2.121.0
+ remote-ip 10.2.121.0
+#
+mpls ldp remote-peer 10.2.38.0
+ remote-ip 10.2.38.0
+#
+mpls ldp remote-peer 10.2.25.0
+ remote-ip 10.2.25.0
+#
+mpls ldp remote-peer 10.90.2.6
+ remote-ip 10.90.2.6
+#
+mpls ldp remote-peer 10.2.64.0
+ remote-ip 10.2.64.0
+#
+mpls ldp remote-peer 10.2.57.0
+ remote-ip 10.2.57.0
+#
+mpls ldp remote-peer 10.2.59.0
+ remote-ip 10.2.59.0
+#
+mpls ldp remote-peer 10.2.20.0
+ remote-ip 10.2.20.0
+#
+mpls ldp remote-peer 10.2.39.0
+ remote-ip 10.2.39.0
+#
+mpls ldp remote-peer 10.2.55.0
+ remote-ip 10.2.55.0
+#
+mpls ldp remote-peer 10.2.117.0
+ remote-ip 10.2.117.0
+#
+mpls ldp remote-peer 10.2.97.0
+ remote-ip 10.2.97.0
+#
+ip pool cgnat-gamer bas local
+ vpn-instance INTERNET
+ gateway 100.80.224.1 255.255.224.0
+ section 10 100.80.224.2 100.80.255.254
+#
+ip pool cgnat-pf bas local
+ vpn-instance INTERNET
+ gateway 100.80.128.1 255.255.192.0
+ section 10 100.80.128.2 100.80.191.254
+#
+ip pool cgnat-pj bas local
+ vpn-instance INTERNET
+ gateway 100.80.192.1 255.255.224.0
+ section 10 100.80.192.2 100.80.223.254
+#
+ip pool pool_bloqueio bas local
+ vpn-instance INTERNET
+ gateway 172.26.1.1 255.255.255.0
+ section 0 172.26.1.2 172.26.1.254
+ lease 0 12 0
+#
+ip pool rtr_bng_pbw_cnt_01 bas local
+ gateway 172.27.1.1 255.255.255.0
+ section 0 172.27.1.2 172.27.1.254
+ lease 0 12 0
+#
+dhcp server request-packet all-interface disable
+#
+dhcp-server group eventos
+ dhcp-server 10.81.0.1 vpn-instance INTERNET
+#
+ipv6 prefix pre-pool_aviso_bloqueio_ipv6 delegation
+ vpn-instance INTERNET
+ prefix 2001:DB8:3003::/48
+#
+ipv6 prefix pf-p-delegation delegation
+ vpn-instance INTERNET
+ prefix 2804:3568:8080::/45 delegating-prefix-length 60
+#
+ipv6 prefix pj-p-delegation delegation
+ vpn-instance INTERNET
+ prefix 2804:3568:80A0::/43 delegating-prefix-length 56
+#
+ipv6 prefix gamer-p-delegation delegation
+ vpn-instance INTERNET
+ prefix 2804:3568:80C0::/43 delegating-prefix-length 56
+#
+ipv6 prefix p-direct local
+ vpn-instance INTERNET
+ prefix 2804:3568:8088::/49
+#
+ipv6 pool gamer-delegation bas delegation
+ prefix gamer-p-delegation
+#
+ipv6 pool p-direct bas local
+ prefix p-direct
+#
+ipv6 pool pf-delegation bas delegation
+ prefix pf-p-delegation
+#
+ipv6 pool pj-delegation bas delegation
+ prefix pj-p-delegation
+#
+ipv6 pool pool_aviso_bloqueio_ipv6 bas delegation
+ prefix pre-pool_aviso_bloqueio_ipv6
+#
+radius-server coa-request hw-policy-name daa same-policy reply-ack
+#
+dot1x-template 1
+#
+user-group 1
+#
+dhcp relay unnumbered database authentication-mode force-check
+#
+acl port-pool bloqueios_WAN_in
+ eq 0
+ eq 17
+ eq 21
+ eq 22
+ eq 23
+ eq 25
+ eq 53
+ eq 60
+ eq 80
+ eq 96
+ eq 111
+ eq 123
+ eq 135
+ eq 139
+ eq 369
+ eq 389
+ eq 443
+ eq 445
+ eq 1900
+ eq 7547
+ eq 8082
+ eq 8088
+ eq 9944
+ eq 13620
+ eq 21315
+ eq 21810
+ eq 22292
+ eq 34354
+ eq 34355
+ range 135 139
+ range 8090 8095
+#
+acl port-pool bloqueios_WAN_out
+ eq 0
+ eq 17
+ eq 19
+ eq 25
+ eq 60
+ eq 111
+ eq 369
+ eq 389
+ eq 445
+ eq 1900
+ eq 8082
+ eq 9944
+ range 135 139
+#
+acl number 3000
+ description CGNAT-PF
+ rule 30 permit ip vpn-instance INTERNET source 100.80.128.0 0.0.63.255
+#
+acl number 3001
+ description CLIENTES-PJ
+ rule 20 permit ip vpn-instance INTERNET source 100.80.192.0 0.0.31.255
+#
+acl number 3002
+ description CLIENTES GAMER
+ rule 10 permit ip vpn-instance INTERNET source 100.80.224.0 0.0.31.255
+#
+acl number 3004
+ description CLINTES BLOQUEADOS
+ rule 5 permit ip source 172.16.0.0 0.15.255.255
+ rule 10 permit ip vpn-instance INTERNET source 172.16.0.0 0.15.255.255
+#
+acl number 3100
+ rule 5 permit ip vpn-instance INTERNET source 100.81.0.0 0.0.31.255
+ rule 10 permit ip source 100.81.0.0 0.0.31.255
+ rule 15 permit ip vpn-instance INTERNET source 100.81.32.0 0.0.31.255
+ rule 20 permit ip source 100.81.32.0 0.0.31.255
+#
+acl name admin advance
+ rule 5 permit ip source 170.79.87.133 0
+ rule 10 permit ip source 170.79.87.128 0
+ rule 25 permit ip source 170.79.87.16 0
+ rule 30 permit ip source 170.79.87.15 0
+ rule 35 permit ip source 170.79.87.11 0
+ rule 40 permit ip source 170.79.87.190 0
+#
+acl name bloqueios-WAN-in advance
+ rule 5 permit tcp destination-port-pool bloqueios_WAN_in
+ rule 10 permit udp destination-port-pool bloqueios_WAN_in
+#
+acl name bloqueios-WAN-out advance
+ rule 5 permit tcp destination-port-pool bloqueios_WAN_out
+ rule 10 permit udp destination-port-pool bloqueios_WAN_out
+#
+acl name liberacoes-WAN-in advance
+ description Regras de Liberaces no Firewall
+ rule 15 permit tcp destination 200.80.118.236 0 destination-port eq www
+ rule 20 permit tcp destination 200.80.118.236 0 destination-port eq 443
+#
+acl name liberacoes-WAN-out advance
+ description Regras de Liberaoes no Firewall
+#
+acl ipv6 name admin-V6 advance
+#
+acl ipv6 name bloqueios-WAN-in-V6 advance
+ description bloqueios_WAN_in_V6
+ rule 5 permit tcp destination-port lt 1024
+ rule 10 permit tcp destination-port eq 1900
+ rule 15 permit tcp destination-port eq 8082
+ rule 20 permit tcp destination-port eq 8088
+ rule 25 permit tcp destination-port eq 9944
+ rule 30 permit tcp destination-port eq 13620
+ rule 35 permit tcp destination-port eq 21810
+ rule 40 permit tcp destination-port eq 22292
+ rule 45 permit tcp destination-port eq 34354
+ rule 50 permit tcp destination-port eq 34355
+ rule 55 permit udp destination-port lt 1024
+ rule 65 permit udp destination-port eq 1900
+ rule 75 permit udp destination-port eq 8082
+ rule 85 permit udp destination-port eq 8088
+ rule 90 permit udp destination-port eq 9944
+ rule 95 permit udp destination-port eq 13620
+ rule 100 permit udp destination-port eq 21810
+ rule 105 permit udp destination-port eq 22292
+ rule 110 permit udp destination-port eq 34354
+ rule 115 permit udp destination-port eq 34355
+#
+acl ipv6 name bloqueios-WAN-out-V6 advance
+ description bloqueios_WAN_out_V6
+ rule 5 permit tcp destination-port eq 0
+ rule 10 permit tcp destination-port eq 17
+ rule 15 permit tcp destination-port eq chargen
+ rule 20 permit tcp destination-port eq smtp
+ rule 25 permit tcp destination-port eq 60
+ rule 30 permit tcp destination-port eq sunrpc
+ rule 35 permit tcp destination-port eq 369
+ rule 40 permit tcp destination-port eq 389
+ rule 45 permit tcp destination-port eq 445
+ rule 50 permit tcp destination-port eq 1900
+ rule 55 permit tcp destination-port eq 8082
+ rule 60 permit tcp destination-port eq 9944
+ rule 65 permit tcp destination-port range 135 139
+ rule 70 permit udp destination-port eq 0
+ rule 75 permit udp destination-port eq 17
+ rule 80 permit udp destination-port eq 19
+ rule 85 permit udp destination-port eq 25
+ rule 90 permit udp destination-port eq 60
+ rule 95 permit udp destination-port eq sunrpc
+ rule 100 permit udp destination-port eq 369
+ rule 105 permit udp destination-port eq 389
+ rule 110 permit udp destination-port eq 445
+ rule 115 permit udp destination-port eq 1900
+ rule 120 permit udp destination-port eq 8082
+ rule 125 permit udp destination-port eq 9944
+ rule 130 permit udp destination-port range 135 netbios-ssn
+#
+acl ipv6 name liberacoes-WAN-in-V6 advance
+ description Regras de Liberacoes no Firewall
+#
+acl ipv6 name liberacoes-WAN-out-V6 advance
+ description Regras de Liberacoes no Firewall
+#
+acl ipv6 name restante advance
+ rule 5 permit ipv6
+#
+acl number 6000
+ description BYPASS
+ rule 5 permit ip source user-group 1 destination ip-address 170.79.87.128 0
+ rule 5 description MATRIX-NORTETEL
+ rule 10 permit ip source user-group 1 destination ip-address 170.79.87.16 0
+ rule 10 description IXC
+ rule 15 permit ip source user-group 1 destination ip-address 170.79.87.10 0
+ rule 15 description DNS-SERVER
+ rule 17 permit ip source user-group 1 destination ip-address 170.79.87.11 0
+ rule 17 description DNS-SERVER
+ rule 20 permit ip source user-group 1 destination ip-address 170.79.85.128 0.0.0.31
+ rule 20 description BYPASS-GOOGLE-NORTETEL
+ rule 25 permit ip source user-group 1 destination ip-address 170.79.86.148 0.0.0.3
+ rule 25 description OCA-SGME
+ rule 30 permit ip source user-group 1 destination ip-address 131.0.116.0 0.0.0.63
+ rule 30 description FNA-OLLA-PBW
+ rule 35 permit ip source user-group 1 destination ip-address 131.0.118.192 0.0.0.63
+ rule 35 description FNA-OLLA-PVH
+ rule 40 permit ip source user-group 1 destination ip-address 170.79.87.133 0
+ rule 40 description MATRIX-NORTETEL
+ rule 45 permit ip source user-group 1 destination ip-address 170.79.87.29 0
+ rule 55 permit ip source user-group 1 destination ip-address 170.79.87.8 0
+ rule 55 description NEXUS-IT
+ rule 60 permit ip source user-group 1 destination ip-address 170.79.84.0 0.0.3.255
+ rule 65 permit ip source user-group 1 destination ip-address 200.80.116.0 0.0.3.255
+#
+acl number 6001
+ description CGNAT
+ rule 20 permit ip source user-group 1
+#
+acl number 6003
+ rule 5 permit ip source ip-address 100.64.3.1 0
+#
+acl name CGNAT ucl
+ rule 5 permit ip source ip-address 100.64.0.0 0.63.255.255
+#
+dhcpv6 duid 00010001266b83d824a52cbbb091
+#
+traffic classifier C-CGNAT operator or
+ if-match acl 6001 precedence 3
+#
+traffic classifier C-CGNAT-BYPASS operator or
+ if-match acl 6000 precedence 1
+#
+traffic classifier C-CGNAT-VRF operator or
+ if-match acl 6003 precedence 1
+#
+traffic classifier admin operator or
+ if-match acl name admin precedence 1
+#
+traffic classifier admin-V6 operator or
+ if-match ipv6 acl name admin-V6 precedence 1
+#
+traffic classifier bloqueio-WAN-in operator or
+ if-match acl name bloqueios-WAN-in precedence 1
+#
+traffic classifier bloqueio-WAN-in-V6 operator or
+ if-match ipv6 acl name bloqueios-WAN-in-V6 precedence 1
+#
+traffic classifier bloqueios-WAN-out operator or
+ if-match acl name bloqueios-WAN-out precedence 1
+#
+traffic classifier bloqueios-WAN-out-V6 operator or
+ if-match ipv6 acl name bloqueios-WAN-out-V6 precedence 1
+#
+traffic classifier liberacoes-WAN-in operator or
+ if-match acl name liberacoes-WAN-in precedence 1
+#
+traffic classifier liberacoes-WAN-in-V6 operator or
+ if-match ipv6 acl name liberacoes-WAN-in-V6 precedence 1
+#
+traffic classifier liberacoes-WAN-out operator or
+ if-match acl name liberacoes-WAN-out precedence 1
+#
+traffic classifier liberacoes-WAN-out-V6 operator or
+ if-match ipv6 acl name liberacoes-WAN-out-V6 precedence 1
+#
+traffic classifier restante operator or
+ if-match any
+#
+traffic classifier restante-V6 operator or
+ if-match ipv6 acl name restante precedence 1
+#
+traffic behavior B-CGNAT
+ nat bind instance CGNAT
+#
+traffic behavior B-CGNAT-BYPASS
+#
+traffic behavior B-CGNAT-VRF
+ nat bind instance CGNAT
+#
+traffic behavior deny
+ deny
+#
+traffic behavior deny-V6
+ deny
+#
+traffic behavior permit
+#
+traffic behavior permit-V6
+#
+traffic policy P-FIREWALL
+ share-mode
+ statistics enable
+ classifier C-CGNAT-BYPASS behavior B-CGNAT-BYPASS precedence 100
+ classifier C-CGNAT behavior B-CGNAT precedence 250
+#
+traffic policy WAN-IN
+ share-mode
+ statistics enable
+ classifier admin behavior permit precedence 1
+ classifier liberacoes-WAN-in behavior permit precedence 2
+ classifier bloqueio-WAN-in behavior deny precedence 3
+ classifier admin-V6 behavior permit-V6 precedence 9
+ classifier liberacoes-WAN-in-V6 behavior permit-V6 precedence 11
+ classifier bloqueio-WAN-in-V6 behavior deny-V6 precedence 12
+ classifier liberacoes-WAN-out behavior permit precedence 21
+ classifier bloqueios-WAN-out behavior deny precedence 22
+ classifier restante behavior permit precedence 23
+ classifier liberacoes-WAN-out-V6 behavior permit-V6 precedence 31
+ classifier bloqueios-WAN-out-V6 behavior deny-V6 precedence 32
+ classifier restante-V6 behavior permit-V6 precedence 33
+#
+traffic policy WAN-OUT
+ share-mode
+ statistics enable
+ classifier admin behavior permit precedence 20
+ classifier liberacoes-WAN-out behavior permit precedence 21
+ classifier bloqueios-WAN-out behavior deny precedence 22
+ classifier restante behavior permit precedence 23
+#
+security password
+ #
+ rule admin
+  forbidden word changeme_123
+#
+aaa
+ local-user jheisson password irreversible-cipher $1c$0H5x$vzXnS$K9GQNb:EW8zn#\QEsu|.]Vwt:&:u4V(WT0/V[hfX$
+ local-user jheisson service-type terminal telnet ssh
+ local-user jheisson level 3
+ local-user jheisson state block fail-times 3 interval 5
+ local-user ixcprovedor password irreversible-cipher $1c$U{qd,.3/iN$&v`VQU&v@3AL)D+dt6(K4MfA53J7}Cg~e<,){dg)$
+ local-user ixcprovedor service-type ssh
+ local-user ixcprovedor level 3
+ local-user ixcprovedor state block fail-times 3 interval 5
+ local-user ixcprovedor user-group manage-ug
+ local-user zabbix password irreversible-cipher $1c$b0dH5s>c%)$A1m!66au_+hrsVH#bOU:L*&~,+CF9.h)tx.Tzq1Y$
+ local-user zabbix service-type ssh
+ local-user zabbix level 3
+ local-user zabbix state block fail-times 3 interval 5
+ #
+ authentication-scheme default0
+ #
+ authentication-scheme default1
+ #
+ authentication-scheme default
+  authentication-mode local radius
+ #
+ authentication-scheme ixcprovedor
+  authentication-mode radius local
+ #
+ authorization-scheme default
+ #
+ accounting-scheme default0
+ #
+ accounting-scheme default1
+ #
+ accounting-scheme ixcprovedor
+  accounting interim interval 1200 second traffic hash
+  accounting send-update
+ #
+ domain default0
+ #
+ domain default1
+ #
+ domain default_admin
+ #
+ domain nortetel.net
+  authentication-scheme ixcprovedor
+  accounting-scheme ixcprovedor
+  radius-server group ixcprovedor
+  ip-pool cgnat-pf
+  ipv6-pool pf-delegation
+  ipv6-pool p-direct
+  vpn-instance INTERNET
+  dns primary-ip 170.79.87.11
+  dns second-ip 8.8.8.8
+  dns primary-ipv6 2001:4860:4860::8888
+  accounting-start-delay 10 online user-type ppp ipoe static
+  accounting dual-stack identical
+  user-group 1 bind nat instance CGNAT
+  user-basic-service-ip-type ipv4
+  undo public-address nat enable
+#
+license
+ active nat session-table size 1 slot 5
+ active nat bandwidth-enhance 40 slot 5
+ active port-l3vpn slot 9 card 1 port 0-9
+ active port-l3vpn slot 9 card 7 port 0-9
+ active port-l3vpn slot 9 card 8 port 0-9
+#
+warranty
+#
+interface Vbdif99
+ description GERENCIA
+ ip address 10.2.19.1 255.255.255.0
+ ip address 10.2.112.1 255.255.255.0 sub
+ ospf enable 10 area 0.0.0.0
+#
+interface Eth-Trunk0
+ description SW3-PE-PBW-CEN-01
+ ip address 10.22.1.42 255.255.255.248
+ ospf network-type p2p
+ ospf enable 10 area 0.0.0.0
+ mode lacp-static
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 400000
+ mpls te bandwidth bc0 400000
+ mpls ldp
+ statistic enable
+#
+interface Eth-Trunk20
+ mode lacp-static
+#
+interface Eth-Trunk20.86
+ mtu 9000
+ description PPPOE-OLT-FIBERHOME-VLAN86
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 86
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Eth-Trunk20.99
+ vlan-type dot1q 99
+ description GERENCIA
+ bridge-domain 99
+#
+interface Eth-Trunk20.102
+ vlan-type dot1q 102
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 102
+#
+interface Eth-Trunk20.103
+ vlan-type dot1q 103
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 103
+#
+interface Eth-Trunk20.105
+ vlan-type dot1q 105
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 105
+#
+interface Eth-Trunk20.150
+ vlan-type dot1q 150
+ description LINK ROUTER GERENCIA NOC
+ ip address 192.168.99.33 255.255.255.252
+ ospf network-type p2p
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls ldp
+#
+interface Eth-Trunk20.151
+ vlan-type dot1q 151
+ description INTERNET-RB4011-NOC
+ ip binding vpn-instance INTERNET
+ ip address 192.168.99.37 255.255.255.252
+#
+interface Eth-Trunk20.152
+ vlan-type dot1q 152
+ description GERENCIA-CONSULTORIA-RB4011-NOC
+ mpls l2vc 10.2.112.0 152
+#
+interface Eth-Trunk20.202
+ vlan-type dot1q 202
+ description DEDICADO-SICOOB-PBW-MATRIZ-CT-ID-34150
+ ip binding vpn-instance INTERNET
+ ip address 10.80.3.57 255.255.255.252
+ statistic enable
+#
+interface Eth-Trunk20.206
+ vlan-type dot1q 206
+ description LINK-DEDICADO-ESTACIO
+ ip binding vpn-instance INTERNET
+ ip address 200.80.118.13 255.255.255.252
+ statistic enable
+#
+interface Eth-Trunk20.207
+ vlan-type dot1q 207
+ description transporte-POSTO-SIMONE
+ l2 binding vsi Tr-POSTO-SIMONE
+#
+interface Eth-Trunk20.209
+ vlan-type dot1q 209
+ description TRANSPORTE-POSTO-SIMONE-CWL
+ mpls l2vc 10.90.0.2 209
+#
+interface Eth-Trunk20.210
+ vlan-type dot1q 210
+ description TRANSPORTE-AGUAS-DE-PIMENTA
+ l2 binding vsi Tr-AGUAS-DE-PIMENTA
+#
+interface Eth-Trunk20.211
+ vlan-type dot1q 211
+ description TRANSPORTE-AGUAS-DE-PIMENTA
+ l2 binding vsi Tr-AGUAS-DE-PIMENTA
+#
+interface Eth-Trunk20.212
+ vlan-type dot1q 212
+ description LINK-DEDICADO-POSTO
+ ip binding vpn-instance INTERNET
+ ip address 170.79.86.129 255.255.255.252
+ statistic enable
+ qos car cir 256000 cbs 18700000 green pass red discard inbound
+ qos car cir 256000 cbs 18700000 green pass red discard outbound
+#
+interface Eth-Trunk20.523
+ vlan-type dot1q 523
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 523
+#
+interface Eth-Trunk20.525
+ vlan-type dot1q 525
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 525
+#
+interface Eth-Trunk20.526
+ vlan-type dot1q 526
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 526
+#
+interface Eth-Trunk20.527
+ vlan-type dot1q 527
+ description TRANSPORTE-GLOBALNET
+ mpls l2vc 10.2.112.0 527
+#
+interface Eth-Trunk20.602
+ vlan-type dot1q 602
+ description OLLA-IRMAOS GONCALVES
+ mpls l2vc 10.2.112.0 602
+#
+interface Eth-Trunk20.615
+ vlan-type dot1q 615
+ description TRANSPORTE-POSTO-SIMONE-UNIAO
+ l2 binding vsi Tr-POSTO-SIMONE
+#
+interface Eth-Trunk20.616
+ vlan-type dot1q 616
+ description TRANSPORTE-POSTO-SIMONE-MINUANO
+ l2 binding vsi Tr-POSTO-SIMONE
+#
+interface Eth-Trunk20.1000
+ mtu 9000
+ description PPPOE-OLT-FIBERHOME-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 1000
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Eth-Trunk20.2057
+ vlan-type dot1q 2057
+ description TRANSPORTE-TELEFONIA-VLAN2057
+ mpls l2vc 10.2.112.0 2057
+ mpls l2vpn flow-label both
+#
+interface Eth-Trunk20.2058
+ mtu 9000
+ description PPPOE-OLT-FIBERHOME-VLAN2058
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 2058
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Eth-Trunk30
+ description OLT-ACE-PBW-CEN-02
+ mode lacp-static
+#
+interface Eth-Trunk30.10
+ description PPPOE
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 10 17
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Eth-Trunk30.99
+ vlan-type dot1q 99
+ description GERENCIA
+ bridge-domain 99
+#
+interface Eth-Trunk30.208
+ vlan-type dot1q 208
+ description transporte-POSTO-SIMONE
+ l2 binding vsi Tr-POSTO-SIMONE
+#
+interface Eth-Trunk30.1000
+ description PPPOE
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 1000
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Eth-Trunk110
+ ipv6 enable
+ ipv6 address auto link-local
+ mode lacp-static
+#
+interface Ethernet0/0/0
+ speed auto
+ duplex auto
+ undo shutdown
+ ip binding vpn-instance __LOCAL_OAM_VPN__
+ ip address 192.168.0.1 255.255.255.0
+#
+interface Virtual-Template0
+ mtu 1500
+ ppp authentication-mode auto
+ ppp mru 1500
+ pppoe-server service-name-parameter RTR-PE-BNG-PBW-CEN-01
+ pppoe-server ac-name RTR-PE-BNG-PBW-CEN-01
+ ip urpf strict enable check subnet
+ ipv6 urpf strict enable check subnet
+#
+interface GigabitEthernet0/1/0
+ description OLT-ACE-PBW-CEN-01-AGG-01:20G
+ undo shutdown
+ eth-trunk 20
+ dcn
+#
+interface GigabitEthernet0/1/1
+ description OLT-ACE-PBW-CEN-01-AGG-01:20G
+ undo shutdown
+ eth-trunk 20
+ dcn
+#
+interface GigabitEthernet0/1/2
+ description OLT-ACE-PBW-CEN-02-AGG-02:20G
+ undo shutdown
+ eth-trunk 30
+ dcn
+#
+interface GigabitEthernet0/1/3
+ description OLT-ACE-PBW-CEN-02-AGG-02:20G
+ undo shutdown
+ eth-trunk 30
+ dcn
+#
+interface GigabitEthernet0/1/4
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/1/5
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/1/6
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/1/7
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/1/8
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/1/9
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/7/0
+ description SW3-PE-PBW-CEN-01-CH01
+ undo shutdown
+ eth-trunk 0
+ dcn
+#
+interface GigabitEthernet0/7/1
+ description SW3-PE-PBW-CEN-01-CH02
+ undo shutdown
+ eth-trunk 0
+ dcn
+#
+interface GigabitEthernet0/7/2
+ description SW3-PE-PBW-CEN-01-CH03
+ undo shutdown
+ eth-trunk 0
+ dcn
+#
+interface GigabitEthernet0/7/3
+ description SW3-PE-PBW-CEN-01-CH04
+ undo shutdown
+ eth-trunk 0
+ dcn
+#
+interface GigabitEthernet0/7/4
+ undo shutdown
+ eth-trunk 0
+ dcn
+#
+interface GigabitEthernet0/7/5
+ undo shutdown
+ eth-trunk 0
+ dcn
+#
+interface GigabitEthernet0/7/6
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/7/7
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/7/8
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/7/9
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/0
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/1
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/2
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/3
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/4
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/5
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/6
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/7
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/8
+ undo shutdown
+ dcn
+#
+interface GigabitEthernet0/8/9
+ undo shutdown
+ dcn
+#
+interface LoopBack0
+ ip address 10.2.19.0 255.255.255.255
+ ospf enable 10 area 0.0.0.0
+#
+interface LoopBack1023
+ description DCN loopback interface
+ ip binding vpn-instance __dcn_vpn__
+ ip address 128.122.232.212 255.255.0.0
+#
+interface Virtual-Ethernet0/2/0
+ ve-group 1 l3-access
+#
+interface Virtual-Ethernet0/2/0.100
+ vlan-type dot1q 100
+ ip binding vpn-instance INTERNET
+ ip address 100.81.0.1 255.255.224.0
+ dhcp server enable
+#
+interface Virtual-Ethernet0/2/100
+ ve-group 100 l2-terminate
+#
+interface Virtual-Ethernet0/2/100.500
+ vlan-type dot1q 500
+ description L2L:PPPOE-AAPC-VLAN1004
+ mpls l2vc 10.2.4.0 500
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.501
+ vlan-type dot1q 501
+ description L2L:PPPOE-AAPC-VLAN1000
+ mpls l2vc 10.2.4.0 501
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.703
+ vlan-type dot1q 703
+ description L2L:PPPOE-AFT-VLAN1000
+ statistic enable
+ mpls l2vc 10.2.123.0 703
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.704
+ vlan-type dot1q 704
+ mtu 9000
+ description L2L:PPPOE-CWL-VLAN84
+ mpls l2vc 10.90.0.2 704
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.705
+ vlan-type dot1q 705
+ mtu 9000
+ description L2L:PPPOE-CWL-VLAN1000
+ mpls l2vc 10.90.0.2 705
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.706
+ vlan-type dot1q 706
+ description L2L:PPPOE-PIVR-VLAN1000
+ statistic enable
+ mpls l2vc 10.2.73.0 706 raw
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.707
+ vlan-type dot1q 707
+ description L2L:PPPOE-AYPO-VLAN1000
+ mpls l2vc 10.2.122.0 503
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/100.708
+ vlan-type dot1q 708
+ description L2L:PPPOE-TORRES-VLAN1000
+ statistic enable
+ l2 binding vsi Tr-505-TORRES
+#
+interface Virtual-Ethernet0/2/100.709
+ vlan-type dot1q 709
+ description PPPOE-LOJA
+ mpls l2vc 10.2.112.0 709
+ mpls l2vpn flow-label both
+#
+interface Virtual-Ethernet0/2/101
+ ve-group 100 l3-access
+ mac-address 0011-2233-4455
+#
+interface Virtual-Ethernet0/2/101.500
+ mtu 9000
+ description PPPOE:FIBRA-AAPC-VLAN1004
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 500
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.501
+ mtu 9000
+ description PPPOE:FIBRA-AAPC-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 501
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.703
+ mtu 9000
+ description PPPOE:FIBRA-AFT-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 703
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.704
+ mtu 9000
+ description L2L:PPPOE-CWL-VLAN84
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 704
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.705
+ mtu 9000
+ description L2L:PPPOE-CWL-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 705
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.706
+ mtu 9000
+ description L2L:PPPOE-PIVR-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 706
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.707
+ mtu 9000
+ description L2L:PPPOE-AYPO-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 707
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.708
+ mtu 9000
+ description L2L:PPPOE-TORRES-VLAN1000
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 708
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Virtual-Ethernet0/2/101.709
+ mtu 9000
+ description PPPOE-VLAN1000-LOJA
+ ipv6 enable
+ ipv6 address auto link-local
+ statistic enable
+ 8021p 0
+ user-vlan 709
+ ipv6 nd autoconfig managed-address-flag
+ ipv6 nd autoconfig other-flag
+ bas
+ #
+  access-type layer2-subscriber default-domain authentication force nortetel.net
+ #
+#
+interface Nve1
+#
+interface NULL0
+#
+bgp 266284
+ router-id 10.2.19.0
+ undo default ipv4-unicast
+ private-4-byte-as enable
+ peer 10.2.102.0 as-number 266284
+ peer 10.2.102.0 description RTR-PE-PBW-01-NE40
+ peer 10.2.102.0 connect-interface LoopBack0
+ peer 10.2.102.0 bfd min-tx-interval 100 min-rx-interval 100
+ peer 10.2.102.0 bfd enable
+ peer 10.2.113.0 as-number 266284
+ peer 10.2.113.0 description RTR-PE-CBA-CEN-01
+ peer 10.2.113.0 connect-interface LoopBack0
+ peer 10.2.113.0 bfd min-tx-interval 100 min-rx-interval 100
+ peer 10.2.113.0 bfd enable
+ #
+ ipv4-family unicast
+  undo synchronization
+  undo peer 10.2.102.0 enable
+  undo peer 10.2.113.0 enable
+ #
+ ipv4-family vpnv4
+  policy vpn-target
+  peer 10.2.102.0 enable
+  peer 10.2.102.0 advertise-community
+  peer 10.2.102.0 advertise-large-community
+  peer 10.2.113.0 enable
+  peer 10.2.113.0 advertise-community
+  peer 10.2.113.0 advertise-large-community
+ #
+ ipv4-family vpn-instance INTERNET
+  import-route direct
+  import-route static
+  import-route unr
+  auto-frr
+ #
+ ipv6-family vpnv6
+  policy vpn-target
+  peer 10.2.102.0 enable
+  peer 10.2.102.0 advertise-community
+  peer 10.2.102.0 advertise-large-community
+  peer 10.2.113.0 enable
+  peer 10.2.113.0 advertise-community
+  peer 10.2.113.0 advertise-large-community
+ #
+ ipv6-family vpn-instance INTERNET
+  import-route direct
+  import-route static
+  import-route unr
+  auto-frr
+#
+ospf 10 router-id 10.2.19.0
+ silent-interface LoopBack0
+ opaque-capability enable
+ graceful-restart
+ bandwidth-reference 4000000
+ area 0.0.0.0
+  mpls-te enable
+#
+ospf 65534 vpn-instance __dcn_vpn__
+ description DCN ospf create by default
+ opaque-capability enable
+ hostname
+ vpn-instance-capability simple
+ area 0.0.0.0
+  network 0.0.0.0 255.255.255.255
+#
+!The DCN function implements the capability of plug-and-play for this device.
+!A NE IP address based on the unique NE ID is automatically generated in VPN
+!of DCN. It is recommended that the NE IP address be changed to the planned
+!one by running the ne-ip X.X.X.X <MASK> command after the device being online.
+dcn
+#
+route-policy ORIGEM-IPV6-BNG-ALL permit node 10
+ apply local-preference 1000
+ apply community 26284:450 26284:455 26284:470 26284:11344 26284:1015 26284:6025 26284:9052 26284:9092
+#
+ip route-static vpn-instance INTERNET 170.79.87.190 255.255.255.255 192.168.99.38
+ip route-static vpn-instance INTERNET 200.80.118.0 255.255.255.248 10.80.3.58
+ip route-static vpn-instance INTERNET 200.80.119.255 255.255.255.255 192.168.99.38
+#
+snmp-agent
+snmp-agent local-engineid 800007DB03C469F0730F55
+snmp-agent community write cipher %^%#dgk!'_L-c+rpMXNth];P[4BoW4ibS/Gh8T2J)"G-B8LM4#FveIOB@f/)cv43_"P/2q(<!8^>TcWO%s0<%^%# alias __CommunityAliasName_01_63726
+#
+snmp-agent sys-info version v2c v3
+#
+snmp-agent protocol source-interface LoopBack0
+snmp-agent protocol source-status all-interface
+undo snmp-agent protocol source-status ipv6 all-interface
+#
+undo snmp-agent proxy protocol source-status all-interface
+undo snmp-agent proxy protocol source-status ipv6 all-interface
+#
+lldp enable
+#
+undo web-auth-server source-ip all
+#
+undo web-auth-server source-ipv6 all
+#
+stelnet server enable
+snetconf server enable
+ssh server rsa-key min-length 3072
+ssh user ixcprovedor
+ssh user ixcprovedor authentication-type password
+ssh user ixcprovedor service-type all
+ssh user jheisson
+ssh user jheisson authentication-type password
+ssh user jheisson service-type stelnet
+ssh user zabbix
+ssh user zabbix authentication-type password
+ssh user zabbix service-type stelnet
+ssh server-source -i Ethernet0/0/0
+ssh server-source -i LoopBack0
+ssh server-source -i LoopBack1023
+undo ssh server-source all-interface
+undo ssh ipv6 server-source all-interface
+ssh authorization-type default aaa
+#
+ssh server cipher aes256_gcm aes128_gcm aes256_ctr aes192_ctr aes128_ctr
+ssh server hmac sha2_512 sha2_256
+ssh server key-exchange dh_group_exchange_sha256 ecdh_sha2_nistp256 ecdh_sha2_nistp384 ecdh_sha2_nistp521
+#
+ssh server publickey ecc rsa_sha2_256 rsa_sha2_512
+#
+ssh server dh-exchange min-len 3072
+#
+ssh client first-time enable
+#
+ssh client publickey ecc rsa_sha2_256 rsa_sha2_512
+#
+ssh client cipher aes256_gcm aes128_gcm aes256_ctr aes192_ctr aes128_ctr
+ssh client hmac sha2_512 sha2_256
+ssh client key-exchange dh_group_exchange_sha256 ecdh_sha2_nistp256 ecdh_sha2_nistp384 ecdh_sha2_nistp521
+#
+traffic-policy P-FIREWALL inbound
+#
+dhcp server database multi-sessions per-mac authentication-mode force-check
+#
+user-interface maximum-vty 21
+#
+user-interface con 0
+ authentication-mode password
+ set authentication password cipher $1c$0,K3&aufOE$n+-"NEu):#Xd-A~UBWM*j.7EVg<X=*#U5hBjQCk:$
+#
+user-interface vty 0 4
+ authentication-mode aaa
+ protocol inbound ssh
+#
+netconf
+ activate module huawei-ip
+#
+local-aaa-server
+#
+pki domain default
+#
+crypto weak-algorithm disable
+#
+l2tp-group default-lac
+ tunnel name HUAWEI
+#
+l2tp-group default-lns
+ tunnel name HUAWEI
+#
+return

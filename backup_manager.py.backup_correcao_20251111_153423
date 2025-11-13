@@ -1,0 +1,315 @@
+import paramiko
+import os
+import requests
+import urllib3
+from datetime import datetime
+import pytz
+from netmiko import ConnectHandler
+from database import Database
+import subprocess
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+class BackupManager:
+    def __init__(self, backup_dir='backups'):
+        self.backup_dir = backup_dir
+        self.db = Database()
+        self.timezone = pytz.timezone('America/Porto_Velho')
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+    
+
+    def _sanitize_folder_name(self, name):
+        """Sanitiza o nome para ser usado como nome de pasta"""
+        sanitized = re.sub(r'[^\w\-_\.]', '_', str(name))
+        sanitized = re.sub(r'_+', '_', sanitized)
+        sanitized = sanitized.strip('_')
+        return sanitized if sanitized else 'Unnamed'
+    
+
+    def _get_device_backup_dir(self, device):
+        """Retorna o diretório de backup para um dispositivo específico
+        Estrutura: backups/Provedor/Dispositivo/
+        """
+        # Obter provedor
+        provedor = 'Sem_Provedor'
+        try:
+            if 'provedor' in device and device['provedor']:
+                provedor = str(device['provedor']).strip()
+                if not provedor:
+                    provedor = 'Sem_Provedor'
+        except:
+            pass
+        
+        provedor_folder = self._sanitize_folder_name(provedor)
+        device_folder = self._sanitize_folder_name(device['name'])
+        
+        # Criar estrutura: backups/Provedor/Dispositivo/
+        device_dir = os.path.join(self.backup_dir, provedor_folder, device_folder)
+        
+        # Criar as pastas se não existirem
+        if not os.path.exists(device_dir):
+            os.makedirs(device_dir)
+        
+        return device_dir
+    
+
+    def backup_device(self, device_id):
+        device = self.db.get_device(device_id)
+        if not device:
+            return {'success': False, 'error': 'Dispositivo não encontrado'}
+        
+        try:
+            if device['protocol'].lower() in ['http', 'https']:
+                result = self._backup_http(device)
+            elif device['protocol'].lower() == 'ssh':
+                result = self._backup_ssh(device)
+            elif device['protocol'].lower() == 'telnet':
+                result = self._backup_telnet(device)
+            else:
+                return {'success': False, 'error': 'Protocolo não suportado'}
+            
+            # Executar limpeza após backup bem-sucedido
+            if result.get('success'):
+                self._cleanup_old_backups(device_id)
+            
+            return result
+        except Exception as e:
+            error_msg = str(e)
+            self.db.add_backup(device_id, '', '', 0, 'failed', error_msg)
+            return {'success': False, 'error': error_msg}
+    
+    def _cleanup_old_backups(self, device_id, keep_count=5):
+        """Mantém apenas os N backups mais recentes de um dispositivo"""
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor()
+            
+            # Buscar backups do dispositivo, ordenados do mais recente para o mais antigo
+            cursor.execute('''
+                SELECT id, file_path 
+                FROM backups 
+                WHERE device_id = ? 
+                ORDER BY backup_date DESC
+            ''', (device_id,))
+            
+            backups = cursor.fetchall()
+            
+            # Se tiver mais que o limite, deletar os antigos
+            if len(backups) > keep_count:
+                backups_to_delete = backups[keep_count:]
+                
+                for backup in backups_to_delete:
+                    # Deletar arquivo físico
+                    if os.path.exists(backup['file_path']):
+                        try:
+                            os.remove(backup['file_path'])
+                        except Exception as e:
+                            print(f"Erro ao deletar arquivo: {e}")
+                    
+                    # Deletar registro do banco
+                    cursor.execute('DELETE FROM backups WHERE id = ?', (backup['id'],))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Erro na limpeza: {e}")
+    
+    def _backup_http(self, device):
+        try:
+            if device['device_type'] == 'mimosa':
+                return self._backup_mimosa_http(device)
+            elif device['device_type'] == 'intelbras_radio':
+                return self._backup_intelbras_http(device)
+            else:
+                return {'success': False, 'error': f"Tipo {device['device_type']} não suporta HTTP/HTTPS"}
+        except Exception as e:
+            raise Exception(f"Erro HTTP: {str(e)}")
+    
+    def _backup_mimosa_http(self, device):
+        protocol = device['protocol'].lower()
+        port = device['port']
+        base_url = f"{protocol}://{device['ip_address']}:{port}"
+        session = requests.Session()
+        
+        try:
+            login_url = f"{base_url}/login"
+            login_data = {'password': device['password']}
+            response = session.post(login_url, data=login_data, verify=False, timeout=30)
+            
+            if response.status_code == 200 or 'Set-Cookie' in response.headers:
+                config_endpoints = ['/api/v1/config', '/cgi-bin/export_config', '/api/config/export', '/backup.cgi', '/cgi-bin/config/export']
+                
+                for endpoint in config_endpoints:
+                    try:
+                        config_url = f"{base_url}{endpoint}"
+                        config_response = session.get(config_url, verify=False, timeout=30)
+                        if config_response.status_code == 200 and len(config_response.content) > 100:
+                            return self._save_backup(device, config_response.text)
+                    except:
+                        continue
+                
+                config_response = session.get(f"{base_url}/config", verify=False, timeout=30)
+                if config_response.status_code == 200:
+                    return self._save_backup(device, config_response.text)
+                
+                raise Exception("Não foi possível baixar a configuração após login")
+            else:
+                raise Exception(f"Falha no login: HTTP {response.status_code}")
+        except Exception as e:
+            raise Exception(f"Erro Mimosa: {str(e)}")
+        finally:
+            session.close()
+    
+    def _backup_intelbras_http(self, device):
+        protocol = device['protocol'].lower()
+        port = device['port']
+        base_url = f"{protocol}://{device['ip_address']}:{port}"
+        session = requests.Session()
+        
+        try:
+            auth = (device['username'], device['password'])
+            backup_urls = [
+                f"{base_url}/cgi-bin/luci/admin/config/backup",
+                f"{base_url}/backup.cgi",
+                f"{base_url}/cgi-bin/backup",
+                f"{base_url}/backup",
+                f"{base_url}/api/backup",
+                f"{base_url}/cgi-bin/export"
+            ]
+            
+            for url in backup_urls:
+                try:
+                    response = session.get(url, auth=auth, verify=False, timeout=30)
+                    if response.status_code == 200 and len(response.content) > 100:
+                        return self._save_backup(device, response.text)
+                except:
+                    continue
+            
+            raise Exception("Nenhum endpoint de backup funcionou.")
+        except Exception as e:
+            raise Exception(f"Erro Intelbras: {str(e)}")
+        finally:
+            session.close()
+    
+    def _backup_ssh(self, device):
+        device_type_map = {
+            'ubiquiti_airos': 'ubiquiti_edgerouter',
+            'intelbras_radio': 'linux',
+            'mimosa': 'linux'
+        }
+        
+        netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
+        
+        device_config = {
+            'device_type': netmiko_type,
+            'host': device['ip_address'],
+            'username': device['username'],
+            'password': device['password'],
+            'port': device['port'],
+            'timeout': 30,
+        }
+        
+        if device['enable_password']:
+            device_config['secret'] = device['enable_password']
+        
+        try:
+            connection = ConnectHandler(**device_config)
+            if device['enable_password'] and netmiko_type not in ['linux', 'ubiquiti_edgerouter']:
+                connection.enable()
+            
+            backup_command = device['backup_command'] if device['backup_command'] else self._get_default_command(device['device_type'])
+            output = connection.send_command(backup_command, read_timeout=60)
+            connection.disconnect()
+            
+            return self._save_backup(device, output)
+        except Exception as e:
+            raise Exception(f"Erro SSH: {str(e)}")
+    
+    def _backup_telnet(self, device):
+        device_type_map = {
+            'ubiquiti_airos': 'ubiquiti_edgerouter',
+            'intelbras_radio': 'linux',
+            'mimosa': 'linux'
+        }
+        
+        netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
+        
+        device_config = {
+            'device_type': netmiko_type + '_telnet',
+            'host': device['ip_address'],
+            'username': device['username'],
+            'password': device['password'],
+            'port': device['port'],
+            'timeout': 30,
+        }
+        
+        if device['enable_password']:
+            device_config['secret'] = device['enable_password']
+        
+        try:
+            connection = ConnectHandler(**device_config)
+            if device['enable_password']:
+                connection.enable()
+            
+            backup_command = device['backup_command'] if device['backup_command'] else self._get_default_command(device['device_type'])
+            output = connection.send_command(backup_command, read_timeout=60)
+            connection.disconnect()
+            
+            return self._save_backup(device, output)
+        except Exception as e:
+            raise Exception(f"Erro Telnet: {str(e)}")
+    
+    def _get_default_command(self, device_type):
+        commands = {
+            'cisco_ios': 'show running-config',
+            'cisco_nxos': 'show running-config',
+            'cisco_asa': 'show running-config',
+            'cisco_xr': 'show running-config',
+            'juniper_junos': 'show configuration',
+            'arista_eos': 'show running-config',
+            'hp_comware': 'display current-configuration',
+            'huawei': 'display current-configuration',
+            'huawei_vrpv8': 'display current-configuration',
+            'mikrotik_routeros': 'export compact',
+            'paloalto_panos': 'show config running',
+            'ubiquiti_airos': 'cat /tmp/system.cfg',
+            'ubiquiti_edge': 'show configuration',
+            'intelbras_radio': 'cat /etc/config/*',
+            'mimosa': 'cat /etc/persistent/mimosa.cfg',
+        }
+        return commands.get(device_type, 'show running-config')
+    
+    def _save_backup(self, device, config_data):
+        now = datetime.now(self.timezone)
+        timestamp = now.strftime('%Y%m%d_%H%M%S')
+        filename = f"{device['name']}_{device['ip_address']}_{timestamp}.txt"
+        file_path = os.path.join(self.backup_dir, filename)
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(config_data)
+        
+        file_size = os.path.getsize(file_path)
+        self.db.add_backup(device['id'], filename, file_path, file_size, 'success')
+        
+        return {'success': True, 'filename': filename, 'size': file_size, 'path': file_path}
+    
+    def backup_all_devices(self):
+        devices = self.db.get_all_devices(active_only=True)
+        results = []
+        for device in devices:
+            result = self.backup_device(device['id'])
+            results.append({'device': device['name'], 'ip': device['ip_address'], 'result': result})
+        return results
+    
+    def get_backup_file(self, backup_id):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT file_path FROM backups WHERE id = ?', (backup_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result and os.path.exists(result['file_path']):
+            with open(result['file_path'], 'r', encoding='utf-8') as f:
+                return f.read()
+        return None

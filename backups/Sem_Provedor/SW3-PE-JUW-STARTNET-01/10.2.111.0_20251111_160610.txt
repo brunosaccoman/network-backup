@@ -1,0 +1,317 @@
+!Software Version V200R022C00SPC500
+#
+sysname SW3-PE-JUW-STARTNET-01
+#
+vlan batch 99 to 101 3001 3999 to 4000
+#
+stp disable
+#
+authentication-profile name default_authen_profile
+authentication-profile name dot1x_authen_profile
+authentication-profile name dot1xmac_authen_profile
+authentication-profile name mac_authen_profile
+authentication-profile name multi_authen_profile
+authentication-profile name portal_authen_profile
+#
+http server-source -i MEth0/0/1
+#
+set if-mib sample-interval 0
+#
+dhcp enable
+#
+diffserv domain default
+#
+radius-server template default
+#
+mpls lsr-id 10.2.111.0
+mpls
+ mpls te
+ mpls rsvp-te
+ mpls te cspf
+#
+mpls l2vpn
+#
+mpls ldp
+#
+#
+pki realm default
+ certificate-check none
+#
+acl number 4000
+#
+free-rule-template name default_free_rule
+#
+portal-access-profile name portal_access_profile
+#
+drop-profile default
+#
+vlan 4000
+ description Tr-STARTNET-100GE-JUW-TROCA-DE-CAPACIDADE-X-FIBRA-OPTCA-JNA->JUW
+#
+aaa
+ authentication-scheme default
+  authentication-mode local
+ authentication-scheme radius
+  authentication-mode radius
+ authorization-scheme default
+  authorization-mode local
+ accounting-scheme default
+  accounting-mode none
+ local-aaa-user password policy administrator
+  password history record number 0
+  password expire 0
+ domain default
+  authentication-scheme radius
+  accounting-scheme default
+  radius-server default
+ domain default_admin
+  authentication-scheme default
+  accounting-scheme default
+ local-user admin password irreversible-cipher $1c${Sy:VYaO>>$RI=-'d>^M9|(TgK$yWUP:U"B(iI$B!j3w_U6w%(Z$
+ local-user admin privilege level 15
+ local-user admin service-type ssh http
+ local-user zabbix password irreversible-cipher $1c$Am1!JuJ0,W$zk+1(kN9q@cA8q6<k,KYNAgz9:p:c&e9@I=w[Y`!$
+ local-user zabbix privilege level 15
+ local-user zabbix service-type ssh
+#
+interface Vlanif1
+ ip address dhcp-alloc
+#
+interface Vlanif99
+ ip address 10.2.111.1 255.255.255.0
+ ospf enable 10 area 0.0.0.0
+ statistic enable both
+#
+interface Vlanif100
+ description RTR-PE-AYP-CEM-01
+ ip address 10.22.3.81 255.255.255.248
+ ospf cost 4
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 20000000
+ mpls te bandwidth bc0 20000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif101
+ description SW3-PE-JNA-INVINET-01
+ ip address 10.22.3.74 255.255.255.248
+ ospf cost 4
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 20000000
+ mpls te bandwidth bc0 20000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif3001
+ description ROTA-BACKUP-VIA-STARTNET-COTRI
+ ip address 10.22.3.33 255.255.255.248
+ ospf cost 100
+ ospf network-type p2p
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif3999
+ ip address 10.22.3.98 255.255.255.248
+ ospf cost 65535
+ ospf network-type p2p
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls ldp
+#
+interface MEth0/0/1
+ ip address 192.168.1.253 255.255.255.0
+#
+load-balance-profile LB
+#
+interface Eth-Trunk10
+ description SW3-PE-JNA-INVINET-01-DWDM-CH40-P-200GE-L2-C3-C4
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 101 4000
+ mode lacp
+ load-balance enhanced profile LB
+#
+interface Eth-Trunk11
+ description RTR-PE-AYP-CEM-01-DWDM-CH40-P-200GE-L1-C1-C2
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 100
+ mode lacp
+ load-balance enhanced profile LB
+#
+interface XGigabitEthernet0/0/1
+#
+interface XGigabitEthernet0/0/2
+#
+interface XGigabitEthernet0/0/3
+#
+interface XGigabitEthernet0/0/4
+#
+interface XGigabitEthernet0/0/5
+#
+interface XGigabitEthernet0/0/6
+#
+interface XGigabitEthernet0/0/7
+#
+interface XGigabitEthernet0/0/8
+#
+interface XGigabitEthernet0/0/9
+#
+interface XGigabitEthernet0/0/10
+#
+interface XGigabitEthernet0/0/11
+#
+interface XGigabitEthernet0/0/12
+#
+interface XGigabitEthernet0/0/13
+#
+interface XGigabitEthernet0/0/14
+#
+interface XGigabitEthernet0/0/15
+#
+interface XGigabitEthernet0/0/16
+#
+interface XGigabitEthernet0/0/17
+#
+interface XGigabitEthernet0/0/18
+#
+interface XGigabitEthernet0/0/19
+#
+interface XGigabitEthernet0/0/20
+#
+interface XGigabitEthernet0/0/21
+#
+interface XGigabitEthernet0/0/22
+#
+interface XGigabitEthernet0/0/23
+#
+interface XGigabitEthernet0/0/24
+ description RB-GERENCIA
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 99
+#
+interface 100GE0/0/1
+ fec mode rs
+ description SW3-PE-JNA-INVINET-01-DWDM-CH40-P-JUW-C2-JNA-C3
+ eth-trunk 10
+#
+interface 100GE0/0/2
+ fec mode rs
+ description SW3-PE-JNA-INVINET-01-DWDM-CH40-P-JUW-C2-JNA-C4
+ eth-trunk 10
+#
+interface 100GE0/0/3
+ fec mode rs
+ description DWDM-CH40-JUW-P-C3-AYP-P-C1
+ eth-trunk 11
+#
+interface 100GE0/0/4
+ fec mode rs
+ description DWDM-CH40-JUW-P-C4-AYP-P-C2
+ eth-trunk 11
+#
+interface 100GE0/0/5
+#
+interface 100GE0/0/6
+ description TO-STARTNET-JUW
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 3001 3999 to 4000
+#
+interface NULL0
+#
+interface LoopBack0
+ ip address 10.2.111.0 255.255.255.255
+ ospf enable 10 area 0.0.0.0
+#
+ospf 10 router-id 10.2.111.0
+ silent-interface Vlanif99
+ silent-interface LoopBack0
+ opaque-capability enable
+ graceful-restart
+ bandwidth-reference 400000
+ enable traffic-adjustment advertise
+ frr
+  loop-free-alternate
+ area 0.0.0.0
+  mpls-te enable
+#
+undo icmp name timestamp-request receive
+#
+snmp-agent
+snmp-agent local-engineid 800007DB03E47727E980A0
+snmp-agent community write cipher %^%#Cgx;29~Z#O|DuG6U"zS$oNS1,$.>06~r\\D""v&~Z=8HM[|Nj/L"-#2M]z-"Xs4$Fu{_"'oN{@LXC\x)%^%#
+snmp-agent sys-info version v2c v3
+undo snmp-agent protocol source-status all-interface
+snmp-agent protocol source-interface LoopBack0
+undo snmp-agent protocol source-status ipv6 all-interface
+#
+sftp server enable
+stelnet server enable
+ssh user zabbix
+ssh user zabbix authentication-type password
+ssh user zabbix service-type stelnet
+ssh server-source all-interface
+ssh server cipher aes256_ctr aes128_ctr
+ssh server hmac sha2_256
+ssh server key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh client cipher aes256_ctr aes128_ctr
+ssh client hmac sha2_256
+ssh client key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh server dh-exchange min-len 2048
+ssh server publickey rsa_sha2_512 rsa_sha2_256
+#
+user-interface con 0
+ authentication-mode password
+ set authentication password cipher $1c$w*Pk3-XCHQ$!xGNJ5r,@I^7w~E[/vH+s0q8/JWKbRRhm-;V=0JY$
+user-interface vty 0 4
+ authentication-mode aaa
+user-interface vty 16 20
+#
+wlan
+ traffic-profile name default
+ security-profile name default
+ security-profile name default-wds
+ security-profile name default-mesh
+ ssid-profile name default
+ vap-profile name default
+ wds-profile name default
+ mesh-handover-profile name default
+ mesh-profile name default
+ regulatory-domain-profile name default
+ air-scan-profile name default
+ rrm-profile name default
+ radio-2g-profile name default
+ radio-5g-profile name default
+ wids-spoof-profile name default
+ wids-whitelist-profile name default
+ wids-profile name default
+ ap-system-profile name default
+ port-link-profile name default
+ wired-port-profile name default
+ ap-group name default
+ provision-ap
+#
+dot1x-access-profile name dot1x_access_profile
+#
+mac-access-profile name mac_access_profile
+#
+ops
+#
+remote-unit
+#
+return

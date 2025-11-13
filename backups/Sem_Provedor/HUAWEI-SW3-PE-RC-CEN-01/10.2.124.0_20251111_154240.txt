@@ -1,0 +1,1076 @@
+!Software Version V200R022C00SPC500
+#
+sysname RC-JIP-CNT-RA-S6730
+#
+info-center loghost source LoopBack0
+info-center loghost 172.18.5.143 port 5115
+#
+ipv6
+#
+as-notation plain
+#
+vcmp role client
+#
+vlan batch 2 to 8 12 to 14 30 to 31 38 40 to 41 50 to 51 53 to 54 60 63 65
+vlan batch 67 99 101 126 129 to 130 132 to 133 136 143 401 to 406 410 to 414
+vlan batch 419 to 422 424 427 to 428 432 to 433 435 to 437 600 to 603 619 700 721 728
+vlan batch 736 742 to 745 747 749 to 750 754 to 760 800 to 801 803 810 815 to 818 820 to 822
+vlan batch 830 to 831 1000 1004 1006 to 1009 1051 1053 to 1054 1059 to 1073 1200 1300 1701 to 1716
+vlan batch 1801 to 1816 1841 to 1856 1861 to 1876 1901 to 1916 2000 to 2016 2040 2063 to 2064 2500 2886 2888
+vlan batch 3001
+#
+lnp disable
+#
+stp disable
+#
+authentication-profile name default_authen_profile
+ undo authentication roam-accounting enable
+authentication-profile name dot1x_authen_profile
+ undo authentication roam-accounting enable
+authentication-profile name dot1xmac_authen_profile
+ undo authentication roam-accounting enable
+authentication-profile name mac_authen_profile
+ undo authentication roam-accounting enable
+authentication-profile name multi_authen_profile
+ undo authentication roam-accounting enable
+authentication-profile name portal_authen_profile
+ undo authentication roam-accounting enable
+#
+radius-attribute encap optimize disable
+#
+http server-source -i MEth0/0/1
+#
+drop illegal-ip disable
+#
+route low-priority enable
+#
+diffserv domain default
+#
+ip vpn-instance INTERNET
+ ipv4-family
+  route-distinguisher 266284:1
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+ ipv6-family
+  route-distinguisher 266284:1
+  vpn-target 266284:1 export-extcommunity
+  vpn-target 266284:1 import-extcommunity
+#
+radius-server template default
+#
+bfd
+ mpls-passive
+#
+mpls lsr-id 10.2.124.0
+mpls
+ mpls te
+ mpls te auto-frr
+ mpls te bfd enable
+ mpls te bfd min-tx-interval 100 min-rx-interval 100 detect-multiplier 4
+ mpls te timer auto-bandwidth
+ mpls rsvp-te
+ mpls rsvp-te bfd all-interfaces enable
+ mpls rsvp-te bfd all-interfaces min-tx-interval 100 min-rx-interval 100 detect-multiplier 4
+ mpls rsvp-te hello
+ mpls te cspf
+#
+mpls l2vpn
+#
+vsi TrVlan_2010_RC_L2L_PPPOE_CPS
+ pwsignal bgp
+  route-distinguisher 266178:4010
+  vpn-target 266178:4010 import-extcommunity
+  vpn-target 266178:4010 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_2006_RC_L2L_PPPOE_T12
+ pwsignal bgp
+  route-distinguisher 266178:4006
+  vpn-target 266178:4006 import-extcommunity
+  vpn-target 266178:4006 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_2007_RC_L2L_PPPOE_T12
+ pwsignal bgp
+  route-distinguisher 266178:4007
+  vpn-target 266178:4007 import-extcommunity
+  vpn-target 266178:4007 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_432_JIPACONN_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4021
+  vpn-target 266178:4021 import-extcommunity
+  vpn-target 266178:4021 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_403_IMPETUS_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4022
+  vpn-target 266178:4022 import-extcommunity
+  vpn-target 266178:4022 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_413_SUPTELCO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4023
+  vpn-target 266178:4023 import-extcommunity
+  vpn-target 266178:4023 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_405_REDEATIV_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4024
+  vpn-target 266178:4024 import-extcommunity
+  vpn-target 266178:4024 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_404_FIBERTEC_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4025
+  vpn-target 266178:4025 import-extcommunity
+  vpn-target 266178:4025 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_406_GREENJIP_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4026
+  vpn-target 266178:4026 import-extcommunity
+  vpn-target 266178:4026 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_421_CONNECT_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4027
+  vpn-target 266178:4027 import-extcommunity
+  vpn-target 266178:4027 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_412_SPEEDWEB_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4033
+  vpn-target 266178:4033 import-extcommunity
+  vpn-target 266178:4033 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_419_HAASE_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4035
+  vpn-target 266178:4035 import-extcommunity
+  vpn-target 266178:4035 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_67_G10_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4030
+  vpn-target 266178:4030 import-extcommunity
+  vpn-target 266178:4030 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_65_VAIFIBRA_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4032
+  vpn-target 266178:4032 import-extcommunity
+  vpn-target 266178:4032 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_63_INVICTO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4028
+  vpn-target 266178:4028 import-extcommunity
+  vpn-target 266178:4028 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_428_INFORMAX_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4034
+  vpn-target 266178:4034 import-extcommunity
+  vpn-target 266178:4034 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_420_GOLDNET_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4029
+  vpn-target 266178:4029 import-extcommunity
+  vpn-target 266178:4029 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_424_FIBRCERT_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4031
+  vpn-target 266178:4031 import-extcommunity
+  vpn-target 266178:4031 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_414_INTERMAX_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4036
+  vpn-target 266178:4036 import-extcommunity
+  vpn-target 266178:4036 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_402_BRAZLINK_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4039
+  vpn-target 266178:4039 import-extcommunity
+  vpn-target 266178:4039 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_401_AMARAL01_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4040
+  vpn-target 266178:4040 import-extcommunity
+  vpn-target 266178:4040 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_411_AMARAL02_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4041
+  vpn-target 266178:4041 import-extcommunity
+  vpn-target 266178:4041 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_427_MDSNET_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4037
+  vpn-target 266178:4037 import-extcommunity
+  vpn-target 266178:4037 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_422_CONNECT_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4042
+  vpn-target 266178:4042 import-extcommunity
+  vpn-target 266178:4042 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi 30
+ pwsignal ldp
+  vsi-id 30
+  peer 10.90.0.0
+#
+vsi TrVlan_433_8LABS_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4043
+  vpn-target 266178:4043 import-extcommunity
+  vpn-target 266178:4043 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_435_BRASINET_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4044
+  vpn-target 266178:4044 import-extcommunity
+  vpn-target 266178:4044 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi Tr-Vlan821-CREDISIS
+ pwsignal ldp
+  vsi-id 821
+  peer 10.2.127.0
+#
+vsi TrVlan_436_IMPACTO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4045
+  vpn-target 266178:4045 import-extcommunity
+  vpn-target 266178:4045 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+vsi TrVlan_437_IMPACTO_REDE_NEUTRA
+ pwsignal bgp
+  route-distinguisher 266178:4046
+  vpn-target 266178:4046 import-extcommunity
+  vpn-target 266178:4046 export-extcommunity
+  site 1 range 20 default-offset 0
+#
+mpls ldp
+#
+#
+mpls ldp remote-peer 10.2.126.0
+ remote-ip 10.2.126.0
+#
+mpls ldp remote-peer 10.90.0.0
+ remote-ip 10.90.0.0
+#
+mpls ldp remote-peer 10.90.0.8
+ remote-ip 10.90.0.8
+#
+rsa peer-public-key 10.2.128.0
+ public-key-code begin
+  30820109
+    02820100
+      A558FC94 51BB57DA 562BD81D 713DDAA1 78AF4219 F4DFA4D3 A32A2627 A76198DE
+      2B5D9A30 02953015 68D3945B A7DE8782 9F96348D A25FD110 CF2D50CE C1EC5278
+      A159C59A 02173AE1 065C2677 380ADE55 B2FDD94C 252C8DAC A4E89CEE 929D5DE0
+      A0167442 5A045772 A6A2711F B8127A1C 16D11130 F523A5B5 30E76B6D CAF6EC65
+      B6FD9BF3 D5BBA18F 4A3555A9 680AFC52 B70A1558 B8D830BD C16010B1 2361CF42
+      D8406832 1290824A D18FB609 9E8D0F15 FD749491 8284A65C EFA5E530 35E90FC2
+      54A43DB3 0627F2A2 B4C33E40 15DAD08F FF205F9A 576E2EBE ACA2D853 68361712
+      14F70620 45510CF5 D0E6A2B6 517A39B7 37873B7D 7BA45B1D DDA7202C 2CE92D85
+    0203
+      010001
+ public-key-code end
+peer-public-key end
+#
+rsa peer-public-key 10.2.117.0
+ public-key-code begin
+  30820109
+    02820100
+      B3688940 0186404A 5C6504B2 0881CD8D E50115FF 62B14964 97FE7BAA BB6AF571
+      198DA666 C136F1CF 2D187FDC A7577851 2914B299 AF57AB84 931D2B72 59FD298E
+      21287263 3ED1194A 6A097333 C13B4F0F 844A937E 773F00F4 F645C8C2 BFA6C2C5
+      4768F8CF C83F3A19 A5509A82 96012B09 390CC667 450EAE39 DA6BA34C 981417EA
+      D6E7F73D 1317D769 40AC2CE4 8D46E04C 4214AA9C 9EDDEDD6 07A1B995 00188A24
+      BF5616E0 DCF51038 1F3E9B00 E2686B99 91996F08 269434BB D43A06EF C7CAB4DC
+      42BCB741 41D74F9D 03778D9B 68DAD30C 1C6FEA53 71629C56 9B4FBB71 FFC9029A
+      3778B194 DA5D577E B0355871 8793CAFE 5AB23594 3DAB5ED0 5CF1A5B6 5D3F1AF9
+    0203
+      010001
+ public-key-code end
+peer-public-key end
+#
+ecc peer-public-key 10.2.126.0 encoding-type der
+ public-key-code begin
+    0401349B 1A3ECE81 676F4FB4 53050EE7 8E0F68F1 D9532EAF 8493DA9B AB1CABB1
+    CB0F82D6 C79F40A9 A57065E4 CCD940E7 8757EE7F 28A9B290 B1D98A63 ADBFDEF6
+    167F7601 C991C7A8 EDAF1D1B 1E67BEFC FFA2D439 CFD723BB AD33E55B 1FBEF60A
+    B81FB49F E8084310 F18EAA84 DDAE0E40 F799D9D0 BD924BC1 99509604 5185FE22
+    EEEE407E 87
+ public-key-code end
+peer-public-key end
+#
+ecc peer-public-key 10.2.125.0 encoding-type der
+ public-key-code begin
+    040185B5 4EEADA06 BAAE73CF 3F5D6EBE E24561C4 B7ADF5E9 5D0AA40C AE1300C1
+    10A0CF70 43B4A6FB 1BCAC84C 525BBAE1 E2436F42 051DE73A D6D04418 D7D0B195
+    14133301 17172F6D 78B3D10B DF1D8012 D0B22D2F 7673C0EF 078614F8 48CA8B0B
+    B5EE3754 FD189351 DB733780 C2292B1E 41A387F6 101000D1 78C9F7D2 D7E7C706
+    7598D36F D0
+ public-key-code end
+peer-public-key end
+#
+pki realm default
+ certificate-check none
+#
+free-rule-template name default_free_rule
+#
+portal-access-profile name portal_access_profile
+#
+drop-profile default
+#
+vlan 40
+ description EN-RC-JIP-CNT-RX_to_RC-JIP-CNT-RZ
+vlan 41
+ description RC-JIP-CNT-RZ_to_RC-JIP-CNT-RC (CGNAT)
+vlan 132
+ description EN-RC-JIP-CNT-RX
+vlan 133
+ description RC-JIP-CNT-RZ-NE8000-M8
+vlan 143
+ description EUCATUR-BGP
+vlan 412
+ description RN-CONNECT-PPPoE
+vlan 422
+ description RN-CONNECT-MGMT
+vlan 601
+ description RN-CONNECT-RX_to_RN-CONNECT-RZ
+vlan 602
+ description RN-CONNECT-RX_to_RN-CONNECT-RG(CGNAT)
+vlan 603
+ description RN-CONNECT-RZ_to_CGNAT
+vlan 820
+ description 8-LABS-LINK
+vlan 821
+ description OLLA_CREDISIS
+vlan 830
+ description ID-LINK
+vlan 831
+ description DOWNSTREAN-CONNECT
+vlan 1200
+ description PPPoE-CLIENTEs
+vlan 2000
+ description CIRCUITO_OI
+vlan 2886
+ description CIRCUITO_OI
+vlan 2888
+ description CIRCUITO_OI
+#
+aaa
+ authentication-scheme default
+  authentication-mode local
+ authentication-scheme radius
+  authentication-mode radius
+ authorization-scheme default
+  authorization-mode local
+ accounting-scheme default
+  accounting-mode none
+ local-aaa-user password policy administrator
+  password history record number 0
+  password expire 0
+ domain default
+  authentication-scheme radius
+  accounting-scheme default
+  radius-server default
+ domain default_admin
+  authentication-scheme default
+  accounting-scheme default
+ local-user zabbix password irreversible-cipher $1c$HR0yOU<,a0$TU5/#zboQ$i5R7K:#N|HYSZO;^[}wBU/[h6HtPV+$
+ local-user zabbix privilege level 15
+ local-user zabbix service-type ssh
+ local-user jheisson password irreversible-cipher $1c$/xFs)1R;'%$gX'XTw%K~#/RRE$;u).TK88pY]OzMJ(-.oB%Hd2T$
+ local-user jheisson privilege level 15
+ local-user jheisson service-type ssh
+ local-user lucas-redecompleta password irreversible-cipher $1c$`j=ODV/Hf:$\'_FV's>C34DxnD^gNiF]_PL#8=Cl#4$U<O.]h*=$
+ local-user lucas-redecompleta privilege level 15
+ local-user lucas-redecompleta service-type ssh
+#
+interface Vlanif1
+#
+interface Vlanif30
+ l2 binding vsi 30
+#
+interface Vlanif31
+ mpls l2vc 10.90.0.0 31
+#
+interface Vlanif63
+ description INVICTO
+ l2 binding vsi TrVlan_63_INVICTO_REDE_NEUTRA
+#
+interface Vlanif65
+ description VAIFIBRA
+ l2 binding vsi TrVlan_65_VAIFIBRA_REDE_NEUTRA
+#
+interface Vlanif67
+ description G10
+ l2 binding vsi TrVlan_67_G10_REDE_NEUTRA
+#
+interface Vlanif99
+ description GERENCIA-POP
+ ip address 10.2.124.1 255.255.255.0
+ ip address 10.2.129.1 255.255.255.0 sub
+ ospf enable 10 area 0.0.0.0
+#
+interface Vlanif101
+ ip address 10.92.1.2 255.255.255.0
+#
+interface Vlanif132
+ description EN-RC-JIP-CNT-RX
+ ip address 10.20.1.2 255.255.255.248
+#
+interface Vlanif133
+ description RC-JIP-CNT-RZ-NE8000-M8
+ ip address 10.20.1.9 255.255.255.248
+#
+interface Vlanif401
+ description AMARALNET01
+ l2 binding vsi TrVlan_401_AMARAL01_REDE_NEUTRA
+#
+interface Vlanif402
+ description BRAZLINK
+ l2 binding vsi TrVlan_402_BRAZLINK_REDE_NEUTRA
+#
+interface Vlanif403
+ description IMPETUS
+ l2 binding vsi TrVlan_403_IMPETUS_REDE_NEUTRA
+#
+interface Vlanif404
+ description FIBERTECH
+ l2 binding vsi TrVlan_404_FIBERTEC_REDE_NEUTRA
+#
+interface Vlanif405
+ description REDE_ATIVA
+ l2 binding vsi TrVlan_405_REDEATIV_REDE_NEUTRA
+#
+interface Vlanif406
+ description GREENJIPA
+ l2 binding vsi TrVlan_406_GREENJIP_REDE_NEUTRA
+#
+interface Vlanif411
+ description AMARALNET02
+ l2 binding vsi TrVlan_411_AMARAL02_REDE_NEUTRA
+#
+interface Vlanif412
+ description SPEEDWEB
+ l2 binding vsi TrVlan_412_SPEEDWEB_REDE_NEUTRA
+#
+interface Vlanif413
+ description SUPERTELECOM
+ l2 binding vsi TrVlan_413_SUPTELCO_REDE_NEUTRA
+#
+interface Vlanif414
+ description INTERMAX
+ l2 binding vsi TrVlan_414_INTERMAX_REDE_NEUTRA
+#
+interface Vlanif419
+ description HAASEE
+ l2 binding vsi TrVlan_419_HAASE_REDE_NEUTRA
+#
+interface Vlanif420
+ description GOLDNET
+ l2 binding vsi TrVlan_420_GOLDNET_REDE_NEUTRA
+#
+interface Vlanif421
+ description CONNECT
+ l2 binding vsi TrVlan_421_CONNECT_REDE_NEUTRA
+#
+interface Vlanif422
+ description CONNECT_MGMT
+ l2 binding vsi TrVlan_422_CONNECT_REDE_NEUTRA
+#
+interface Vlanif424
+ description FIBRACERTO
+ l2 binding vsi TrVlan_424_FIBRCERT_REDE_NEUTRA
+#
+interface Vlanif427
+ description MDSNET
+ l2 binding vsi TrVlan_427_MDSNET_REDE_NEUTRA
+#
+interface Vlanif428
+ description INFORMAX
+ l2 binding vsi TrVlan_428_INFORMAX_REDE_NEUTRA
+#
+interface Vlanif432
+ description JIPACONN
+ l2 binding vsi TrVlan_432_JIPACONN_REDE_NEUTRA
+#
+interface Vlanif433
+ description 8LABS
+ l2 binding vsi TrVlan_433_8LABS_REDE_NEUTRA
+#
+interface Vlanif435
+ description BRASILNET
+ l2 binding vsi TrVlan_435_BRASINET_REDE_NEUTRA
+#
+interface Vlanif436
+ description IMPACTONET-PPPOE
+ l2 binding vsi TrVlan_436_IMPACTO_REDE_NEUTRA
+#
+interface Vlanif437
+ description IMPACTONET-MGMT
+ l2 binding vsi TrVlan_437_IMPACTO_REDE_NEUTRA
+#
+interface Vlanif521
+#
+interface Vlanif815
+ description Tr-OLLA-IFRO
+ mpls l2vc 10.90.0.8 815
+#
+interface Vlanif816
+ description Tr-OLLA-IFRO
+ mpls l2vc 10.90.0.8 816
+#
+interface Vlanif817
+ description Tr-OLLA-UNIR
+ mpls l2vc 10.90.0.8 817
+#
+interface Vlanif818
+ description Tr-OLLA-UNIR
+ mpls l2vc 10.90.0.8 818
+#
+interface Vlanif821
+ description LINK-OLLA-CREDISIS-CENTRAL
+ ip binding vpn-instance INTERNET
+ ip address 192.144.64.169 255.255.255.248
+ statistic enable both
+#
+interface Vlanif822
+#
+interface Vlanif824
+#
+interface Vlanif831
+ description DOWNSTREAN-CONNECT-AS271323
+ ip binding vpn-instance INTERNET
+ ipv6 enable
+ ip address 172.28.0.49 255.255.255.252
+ ipv6 address 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C2/126
+ ipv6 address auto link-local
+ statistic enable both
+#
+interface Vlanif1004
+ description SW3-PE-RC-T12-CEN-01
+ ip address 10.22.4.241 255.255.255.248
+ ospf cost 65535
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 10000000
+ mpls te bandwidth bc0 10000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif1006
+ ip address 10.22.5.18 255.255.255.248
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 10000000
+ mpls te bandwidth bc0 10000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif1007
+ ip address 10.22.5.25 255.255.255.248
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 10000000
+ mpls te bandwidth bc0 10000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif1008
+ description SW3-PE-RC-KM05-01
+ ip address 10.22.5.33 255.255.255.248
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 10000000
+ mpls te bandwidth bc0 10000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif1009
+ description SW3-PE-RC-CASA-PRETA-01
+ ip address 10.22.5.41 255.255.255.248
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 10000000
+ mpls te bandwidth bc0 10000000
+ mpls rsvp-te
+ mpls ldp
+ statistic enable both
+#
+interface Vlanif2006
+ description T12_OLT01
+ l2 binding vsi TrVlan_2006_RC_L2L_PPPOE_T12
+#
+interface Vlanif2007
+ description T12_OLT02
+ l2 binding vsi TrVlan_2007_RC_L2L_PPPOE_T12
+#
+interface Vlanif2010
+ description CAPELASO
+ l2 binding vsi TrVlan_2010_RC_L2L_PPPOE_CPS
+#
+interface MEth0/0/1
+ ip address 192.168.1.253 255.255.255.0
+#
+interface Eth-Trunk0
+ description EN-RC-JIP-CNT-RX
+ port link-type hybrid
+ port hybrid pvid vlan 132
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 5 to 8 13 38 40 60 143 300 601 to 602 700 721
+ port hybrid tagged vlan 728 736 742 744 749 754 to 756 760 810 820 822
+ port hybrid tagged vlan 830 1000 1006 2000 2886 2888
+ port hybrid untagged vlan 132
+#
+interface Eth-Trunk1
+ description RC-JIP-CNT-RZ-NE8000-M8
+ port link-type hybrid
+ port hybrid pvid vlan 133
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 40 to 41 53 to 54 60 130 404 410 412 601 603 1051
+ port hybrid tagged vlan 1053 to 1054 1059 1065 1067 to 1073 1200 1701 to 1716 1801 to 1816 1841 to 1856 1861 to 1876 1901 to 1916
+ port hybrid tagged vlan 2001 to 2009 2011 to 2016 2040 2063 to 2064
+ port hybrid untagged vlan 133
+#
+interface Eth-Trunk2
+ description EN-RC-JIP-CNT-BOA-DM4250
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 13 38 300 700 721 728 736 742 744 749
+ port hybrid tagged vlan 754 to 756 1000
+#
+interface Eth-Trunk3
+ description DM4250-Transporte OLT
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 53 to 54 129 to 130 404 410 412 422 600 1051 1053 to 1054 1059 to 1073
+ port hybrid tagged vlan 1200 1300 1701 to 1716 1801 to 1816 1841 to 1856 1861 to 1876 1901 to 1916 2001 to 2009 2011 to 2016 2040
+ port hybrid tagged vlan 2063 to 2064
+#
+interface Eth-Trunk4
+ description AGG:SW-ATACOM
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 30 to 31 63 65 67 99 143 401 to 406 411 to 414 419 to 422 424
+ port hybrid tagged vlan 427 to 428 432 to 433 435 to 437 757 to 760 815 to 818 1004 1007 to 1009 2006 to 2007 2010
+ mode lacp
+#
+interface Eth-Trunk5
+ undo portswitch
+ description AGG:SW3-PE-JIP-VTAL-01{10GE}
+ ip address 10.22.5.49 255.255.255.248
+ ospf network-type p2p
+ ospf ldp-sync
+ ospf enable 10 area 0.0.0.0
+ mpls
+ mpls te
+ mpls te bandwidth max-reservable-bandwidth 10000000
+ mpls te bandwidth bc0 10000000
+ mpls rsvp-te
+ mpls ldp
+ mode lacp
+#
+interface XGigabitEthernet0/0/1
+ description RC-JIP-CNT-RZ-NE8000-M8
+ eth-trunk 1
+#
+interface XGigabitEthernet0/0/2
+ description RC-JIP-CNT-RZ-NE8000-M8
+ eth-trunk 1
+#
+interface XGigabitEthernet0/0/3
+ description FIBERTECH-LINK-E-REDE-NEUTRA
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 404 757 to 760
+#
+interface XGigabitEthernet0/0/4
+ description DOWNSTREAN-CONNECT-AS271323
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 831
+#
+interface XGigabitEthernet0/0/5
+ description REDE-NEUTRA-CONNECT
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 421 to 422
+#
+interface XGigabitEthernet0/0/6
+#
+interface XGigabitEthernet0/0/7
+#
+interface XGigabitEthernet0/0/8
+ description RC-JIP-CNT-BOA-DM4250
+ eth-trunk 2
+#
+interface XGigabitEthernet0/0/9
+ description RC-JIP-CNT-BOA-DM4250
+ eth-trunk 2
+#
+interface XGigabitEthernet0/0/10
+ description 8_LABS
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 404 433 757 to 760 820
+#
+interface XGigabitEthernet0/0/11
+ description TRUNK-VTAL-5G
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 2000 2886 2888
+#
+interface XGigabitEthernet0/0/12
+ description CGNAT
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 3 to 4 41
+#
+interface XGigabitEthernet0/0/13
+ description CORE1
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 4 7 to 8
+#
+interface XGigabitEthernet0/0/14
+ description CORE2
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 3 5 to 6 602 to 603
+#
+interface XGigabitEthernet0/0/15
+#
+interface XGigabitEthernet0/0/16
+ description RN-CONNECT-BRAS_CCR1009
+ shutdown
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 421 to 422 601 603
+#
+interface XGigabitEthernet0/0/17
+ description DM4250-Transporte OLT
+ eth-trunk 3
+#
+interface XGigabitEthernet0/0/18
+#
+interface XGigabitEthernet0/0/19
+ description OLLA_CREDISIS_CENTRAL
+ port link-type hybrid
+ port hybrid pvid vlan 821
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 821
+#
+interface XGigabitEthernet0/0/20
+ description DOWNLINK-REDE-NEUTRA-ID-LINK
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 402 830
+#
+interface XGigabitEthernet0/0/21
+ description SW3-EJIP-VTAL-01-CH01
+ eth-trunk 5
+#
+interface XGigabitEthernet0/0/22
+ description SW3-EJIP-VTAL-01-CH02
+#
+interface XGigabitEthernet0/0/23
+ description AS263566-RONDONET
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 38 700 721 728 736 742 756
+#
+interface XGigabitEthernet0/0/24
+ description JIPACONN
+ port link-type hybrid
+ undo port hybrid vlan 1
+ port hybrid tagged vlan 432 810
+#
+interface 40GE0/0/1
+ description AGG:SW-DATACOM
+ eth-trunk 4
+#
+interface 40GE0/0/2
+#
+interface 40GE0/0/3
+#
+interface 40GE0/0/4
+#
+interface 40GE0/0/5
+#
+interface 40GE0/0/6
+ eth-trunk 0
+#
+interface NULL0
+#
+interface LoopBack0
+ ip address 10.2.124.0 255.255.255.255
+ ospf enable 10 area 0.0.0.0
+#
+bgp 266284
+ undo default ipv4-unicast
+ group RR internal
+ peer RR connect-interface LoopBack0
+ peer 10.2.127.0 as-number 266284
+ peer 10.2.127.0 group RR
+ peer 10.2.132.0 as-number 266284
+ peer 10.2.132.0 group RR
+ #
+ ipv4-family unicast
+  undo synchronization
+  undo peer 10.2.127.0 enable
+  undo peer 10.2.132.0 enable
+  peer RR enable
+ #
+ l2vpn-ad-family
+  policy vpn-target
+  signaling vpls
+  signaling vpws
+  peer RR enable
+  peer RR advertise-community
+  peer 10.2.127.0 enable
+  peer 10.2.127.0 group RR
+  peer 10.2.132.0 enable
+  peer 10.2.132.0 group RR
+ #
+ ipv4-family vpnv4
+  policy vpn-target
+  peer RR enable
+  peer RR advertise-community
+  peer 10.2.127.0 enable
+  peer 10.2.127.0 group RR
+ #
+ ipv4-family vpn-instance INTERNET
+  import-route direct route-policy OLLA-CREDISIS
+  import-route static
+  auto-frr
+  peer 172.28.0.50 as-number 271323
+  peer 172.28.0.50 description AS271323-CONNECT
+  peer 172.28.0.50 connect-interface Vlanif831
+  peer 172.28.0.50 fake-as 266178
+  peer 172.28.0.50 route-policy AS271323-CONNECT-Import-V4 import
+  peer 172.28.0.50 route-policy AS271323-CONNECT-Export-V4 export
+ #
+ ipv6-family vpnv6
+  policy vpn-target
+  peer RR enable
+  peer RR advertise-community
+  peer 10.2.127.0 enable
+  peer 10.2.127.0 group RR
+ #
+ ipv6-family vpn-instance INTERNET
+  import-route direct
+  import-route static
+  auto-frr
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C1 as-number 271323
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C1 description AS271323-CONNECT
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C1 connect-interface Vlanif831
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C1 fake-as 266178
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C1 route-policy AS271323-CONNECT-Import-V6 import
+  peer 2804:3BE4:FF:FFFF:FFFF:FFFF:FFFF:27C1 route-policy AS271323-CONNECT-Export-V6 export
+#
+ospf 10 router-id 10.2.124.0
+ silent-interface LoopBack0
+ opaque-capability enable
+ graceful-restart
+ bandwidth-reference 400000
+ enable traffic-adjustment advertise
+ frr
+  loop-free-alternate
+ area 0.0.0.0
+  mpls-te enable
+#
+route-policy OLLA-CREDISIS permit node 10
+ if-match ip-prefix OLLA-CREDISIS
+ apply local-preference 210
+#
+route-policy OLLA-CREDISIS permit node 20
+#
+route-policy AS271323-CONNECT-Export-V4 permit node 10
+ if-match ip-prefix DEFAULT-V4
+#
+route-policy AS271323-CONNECT-Export-V4 deny node 600
+#
+route-policy AS271323-CONNECT-Import-V4 permit node 10
+ if-match ip-prefix AS271323-CONNECT-V4
+ apply as-path 266178 additive
+ apply local-preference 999
+ apply community 26284:460 26284:470 26284:11344 26284:100 26284:9092 26284:9053 26284:1011 additive
+#
+route-policy AS271323-CONNECT-Import-V4 deny node 600
+#
+route-policy AS271323-CONNECT-Import-V6 permit node 10
+ if-match ipv6 address prefix-list AS271323-CONNECT-V6
+ apply as-path 266178 additive
+ apply local-preference 999
+ apply community 26284:460 26284:470 26284:11344 26284:100 26284:9090 26284:9054 26284:1015 additive
+#
+route-policy AS271323-CONNECT-Import-V6 deny node 600
+#
+route-policy AS271323-CONNECT-Export-V6 permit node 10
+ if-match ipv6 address prefix-list DEFAULT-V6
+#
+route-policy AS271323-CONNECT-Export-V6 deny node 600
+#
+undo icmp name timestamp-request receive
+#
+ip ip-prefix OLLA-CREDISIS index 10 permit 192.144.64.168 29 greater-equal 29 less-equal 32
+ip ip-prefix AS271323-CONNECT-V4 index 10 permit 190.123.68.0 24 greater-equal 24 less-equal 24
+ip ip-prefix DEFAULT-V4 index 10 permit 0.0.0.0 0
+#
+ip route-static 0.0.0.0 0.0.0.0 10.20.1.1
+ip route-static 0.0.0.0 0.0.0.0 10.92.1.1
+#
+ip ipv6-prefix AS271323-CONNECT-V6 index 10 permit 2804:79B8:1000:: 36 greater-equal 36 less-equal 48
+ip ipv6-prefix DEFAULT-V6 index 10 permit :: 0
+#
+snmp-agent
+snmp-agent local-engineid 800007DB03389052CA5560
+snmp-agent community read cipher %^%#c\\g:t;V>Z=!%z>FAY;':O+pMmilJ3bZ:r%:1d*<x0[580jS.W!U\W<-Epg)#/f05\+h%7r]|4Ri`:L=%^%#
+snmp-agent community read cipher %^%#N|2"+Vgcw3j0(>"4zEx7yc>/Ie.G@T7vw@+*v-/+u#g\.F_s}9k(u57]kNS:i{UTS1}Er9'9$5#^g#_U%^%#
+snmp-agent community write cipher %^%#C,z1ZGl7KB;vTk<7W\Q%HUsaV#p3t9MHmu%^1aV"9:!PKU0(qYDm{4Xyixp;'p'i:Ju9BD/}dDY-j!jC%^%#
+snmp-agent sys-info contact noc@redecompleta.com.br
+snmp-agent sys-info location RedeCompleta
+snmp-agent sys-info version v1 v2c
+undo snmp-agent sys-info version v3
+undo snmp-agent protocol source-status all-interface
+snmp-agent protocol source-interface LoopBack0
+undo snmp-agent protocol source-status ipv6 all-interface
+#
+ssh server timeout 120
+stelnet server enable
+ssh user jheisson
+ssh user jheisson authentication-type password
+ssh user jheisson service-type all
+ssh user jheisson authorization-cmd aaa
+ssh user lucas-redecompleta
+ssh user lucas-redecompleta authentication-type all
+ssh user lucas-redecompleta service-type all
+ssh user zabbix
+ssh user zabbix authentication-type password
+ssh user zabbix service-type stelnet
+ssh user zabbix authorization-cmd aaa
+ssh user zabix
+ssh user zabix service-type stelnet
+ssh client first-time enable
+ssh client 10.2.117.0 assign rsa-key 10.2.117.0
+ssh client 10.2.125.0 assign ecc-key 10.2.125.0
+ssh client 10.2.126.0 assign ecc-key 10.2.126.0
+ssh client 10.2.128.0 assign rsa-key 10.2.128.0
+ssh server-source all-interface
+ssh server cipher aes256_ctr aes128_ctr
+ssh server hmac sha2_256
+ssh server key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh client cipher aes256_ctr aes128_ctr
+ssh client hmac sha2_256
+ssh client key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh server dh-exchange min-len 2048
+ssh server publickey rsa_sha2_512 rsa_sha2_256
+#
+capwap dtls version1.0 enable
+capwap dtls cbc enable
+#
+user-interface maximum-vty 15
+user-interface con 0
+ authentication-mode aaa
+user-interface vty 0 14
+ authentication-mode aaa
+ screen-length 0
+user-interface vty 16 20
+#
+wlan
+ traffic-profile name default
+ security-profile name default
+ security-profile name default-wds
+ security-profile name default-mesh
+ ssid-profile name default
+ vap-profile name default
+ wds-profile name default
+ mesh-handover-profile name default
+ mesh-profile name default
+ regulatory-domain-profile name default
+  dca-channel 5g bandwidth 20mhz
+  dca-channel 6g bandwidth 20mhz
+ air-scan-profile name default
+ rrm-profile name default
+  smart-roam snr-margin high-level-margin 15 low-level-margin 6
+  smart-roam unable-roam-client expire-time 120
+  sta-load-balance dynamic disable
+  antenna-mode omnidirection
+ radio-2g-profile name default
+ radio-5g-profile name default
+ wids-spoof-profile name default
+ wids-whitelist-profile name default
+ wids-profile name default
+ ap-system-profile name default
+  traffic-optimize broadcast-suppression other-multicast disable
+ port-link-profile name default
+ wired-port-profile name default
+ ap-group name default
+ provision-ap
+#
+dot1x-access-profile name dot1x_access_profile
+#
+mac-access-profile name mac_access_profile
+#
+ops
+#
+remote-unit
+#
+return
