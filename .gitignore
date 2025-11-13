@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environment
+.env
+.env.*
+.venv/
+venv/
+env/
+
+# Flask-specific
+instance/
+.flaskenv
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.bak
+*.orig
+*~
+.DS_Store
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Backups and generated files
+backups/
+*.backup
+*.backup_*
+*.manual
+*.bkp
+*.db.bkp
+
+# Compiled static assets (optional for production builds)
+# static/dist/
+
+# Ignore HTML and Python backup versions
+*.html.backup*
+*.py.backup*
+
+# Exclude virtualenv/extras in venv folder
+venv/
