@@ -1,0 +1,29 @@
+/* --- Navbar styling for all pages (from dashboard.html) --- */
+.navbar {
+    background: #2c3e50;
+    padding: 12px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.navbar-brand {
+    color: #fff !important;
+    font-weight: 600;
+    font-size: 18px;
+}
+.nav-link {
+    color: #ecf0f1 !important;
+    margin: 0 10px;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+.nav-link:hover,
+.nav-link.active {
+    color: #3498db !important;
+}
+
+/* Optional: adjust .container-fluid in navbar to match dashboard width */
+.navbar .container-fluid {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* --- End navbar styling --- */
