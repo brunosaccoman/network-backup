@@ -113,18 +113,15 @@ class Database:
     
     def update_device(self, device_id, **kwargs):
         """Update device fields. Only allows updates to specific safe columns."""
-        # Whitelist of allowed columns to prevent SQL injection
         allowed_columns = {'name', 'ip_address', 'device_type', 'protocol', 'port', 
                           'username', 'password', 'enable_password', 'backup_command', 
                           'provedor', 'active'}
         
-        # Filter kwargs to only include allowed columns
         safe_kwargs = {k: v for k, v in kwargs.items() if k in allowed_columns}
         
         if not safe_kwargs:
             return
         
-        # Validate device_id
         try:
             device_id = int(device_id)
         except (ValueError, TypeError):

@@ -304,6 +304,13 @@
         loadProvedoresIntoSelect();
     });
 
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     // Provedores Management
     async function loadProvedores() {
         const listDiv = document.getElementById('provedoresList');
@@ -317,15 +324,20 @@
                 return;
             }
 
-            listDiv.innerHTML = provedores.map(p => `
+            listDiv.innerHTML = provedores.map(p => {
+                // Escape HTML and JavaScript special characters
+                const safeName = String(p.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                const safeId = p.id || 'null';
+                return `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;">
                     <div>
-                        <strong>${p.name}</strong>
-                        ${p.description ? `<br><small style="color: #666;">${p.description}</small>` : ''}
+                        <strong>${escapeHtml(p.name)}</strong>
+                        ${p.description ? `<br><small style="color: #666;">${escapeHtml(p.description)}</small>` : ''}
                     </div>
-                    <button class="btn btn-danger" onclick="deleteProvedor(${p.id}, '${p.name.replace(/'/g, "\\'")}')" style="padding: 4px 12px; font-size: 12px;">🗑️ Remover</button>
+                    <button class="btn btn-danger" onclick="deleteProvedor(${safeId}, '${safeName}')" style="padding: 4px 12px; font-size: 12px;">🗑️ Remover</button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         } catch (error) {
             listDiv.innerHTML = `<p style="text-align: center; color: #e74c3c; padding: 20px;">Erro ao carregar: ${error.message}</p>`;
         }
@@ -370,7 +382,19 @@
         }
 
         try {
-            const response = await fetch(`/api/provedores/${provedorId}/delete`, { method: 'POST' });
+            // Try to delete by ID first
+            let response;
+            if (provedorId && provedorId !== 'null' && !isNaN(provedorId)) {
+                response = await fetch(`/api/provedores/${provedorId}/delete`, { method: 'POST' });
+            } else {
+                // Fallback: delete by name if ID is invalid
+                response = await fetch('/api/provedores/delete-by-name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: provedorName })
+                });
+            }
+
             const data = await response.json();
 
             if (data.success) {
