@@ -214,3 +214,12 @@ class Database:
         cursor.execute('DELETE FROM schedules WHERE id = ?', (schedule_id,))
         conn.commit()
         conn.close()
+
+    def get_provedores(self):
+        """Return a list of unique registered provedores (provider/cliente) from devices table."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT DISTINCT provedor FROM devices WHERE provedor IS NOT NULL AND provedor != "" ORDER BY provedor')
+        rows = cursor.fetchall()
+        conn.close()
+        return [row['provedor'] for row in rows if row['provedor']]

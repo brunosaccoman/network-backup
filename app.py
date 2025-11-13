@@ -49,7 +49,8 @@ def index():
             b.status,
             b.file_size,
             d.name as device_name,
-            d.ip_address
+            d.ip_address,
+            d.provedor
         FROM backups b
         JOIN devices d ON b.device_id = d.id
         ORDER BY b.backup_date DESC
@@ -64,6 +65,9 @@ def index():
     
     conn.close()
     
+    # Get list of unique provedores for filtering
+    provedores = db.get_provedores()
+    
     return render_template('dashboard.html',
         total_devices=total_devices,
         successful_backups=successful_backups,
@@ -71,7 +75,8 @@ def index():
         total_size_gb=total_size_gb,
         recent_backups=recent_backups,
         total_backups=total_backups,
-        devices=devices
+        devices=devices,
+        provedores=provedores
     )
 
 @app.route('/devices')
@@ -326,6 +331,11 @@ def api_stats():
         'active_schedules': len([s for s in schedules if s['active']]),
         'next_jobs': scheduler.get_jobs()
     })
+
+@app.route('/api/provedores')
+def api_provedores():
+    provedores = db.get_provedores()
+    return jsonify({"provedores": provedores})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
