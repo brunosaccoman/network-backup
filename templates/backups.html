@@ -1,11 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Backups{% endblock %}
 {% block content %}
+
+<script>
+    // Initialize filter for Backups table
+    const backupFilter = new TableFilter({
+        filterId: 'backup',
+        tableBodyId: 'backupsTableBody',
+        countSpanId: 'visibleBackupCount',
+        totalCount: {{ total_backups }},
+    filters: {
+        provedor: true,
+            ip: true,
+        }
+    });
+
+</script>
 <div class="card">
     <h2>Histórico de Backups</h2>
     {% if backups %}
     <table>
-        <thead><tr><th>ID</th><th>Dispositivo</th><th>IP</th><th>Data/Hora</th><th>Tamanho</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Dispositivo</th>
+                <th>IP</th>
+                <th>Data/Hora</th>
+                <th>Tamanho</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
         <tbody>
             {% for backup in backups %}
             <tr>
@@ -14,11 +39,14 @@
                 <td>{{ backup.ip_address }}</td>
                 <td>{{ backup.backup_date }}</td>
                 <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
-                <td>{% if backup.status == 'success' %}<span class="badge badge-success">✓ Sucesso</span>{% else %}<span class="badge badge-danger">✗ Falha</span>{% endif %}</td>
+                <td>{% if backup.status == 'success' %}<span class="badge badge-success">✓ Sucesso</span>{% else %}<span
+                        class="badge badge-danger">✗ Falha</span>{% endif %}</td>
                 <td>
                     {% if backup.status == 'success' %}
-                    <a href="/backups/{{ backup.id }}/download" class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;">⬇️ Download</a>
-                    <a href="/backups/{{ backup.id }}/view" class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;">👁️ Ver</a>
+                    <a href="/backups/{{ backup.id }}/download" class="btn btn-primary"
+                        style="padding:0.4rem 0.8rem;font-size:0.8rem;">⬇️ Download</a>
+                    <a href="/backups/{{ backup.id }}/view" class="btn btn-primary"
+                        style="padding:0.4rem 0.8rem;font-size:0.8rem;">👁️ Ver</a>
                     {% endif %}
                 </td>
             </tr>
