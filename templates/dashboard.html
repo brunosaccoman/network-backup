@@ -308,7 +308,6 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize filter for Devices table
         const deviceFilter = new TableFilter({
             filterId: 'device',
             tableBodyId: 'devicesTableBody',
@@ -319,19 +318,113 @@
         ip: false
     }
         });
-
-    // Initialize filter for Backups table
-    const backupFilter = new TableFilter({
-        filterId: 'backup',
-        tableBodyId: 'backupsTableBody',
-        countSpanId: 'visibleBackupCount',
-        totalCount: {{ total_backups }},
-    filters: {
-        provedor: true,
-            ip: true
-    }
-        });
     });
+
+    document.getElementById('addDeviceForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/devices/add', {
+                method: 'POST',
+                body: new URLSearchParams(data)
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Device adicionado com sucesso!');
+                this.reset();
+            } else {
+                alert('Erro: ' + result.error);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao adicionar device');
+        }
+    });
+
+    async function backupDevice(deviceId) {
+        console.log('Backup device', deviceId);
+        if (!confirm('Backup agora?')) return;
+        try {
+            const response = await fetch('/backup/' + deviceId, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) showAlert('Backup realizado!', 'success');
+            else showAlert('Erro: ' + data.error, 'danger');
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function editDevice(deviceId) {
+        try {
+            const response = await fetch(`/devices/${deviceId}/get`);
+            const device = await response.json();
+
+            document.getElementById('editId').value = device.id;
+            document.getElementById('editName').value = device.name;
+            document.getElementById('editIp').value = device.ip_address;
+            document.getElementById('editProtocol').value = device.protocol;
+            document.getElementById('editPort').value = device.port;
+            document.getElementById('editProvedor').value = device.provedor || '';
+
+            showModal('editModal');
+
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+
+    async function saveEdit() {
+        const id = document.getElementById('editId').value;
+
+        const payload = {
+            name: document.getElementById('editName').value.trim(),
+            ip_address: document.getElementById('editIp').value.trim(),
+            protocol: document.getElementById('editProtocol').value,
+            port: document.getElementById('editPort').value,
+            provedor: document.getElementById('editProvedor').value.trim()
+        };
+
+        try {
+            const response = await fetch(`/devices/${id}/update`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert("Dispositivo atualizado!", "success");
+                closeModal("editModal");
+
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert("Erro: " + data.error, "danger");
+            }
+
+        } catch (error) {
+            showAlert("Erro: " + error.message, "danger");
+        }
+    }
+
+
+    async function deleteDevice(deviceId) {
+        console.log('Delete device', deviceId);
+        if (!confirm('Deletar este dispositivo?')) return;
+        try {
+            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) showAlert('Dispositivo deletado!', 'success');
+            else showAlert('Erro: ' + data.error, 'danger');
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
 </script>
 {% endblock %}
 
@@ -376,83 +469,7 @@
             </div>
         </div>
     </div>
-    <!-- Tabela de Backups Recentes -->
-    <div class="table-container">
-        <div class="table-header">
-            <h5><i class="fas fa-history"></i> Backups Recentes</h5>
-            <div class="table-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                {% set filter_id = 'backup' %}
-                {% set show_provedor_filter = true %}
-                {% set show_ip_search = true %}
-                {% include 'components/table_filters.html' %}
-                <button class="btn-clean" onclick="location.reload()">
-                    <i class="fas fa-sync"></i> Atualizar
-                </button>
-                <button class="btn-primary-custom" onclick="location.href='/devices'">
-                    <i class="fas fa-plus"></i> Novo Backup
-                </button>
-            </div>
-        </div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Dispositivo</th>
-                    <th>Endereço IP</th>
-                    <th>Provedor/Cliente</th>
-                    <th>Data/Hora</th>
-                    <th>Tamanho</th>
-                    <th>Status</th>
-                    <th style="text-align: right;">Ações</th>
-                </tr>
-            </thead>
-            <tbody id="backupsTableBody">
-                {% for backup in recent_backups %}
-                <tr data-provedor="{{ backup.provedor if backup.provedor else 'Sem_Provedor' }}"
-                    data-ip="{{ backup.ip_address }}">
-                    <td><strong>#{{ backup.id }}</strong></td>
-                    <td>
-                        <div class="device-status">
-                            <span class="status-dot online"></span>
-                            {{ backup.device_name }}
-                        </div>
-                    </td>
-                    <td>{{ backup.ip_address }}</td>
-                    <td>{{ backup.provedor if backup.provedor else 'Sem_Provedor' }}</td>
-                    <td>{{ backup.backup_date }}</td>
-                    <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
-                    <td>
-                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
-                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
-                        </span>
-                    </td>
-                    <td style="text-align: right;">
-                        <div class="action-buttons" style="justify-content: flex-end;">
-                            <a href="/backups/{{ backup.id }}/download" class="btn-action" title="Download">
-                                <i class="fas fa-download"></i>
-                            </a>
-                            <a href="/backups/{{ backup.id }}/view" class="btn-action" title="Visualizar"
-                                target="_blank">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="table-footer">
-            <div id="backupCount">Mostrando <span id="visibleBackupCount">{{ recent_backups|length }}</span> de {{
-                total_backups }} backups</div>
-            <div class="pagination">
-                <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-                <button class="page-btn active">1</button>
-                <button class="page-btn">2</button>
-                <button class="page-btn">3</button>
-                <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </div>
-    </div>
+
     <!-- Tabela de Dispositivos -->
     <div class="table-container" style="margin-top: 20px;">
         <div class="table-header">
@@ -475,6 +492,7 @@
                     <th>Provedor/Cliente</th>
                     <th>Plataforma</th>
                     <th>Protocolo</th>
+                    <th>Porta</th>
                     <th>Status</th>
                     <th style="text-align: right;">Ações</th>
                 </tr>
@@ -492,6 +510,7 @@
                     <td>{{ device.provedor if device.provedor else 'Sem_Provedor' }}</td>
                     <td>{{ device.device_type|title }}</td>
                     <td>{{ device.protocol|upper }}</td>
+                    <td>{{ device.port }}</td>
                     <td>
                         <span class="badge-status badge-{{ 'active' if device.active else 'failed' }}">
                             {{ 'Ativo' if device.active else 'Inativo' }}
@@ -499,12 +518,15 @@
                     </td>
                     <td style="text-align: right;">
                         <div class="action-buttons" style="justify-content: flex-end;">
-                            <a href="/devices/{{ device.id }}/backup" class="btn-action" title="Fazer Backup">
+                            <button onclick="backupDevice({{ device.id }})" class="btn-action" title="Fazer Backup">
                                 <i class="fas fa-sync"></i>
-                            </a>
-                            <a href="/devices/{{ device.id }}/edit" class="btn-action" title="Editar">
+                            </button>
+                            <button onclick="editDevice({{ device.id }})" class="btn-action" title="Editar">
                                 <i class="fas fa-edit"></i>
-                            </a>
+                            </button>
+                            <button onclick="deleteDevice({{ device.id }})" class="btn-action" title="Deletar">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -516,5 +538,53 @@
                 dispositivos</div>
         </div>
     </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Editar Dispositivo</h5>
+                <span class="close" onclick="closeModal('editModal')">&times;</span>
+            </div>
+
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="editName" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Endereço IP</label>
+                <input type="text" id="editIp" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Protocolo</label>
+                <select id="editProtocol" class="form-control">
+                    <option value="ssh">SSH</option>
+                    <option value="ftp">FTP</option>
+                    <option value="sftp">SFTP</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Porta</label>
+                <input type="number" id="editPort" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="editProvedor">Provedor</label>
+                <select id="editProvedor" class="form-control">
+                    <option value="">Todos</option>
+                    {% for prov in provedores %}
+                    <option value="{{ prov }}">{{ prov }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <input type="hidden" id="editId">
+
+            <button class="btn btn-primary" onclick="saveEdit()">Salvar</button>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

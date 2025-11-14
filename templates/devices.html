@@ -25,6 +25,7 @@
             Adicionar Provedor</button>
     </div>
 </div>
+
 <div class="card">
     <h2>Lista de Dispositivos</h2>
     {% if devices %}
@@ -382,12 +383,10 @@
         }
 
         try {
-            // Try to delete by ID first
             let response;
-            if (provedorId && provedorId !== 'null' && !isNaN(provedorId)) {
+            if (provedorId !== 'null' && !isNaN(provedorId)) {
                 response = await fetch(`/api/provedores/${provedorId}/delete`, { method: 'POST' });
             } else {
-                // Fallback: delete by name if ID is invalid
                 response = await fetch('/api/provedores/delete-by-name', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
