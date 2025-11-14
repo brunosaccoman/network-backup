@@ -1,9 +1,331 @@
 {% extends "base.html" %}
 {% block title %}Backups{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Usa exatamente os mesmos estilos do dashboard */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+
+    .table-container {
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    .btn-atualizar,
+    .btn-backup {
+        all: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        border-radius: 8px;
+
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #e9e9ec;
+        }
+
+        &:active {
+            background: #dcdce0;
+            transform: scale(0.98);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .btn-backup.danger {
+        background: #ffe9e9;
+        border-color: #ffc6c6;
+        color: #c62828;
+
+        &:hover {
+            background: #ffdede;
+        }
+
+        &:active {
+            background: #ffd3d3;
+        }
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+    }
+
+    .btn-action:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: #f0f8ff;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    .badge-status {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+    }
+
+    .page-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+
+    .page-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
+<div class="main-container">
+    <!-- Tabela de Backups Recentes -->
+    <div class="table-container">
+        <div class="table-header">
+            <h5><i class="fas fa-history"></i> Backups Recentes</h5>
+            <div class="table-actions">
+                <button class="btn-atualizar" onclick="location.reload()">
+                    <i class="fas fa-sync"></i> Atualizar
+                </button>
+                <button class="btn-backup" onclick="location.href='/devices'">
+                    <i class="fas fa-plus"></i> Novo Backup
+                </button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Dispositivo</th>
+                    <th>Endereço IP</th>
+                    <th>Data/Hora</th>
+                    <th>Tamanho</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+
+            <tbody id="backupsTableBody">
+                {% for backup in recent_backups %}
+                <tr>
+                    <td><strong>#{{ backup.id }}</strong></td>
+                    <td>{{ backup.device_name }}</td>
+                    <td>{{ backup.ip_address }}</td>
+                    <td>{{ backup.backup_date }}</td>
+                    <td>{{ (backup.file_size / 1024) | round(2) }} KB</td>
+
+                    <td>
+                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
+                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
+                        </span>
+                    </td>
+
+                    <td style="text-align: right;">
+                        <div class="action-buttons">
+                            <a href="/backups/{{ backup.id }}/download" class="btn-action">
+                                <i class="fa fa-download"></i>
+                            </a>
+                            <a href="/backups/{{ backup.id }}/view" class="btn-action" target="_blank">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="table-footer">
+            <div>Mostrando {{ recent_backups|length }} de {{ total_backups }} backups</div>
+        </div>
+    </div>
+
+    <!-- Histórico Completo -->
+    <div class="table-container" style="margin-top: 25px;">
+        <div class="table-header">
+            <h5><i class="fas fa-archive"></i> Histórico Completo</h5>
+        </div>
+
+        {% if backups %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Dispositivo</th>
+                    <th>IP</th>
+                    <th>Data/Hora</th>
+                    <th>Tamanho</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for backup in backups %}
+                <tr>
+                    <td>{{ backup.id }}</td>
+                    <td>{{ backup.device_name }}</td>
+                    <td>{{ backup.ip_address }}</td>
+                    <td>{{ backup.backup_date }}</td>
+                    <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
+
+                    <td>
+                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
+                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {% if backup.status == 'success' %}
+                        <div class="action-buttons">
+                            <a href="/backups/{{ backup.id }}/download" class="btn-action">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <a href="/backups/{{ backup.id }}/view" class="btn-action" target="_blank">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+        {% else %}
+        <div style="padding: 20px;">Nenhum backup encontrado.</div>
+        {% endif %}
+    </div>
+
+</div>
+
 <script>
-    // Initialize filter for Backups table
     const backupFilter = new TableFilter({
         filterId: 'backup',
         tableBodyId: 'backupsTableBody',
@@ -14,47 +336,5 @@
             ip: true,
         }
     });
-
 </script>
-<div class="card">
-    <h2>Histórico de Backups</h2>
-    {% if backups %}
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Dispositivo</th>
-                <th>IP</th>
-                <th>Data/Hora</th>
-                <th>Tamanho</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for backup in backups %}
-            <tr>
-                <td>{{ backup.id }}</td>
-                <td>{{ backup.device_name }}</td>
-                <td>{{ backup.ip_address }}</td>
-                <td>{{ backup.backup_date }}</td>
-                <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
-                <td>{% if backup.status == 'success' %}<span class="badge badge-success">✓ Sucesso</span>{% else %}<span
-                        class="badge badge-danger">✗ Falha</span>{% endif %}</td>
-                <td>
-                    {% if backup.status == 'success' %}
-                    <a href="/backups/{{ backup.id }}/download" class="btn btn-primary"
-                        style="padding:0.4rem 0.8rem;font-size:0.8rem;">⬇️ Download</a>
-                    <a href="/backups/{{ backup.id }}/view" class="btn btn-primary"
-                        style="padding:0.4rem 0.8rem;font-size:0.8rem;">👁️ Ver</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>Nenhum backup encontrado.</p>
-    {% endif %}
-</div>
 {% endblock %}
