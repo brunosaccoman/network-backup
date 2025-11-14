@@ -431,7 +431,7 @@ def api_provedores_delete(provedor_id):
     """Delete a provedor by ID."""
     try:
         db.delete_provedor(provedor_id)
-        return jsonify({'success': True}), 204
+        return jsonify({'success': True}), 200
     except ValueError as e:
         error_msg = str(e)
         if 'não encontrado' in error_msg.lower() or 'not found' in error_msg.lower():
@@ -453,7 +453,7 @@ def api_provedores_delete_by_name():
             return jsonify({'success': False, 'error': 'Nome do provedor é obrigatório'}), 400
         
         db.delete_provedor_by_name(name)
-        return jsonify({'success': True}), 204
+        return jsonify({'success': True}), 200
     except ValueError as e:
         error_msg = str(e)
         if 'não encontrado' in error_msg.lower() or 'not found' in error_msg.lower():
