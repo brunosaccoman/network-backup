@@ -296,124 +296,186 @@
 
 {% block extra_js %}
 <script>
+    console.log('Script carregado!');
+
     document.addEventListener('DOMContentLoaded', function () {
-        const deviceFilter = new TableFilter({
-            filterId: 'device',
-            tableBodyId: 'devicesTableBody',
-            countSpanId: 'visibleCount',
-            totalCount: {{ devices| length }},
-        filters: {
-        provedor: true,
-        ip: false
-    }
+        console.log('DOM completamente carregado!');
+
+        const searchInput = document.getElementById('deviceSearch');
+        if (!searchInput) {
+            console.error('Elemento de busca não encontrado!');
+            return;
+        }
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            console.log("Buscando por:", query);
+
+            let visibleCount = 0;
+            const tableBody = document.getElementById('devicesTableBody');
+
+            if (!tableBody) {
+                console.error('Tabela de dispositivos não encontrada!');
+                return;
+            }
+
+            Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+                const deviceName = row.querySelector('td:nth-child(1) strong') ? row.querySelector('td:nth-child(1) strong').innerText.toLowerCase() : '';
+                const deviceIp = row.querySelector('td:nth-child(2)') ? row.querySelector('td:nth-child(2)').innerText.toLowerCase() : '';
+                const deviceProvedor = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').innerText.toLowerCase() : '';
+                const devicePlatform = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').innerText.toLowerCase() : '';
+                const deviceProtocol = row.querySelector('td:nth-child(5)') ? row.querySelector('td:nth-child(5)').innerText.toLowerCase() : '';
+                const devicePort = row.querySelector('td:nth-child(6)') ? row.querySelector('td:nth-child(6)').innerText.toLowerCase() : '';
+
+                console.log({
+                    deviceName,
+                    deviceIp,
+                    deviceProvedor,
+                    devicePlatform,
+                    deviceProtocol,
+                    devicePort
+                });
+
+                const text = deviceName + ' ' + deviceIp + ' ' + deviceProvedor + ' ' + devicePlatform + ' ' + deviceProtocol + ' ' + devicePort;
+
+                if (text.includes(query)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            console.log("Dispositivos visíveis:", visibleCount);
+            document.getElementById('visibleCount').innerText = visibleCount;
         });
-    });
 
-    document.getElementById('addDeviceForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
+        document.getElementById('addDeviceForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        const formData = new FormData(this);
-        const data = Object.fromEntries(formData.entries());
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
 
-        try {
-            const response = await fetch('/devices/add', {
-                method: 'POST',
-                body: new URLSearchParams(data)
-            });
-            const result = await response.json();
+            try {
+                const response = await fetch('/devices/add', {
+                    method: 'POST',
+                    body: new URLSearchParams(data)
+                });
+                const result = await response.json();
 
-            if (result.success) {
-                alert('Device adicionado com sucesso!');
-                this.reset();
-            } else {
-                alert('Erro: ' + result.error);
+                if (result.success) {
+                    alert('Device adicionado com sucesso!');
+                    this.reset();
+                } else {
+                    alert('Erro: ' + result.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao adicionar device');
             }
-        } catch (err) {
-            console.error(err);
-            alert('Erro ao adicionar device');
-        }
-    });
+        });
 
-    async function backupDevice(deviceId) {
-        console.log('Backup device', deviceId);
-        if (!confirm('Backup agora?')) return;
-        try {
-            const response = await fetch('/backup/' + deviceId, { method: 'POST' });
-            const data = await response.json();
-            if (data.success) showAlert('Backup realizado!', 'success');
-            else showAlert('Erro: ' + data.error, 'danger');
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    }
-
-    async function editDevice(deviceId) {
-        try {
-            const response = await fetch(`/devices/${deviceId}/get`);
-            const device = await response.json();
-
-            document.getElementById('editId').value = device.id;
-            document.getElementById('editName').value = device.name;
-            document.getElementById('editIp').value = device.ip_address;
-            document.getElementById('editProtocol').value = device.protocol;
-            document.getElementById('editPort').value = device.port;
-            document.getElementById('editProvedor').value = device.provedor || '';
-
-            showModal('editModal');
-
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    }
-
-
-    async function saveEdit() {
-        const id = document.getElementById('editId').value;
-
-        const payload = {
-            name: document.getElementById('editName').value.trim(),
-            ip_address: document.getElementById('editIp').value.trim(),
-            protocol: document.getElementById('editProtocol').value,
-            port: document.getElementById('editPort').value,
-            provedor: document.getElementById('editProvedor').value.trim()
-        };
-
-        try {
-            const response = await fetch(`/devices/${id}/update`, {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert("Dispositivo atualizado!", "success");
-                closeModal("editModal");
-
-                setTimeout(() => location.reload(), 800);
-            } else {
-                showAlert("Erro: " + data.error, "danger");
+        async function backupDevice(deviceId) {
+            console.log('Backup device', deviceId);
+            if (!confirm('Backup agora?')) return;
+            try {
+                const response = await fetch('/backup/' + deviceId, { method: 'POST' });
+                const data = await response.json();
+                if (data.success) showAlert('Backup realizado!', 'success');
+                else showAlert('Erro: ' + data.error, 'danger');
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
             }
-
-        } catch (error) {
-            showAlert("Erro: " + error.message, "danger");
         }
-    }
 
+        async function editDevice(deviceId) {
+            try {
+                const response = await fetch(`/devices/${deviceId}/get`);
+                const device = await response.json();
 
-    async function deleteDevice(deviceId) {
-        console.log('Delete device', deviceId);
-        if (!confirm('Deletar este dispositivo?')) return;
-        try {
-            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
-            const data = await response.json();
-            if (data.success) showAlert('Dispositivo deletado!', 'success');
-            else showAlert('Erro: ' + data.error, 'danger');
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
+                document.getElementById('editId').value = device.id;
+                document.getElementById('editName').value = device.name;
+                document.getElementById('editIp').value = device.ip_address;
+                document.getElementById('editProtocol').value = device.protocol;
+                document.getElementById('editPort').value = device.port;
+                document.getElementById('editProvedor').value = device.provedor || '';
+
+                showModal('editModal');
+
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
+            }
         }
-    }
+
+        async function saveEdit() {
+            const id = document.getElementById('editId').value;
+
+            const payload = {
+                name: document.getElementById('editName').value.trim(),
+                ip_address: document.getElementById('editIp').value.trim(),
+                protocol: document.getElementById('editProtocol').value,
+                port: document.getElementById('editPort').value,
+                provedor: document.getElementById('editProvedor').value.trim()
+            };
+
+            try {
+                const response = await fetch(`/devices/${id}/update`, {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert("Dispositivo atualizado!", "success");
+                    closeModal("editModal");
+
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert("Erro: " + data.error, "danger");
+                }
+
+            } catch (error) {
+                showAlert("Erro: " + error.message, "danger");
+            }
+        }
+
+        async function deleteDevice(deviceId) {
+            console.log('Delete device', deviceId);
+            if (!confirm('Deletar este dispositivo?')) return;
+            try {
+                const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) showAlert('Dispositivo deletado!', 'success');
+                else showAlert('Erro: ' + data.error, 'danger');
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        }
+
+        document.querySelectorAll('.editButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const deviceId = this.getAttribute('data-device-id');
+                editDevice(deviceId);
+            });
+        });
+
+        document.querySelectorAll('.backupButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const deviceId = this.getAttribute('data-device-id');
+                backupDevice(deviceId);
+            });
+        });
+
+        document.querySelectorAll('.deleteButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const deviceId = this.getAttribute('data-device-id');
+                deleteDevice(deviceId);
+            });
+        });
+
+    });
 </script>
 {% endblock %}
 
@@ -458,13 +520,11 @@
         </div>
     </div>
 
-    <!-- Seção Últimos Backups e Últimos Erros -->
     <div class="stats-row" style="margin-top: 25px;">
 
-        <!-- Últimos Backups -->
         <div class="table-container" style="flex: 1; margin-right: 15px;">
             <div class="table-header">
-                <h5><i class="fas fa-clock"></i> Últimos 5 Backups</h5>
+                <h5><i class="fas fa-clock"></i> Últimos 10 Backups</h5>
             </div>
 
             <table class="data-table">
@@ -522,7 +582,6 @@
 
     </div>
 
-    <!-- Tabela de Dispositivos -->
     <div class="table-container" style="margin-top: 20px;">
         <div class="table-header">
             <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
@@ -531,11 +590,14 @@
                 {% set show_provedor_filter = true %}
                 {% set show_ip_search = false %}
                 {% include 'components/table_filters.html' %}
+                <input id="deviceSearch" type="text" placeholder="Buscar dispositivo..." class="search-input"
+                    style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; width: 200px;">
                 <button class="btn-gerenciar" onclick="location.href='/devices'">
                     <i class="fas fa-cog"></i> Gerenciar
                 </button>
             </div>
         </div>
+
         <table class="data-table">
             <thead>
                 <tr>
@@ -585,6 +647,7 @@
                 {% endfor %}
             </tbody>
         </table>
+
         <div class="table-footer">
             <div id="deviceCount">Mostrando <span id="visibleCount">{{ devices|length }}</span> de {{ devices|length }}
                 dispositivos</div>
@@ -637,6 +700,5 @@
             <button class="btn btn-primary" onclick="saveEdit()">Salvar</button>
         </div>
     </div>
-
 </div>
 {% endblock %}
