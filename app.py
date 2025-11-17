@@ -42,7 +42,7 @@ def index():
     total_size = total_size_result['total'] if total_size_result['total'] else 0
     total_size_gb = round(total_size / (1024**3), 2)
     
-    last_backups = db.get_backups(limit=5)
+    last_backups = db.get_backups(limit=10)
     last_errors = db.get_backups_with_errors(limit=5)
 
     # Backups recentes (últimos 20)
