@@ -213,11 +213,6 @@
         color: #721c24;
     }
 
-    .pagination {
-        display: flex;
-        gap: 5px;
-    }
-
     .page-btn {
         width: 32px;
         height: 32px;
@@ -248,7 +243,6 @@
         gap: 6px;
         justify-content: center;
         padding: 18px 0;
-        border-top: 1px solid #e0e6ed;
         background: #fafbfc;
     }
 
@@ -293,8 +287,23 @@
 
     .table-footer {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        font-size: 13px;
+        color: #555;
+    }
+
+    #footerInfo {
+        flex: 1;
+    }
+
+    #pagination {
+        display: flex;
+        justify-content: center;
+        flex: 1;
+        gap: 5px;
     }
 </style>
 {% endblock %}
@@ -390,12 +399,17 @@
             </tbody>
         </table>
 
-        <div id="pagination" class="pagination"></div>
+        <div class="table-footer">
+            <div id="footerInfo">Mostrando 0 de 0 backups</div>
+            <div id="pagination" class="pagination">
+            </div>
+        </div>
 
+        <!-- <div id="pagination" class="pagination"></div>
 
         <div class="table-footer">
             <div id="footerInfo">Mostrando 0 de 0 backups</div>
-        </div>
+        </div> -->
 
     </div>
 </div>
