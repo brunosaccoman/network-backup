@@ -10,6 +10,50 @@
         padding: 20px;
     }
 
+    .table-filters-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .table-filters {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+    }
+
+    .filter-group label {
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 0.4rem 0.6rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 0.9rem;
+        min-width: 150px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 3px rgba(74, 144, 226, 0.5);
+        outline: none;
+    }
 
     .table-container {
         background: white;
@@ -36,6 +80,7 @@
     .table-actions {
         display: flex;
         gap: 10px;
+        margin-top: 9px;
     }
 
     .data-table {
@@ -203,17 +248,49 @@
 {% block content %}
 
 <div class="main-container">
-    <!-- Tabela de Backups Recentes -->
     <div class="table-container">
+
+
         <div class="table-header">
             <h5><i class="fas fa-history"></i> Backups Recentes</h5>
-            <div class="table-actions">
-                <button class="btn-atualizar" onclick="location.reload()">
-                    <i class="fas fa-sync"></i> Atualizar
-                </button>
-                <button class="btn-backup" onclick="location.href='/devices'">
-                    <i class="fas fa-plus"></i> Novo Backup
-                </button>
+
+            <div class="table-filters-wrapper"
+                style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+                <div class="table-filters" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                    <div class="filter-group">
+                        <label for="searchDevice"><i class="fas fa-search"></i> Pesquisar:</label>
+                        <input type="text" id="searchDevice" placeholder="Dispositivo..." class="filter-input">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterProvedor"><i class="fas fa-server"></i> Provedor:</label>
+                        <select id="filterProvedor" class="filter-select">
+                            <option value="">Todos</option>
+                            {% for provedor in provedores %}
+                            <option value="{{ provedor }}">{{ provedor }}</option>
+                            {% endfor %}
+                            <option value="Sem_Provedor">Sem Provedor</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterStatus"><i class="fas fa-info-circle"></i> Status:</label>
+                        <select id="filterStatus" class="filter-select">
+                            <option value="">Todos</option>
+                            <option value="success">Sucesso</option>
+                            <option value="failed">Falhou</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-actions">
+                    <button class="btn-atualizar" onclick="location.reload()">
+                        <i class="fas fa-sync"></i> Atualizar
+                    </button>
+                    <button class="btn-backup" onclick="location.href='/devices'">
+                        <i class="fas fa-plus"></i> Novo Backup
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -223,28 +300,28 @@
                     <th>ID</th>
                     <th>Dispositivo</th>
                     <th>Endereço IP</th>
+                    <th>Provedor</th>
                     <th>Data/Hora</th>
                     <th>Tamanho</th>
                     <th>Status</th>
                     <th style="text-align: right;">Ações</th>
                 </tr>
             </thead>
-
             <tbody id="backupsTableBody">
                 {% for backup in recent_backups %}
-                <tr>
+                <tr data-provedor="{{ backup.provedor if backup.provedor else 'Sem_Provedor' }}"
+                    data-status="{{ backup.status }}">
                     <td><strong>#{{ backup.id }}</strong></td>
                     <td>{{ backup.device_name }}</td>
                     <td>{{ backup.ip_address }}</td>
+                    <td>{{ backup.provedor if backup.provedor else 'Sem Provedor' }}</td>
                     <td>{{ backup.backup_date }}</td>
                     <td>{{ (backup.file_size / 1024) | round(2) }} KB</td>
-
                     <td>
                         <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
                             {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
                         </span>
                     </td>
-
                     <td style="text-align: right;">
                         <div class="action-buttons">
                             <a href="/backups/{{ backup.id }}/download" class="btn-action">
@@ -260,81 +337,103 @@
             </tbody>
         </table>
 
+        <div id="pagination" class="pagination"></div>
+
+
         <div class="table-footer">
-            <div>Mostrando {{ recent_backups|length }} de {{ total_backups }} backups</div>
-        </div>
-    </div>
-
-    <!-- Histórico Completo -->
-    <div class="table-container" style="margin-top: 25px;">
-        <div class="table-header">
-            <h5><i class="fas fa-archive"></i> Histórico Completo</h5>
+            <div id="footerInfo">Mostrando 0 de 0 backups</div>
         </div>
 
-        {% if backups %}
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Dispositivo</th>
-                    <th>IP</th>
-                    <th>Data/Hora</th>
-                    <th>Tamanho</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% for backup in backups %}
-                <tr>
-                    <td>{{ backup.id }}</td>
-                    <td>{{ backup.device_name }}</td>
-                    <td>{{ backup.ip_address }}</td>
-                    <td>{{ backup.backup_date }}</td>
-                    <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
-
-                    <td>
-                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
-                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
-                        </span>
-                    </td>
-
-                    <td>
-                        {% if backup.status == 'success' %}
-                        <div class="action-buttons">
-                            <a href="/backups/{{ backup.id }}/download" class="btn-action">
-                                <i class="fas fa-download"></i>
-                            </a>
-                            <a href="/backups/{{ backup.id }}/view" class="btn-action" target="_blank">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-
-        </table>
-
-        {% else %}
-        <div style="padding: 20px;">Nenhum backup encontrado.</div>
-        {% endif %}
     </div>
-
 </div>
 
 <script>
-    const backupFilter = new TableFilter({
-        filterId: 'backup',
-        tableBodyId: 'backupsTableBody',
-        countSpanId: 'visibleBackupCount',
-        totalCount: {{ total_backups }},
-    filters: {
-        provedor: true,
-            ip: true,
+    const rowsPerPage = 15;
+    const tableBody = document.getElementById('backupsTableBody');
+    const pagination = document.getElementById('pagination');
+    const footer = document.getElementById('footerInfo');
+
+    let rows = Array.from(tableBody.querySelectorAll('tr'));
+    let currentPage = 1;
+
+    function applyFilters() {
+        const provedorFilter = document.getElementById("filterProvedor").value.toLowerCase();
+        const statusFilter = document.getElementById("filterStatus").value.toLowerCase();
+        const searchFilter = document.getElementById("searchDevice").value.toLowerCase();
+
+        rows.forEach(row = F => {
+            const provedor = row.getAttribute("data-provedor")?.toLowerCase() || "sem_provedor";
+            const status = row.getAttribute("data-status")?.toLowerCase() || "";
+            const deviceName = row.children[1].textContent.toLowerCase();
+
+            const match =
+                (!provedorFilter || provedor === provedorFilter) &&
+                (!statusFilter || status === statusFilter) &&
+                (!searchFilter || deviceName.includes(searchFilter));
+
+            row.dataset.visible = match ? "1" : "0";
+        });
+
+        currentPage = 1;
+        showPage(currentPage);
+    }
+
+    function showPage(page) {
+        const visibleRows = rows.filter(row => row.dataset.visible === "1");
+        const totalPages = Math.ceil(visibleRows.length / rowsPerPage) || 1;
+
+        currentPage = Math.min(page, totalPages);
+
+        rows.forEach(row => row.style.display = 'none');
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        visibleRows.slice(start, end).forEach(row => row.style.display = '');
+
+        renderPagination(totalPages);
+        updateFooter(visibleRows.length, start, end);
+    }
+
+    function updateFooter(total, start, end) {
+        if (total === 0) {
+            footer.textContent = 'Nenhum backup encontrado';
+        } else {
+            footer.textContent = `Mostrando ${start + 1} a ${Math.min(end, total)} de ${total} backups`;
         }
-    });
+    }
+
+    function renderPagination(totalPages) {
+        pagination.innerHTML = '';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.classList.add('page-btn');
+        prevBtn.innerHTML = '&laquo;';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => showPage(currentPage - 1));
+        pagination.appendChild(prevBtn);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            if (i === currentPage) btn.classList.add('active');
+            btn.innerText = i;
+            btn.addEventListener('click', () => showPage(i));
+            pagination.appendChild(btn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.classList.add('page-btn');
+        nextBtn.innerHTML = '&raquo;';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => showPage(currentPage + 1));
+        pagination.appendChild(nextBtn);
+    }
+
+    document.getElementById("filterProvedor").addEventListener("change", applyFilters);
+    document.getElementById("filterStatus").addEventListener("change", applyFilters);
+    document.getElementById("searchDevice").addEventListener("input", applyFilters);
+
+    applyFilters();
 </script>
+
 {% endblock %}
