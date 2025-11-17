@@ -49,3 +49,62 @@ backups/
 
 # Exclude virtualenv/extras in venv folder
 venv/
+
+# Arquivos Python compilados
+*.pyc
+
+# Arquivos de texto
+*.txt
+
+# Arquivos de banco de dados
+*.db
+
+*.cpython
+backups.db
+__pycache__/backup_manager.cpython-313.pyc
+__pycache__/database.cpython-313.pyc
+__pycache__/scheduler.cpython-313.pyc
+backups/PNM_AYP_TULDIA_PE_10.90.1.6_20251110_221938.txt
+backups/RTR-BNG-AYP-CEM-01_10.80.7.42_20251110_221942.txt
+backups/RTR-GERENCIA-NOC_192.168.99.237_20251111_153025.txt
+backups/RTR-PE-CBA_OLLA-01-NE80M4_10.2.113.2_20251110_221951.txt
+backups/SW3-PE-BRN-FAZ-01_10.2.109.0_20251110_221958.txt
+backups/SW3-PE-CZN-SPEEDNET-01_10.2.138.0_20251110_222004.txt
+backups/SW3-PE-JNA-INVINET-01_10.2.110.0_20251110_222014.txt
+backups/SW3-PE-JUW-STARTNET-01_10.2.111.0_20251110_222020.txt
+backups/ubiquit_10.2.204.46_20251110_222030.txt
+backups/Sem_Provedor/HUAWEI-RTR-PE-RC-CEN-01/10.2.127.0_20251111_160418.txt
+backups/Sem_Provedor/HUAWEI-RTR-PE-RC-CEN-01/10.2.127.0_20251111_160451.txt
+backups/Sem_Provedor/HUAWEI-RTR-PE-RC-CEN-01/10.2.127.0_20251111_221903.txt
+backups/Sem_Provedor/HUAWEI-SW3-PE-RC-CEN-01/10.2.124.0_20251111_154240.txt
+backups/Sem_Provedor/HUAWEI-SW3-PE-RC-CEN-01/10.2.124.0_20251111_160426.txt
+backups/Sem_Provedor/HUAWEI-SW3-PE-RC-CEN-01/10.2.124.0_20251111_160459.txt
+backups/Sem_Provedor/HUAWEI-SW3-PE-RC-DEIR-01/10.2.117.0_20251111_154247.txt
+backups/Sem_Provedor/HUAWEI-SW3-PE-RC-DEIR-01/10.2.117.0_20251111_160434.txt
+backups/Sem_Provedor/HUAWEI-SW3-PE-RC-DEIR-01/10.2.117.0_20251111_160505.txt
+backups/Sem_Provedor/PERALTA/10.2.120.0_20251111_154253.txt
+backups/Sem_Provedor/PERALTA/10.2.120.0_20251111_160442.txt
+backups/Sem_Provedor/PERALTA/10.2.120.0_20251111_160513.txt
+backups/Sem_Provedor/PNM_AYP_TULDIA_PE/10.90.1.6_20251111_154303.txt
+backups/Sem_Provedor/PNM_AYP_TULDIA_PE/10.90.1.6_20251111_160520.txt
+backups/Sem_Provedor/RTR-BNG-AYP-CEM-01/10.80.7.42_20251111_154307.txt
+backups/Sem_Provedor/RTR-BNG-AYP-CEM-01/10.80.7.42_20251111_160523.txt
+backups/Sem_Provedor/RTR-BNG-PE-JIP-CEN-01-OLLA/10.2.132.0_20251111_154215.txt
+backups/Sem_Provedor/RTR-BNG-PE-JIP-CEN-01-OLLA/10.2.132.0_20251111_154311.txt
+backups/Sem_Provedor/RTR-BNG-PE-JIP-CEN-01-OLLA/10.2.132.0_20251111_160529.txt
+backups/Sem_Provedor/RTR-GERENCIA-NOC/192.168.99.237_20251111_154312.txt
+backups/Sem_Provedor/RTR-GERENCIA-NOC/192.168.99.237_20251111_160530.txt
+backups/Sem_Provedor/RTR-PE-BNG-PBW-CEN-01/10.2.19.0_20251111_154316.txt
+backups/Sem_Provedor/RTR-PE-BNG-PBW-CEN-01/10.2.19.0_20251111_160534.txt
+backups/Sem_Provedor/RTR-PE-CBA_OLLA-01-NE80M4/10.2.113.2_20251111_154320.txt
+backups/Sem_Provedor/RTR-PE-CBA_OLLA-01-NE80M4/10.2.113.2_20251111_160537.txt
+backups/Sem_Provedor/SW3-PE-BRN-FAZ-01/10.2.109.0_20251111_154327.txt
+backups/Sem_Provedor/SW3-PE-BRN-FAZ-01/10.2.109.0_20251111_160545.txt
+backups/Sem_Provedor/SW3-PE-CZN-SPEEDNET-01/10.2.138.0_20251111_154333.txt
+backups/Sem_Provedor/SW3-PE-CZN-SPEEDNET-01/10.2.138.0_20251111_160552.txt
+backups/Sem_Provedor/SW3-PE-JNA-INVINET-01/10.2.110.0_20251111_154344.txt
+backups/Sem_Provedor/SW3-PE-JNA-INVINET-01/10.2.110.0_20251111_160604.txt
+backups/Sem_Provedor/SW3-PE-JUW-STARTNET-01/10.2.111.0_20251111_154351.txt
+backups/Sem_Provedor/SW3-PE-JUW-STARTNET-01/10.2.111.0_20251111_160610.txt
+backups/Sem_Provedor/ubiquit/10.2.204.46_20251111_154401.txt
+backups/Sem_Provedor/ubiquit/10.2.204.46_20251111_160620.txt
