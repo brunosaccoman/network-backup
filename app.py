@@ -42,6 +42,9 @@ def index():
     total_size = total_size_result['total'] if total_size_result['total'] else 0
     total_size_gb = round(total_size / (1024**3), 2)
     
+    last_backups = db.get_backups(limit=5)
+    last_errors = db.get_backups_with_errors(limit=5)
+
     # Backups recentes (últimos 20)
     cursor.execute('''
         SELECT 
@@ -77,7 +80,9 @@ def index():
         recent_backups=recent_backups,
         total_backups=total_backups,
         devices=devices,
-        provedores=provedores
+        provedores=provedores,
+        last_backups=last_backups,
+        last_errors=last_errors
     )
 
 @app.route('/devices')
@@ -250,8 +255,15 @@ def backup_all():
 @app.route('/backups')
 def backups():
     device_id = request.args.get('device_id', type=int)
-    all_backups = db.get_backups(device_id=device_id, limit=100)
-    return render_template('backups.html', backups=all_backups)
+
+    all_backups = db.get_backups(device_id=device_id)
+    total_backups = db.count_backups(device_id=device_id)
+
+    return render_template(
+        'backups.html',
+        recent_backups=all_backups,
+        total_backups=total_backups
+    )
 
 @app.route('/backups/<int:backup_id>/download')
 def download_backup(backup_id):
