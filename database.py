@@ -182,6 +182,69 @@ class Database:
         conn.close()
         return backups
     
+    def get_all_backups(self, device_id=None):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        if device_id:
+            cursor.execute('''
+                SELECT b.*, d.name as device_name, d.ip_address
+                FROM backups b
+                JOIN devices d ON b.device_id = d.id
+                WHERE b.device_id = ?
+                ORDER BY b.backup_date DESC
+            ''', (device_id,))
+        else:
+            cursor.execute('''
+                SELECT b.*, d.name as device_name, d.ip_address
+                FROM backups b
+                JOIN devices d ON b.device_id = d.id
+                ORDER BY b.backup_date DESC
+            ''')
+        
+        backups = cursor.fetchall()
+        conn.close()
+        return backups
+
+    def get_backups_with_errors(self, limit=5):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT b.*, d.name AS device_name, d.ip_address
+            FROM backups b
+            JOIN devices d ON d.id = b.device_id
+            WHERE b.status = 'failed'
+            ORDER BY b.backup_date DESC
+            LIMIT ?
+        ''', (limit,))
+
+        results = cursor.fetchall()
+        conn.close()
+
+        return results
+
+    def count_backups(self, device_id=None):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        if device_id:
+            cursor.execute("SELECT COUNT(*) FROM backups WHERE device_id = ?", (device_id,))
+        else:
+            cursor.execute("SELECT COUNT(*) FROM backups")
+
+        total = cursor.fetchone()[0]
+        conn.close()
+        return total
+
+    def count_backups_by_status(self, status):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM backups WHERE status = ?", (status,))
+        total = cursor.fetchone()[0]
+        conn.close()
+        return total
+
     def add_schedule(self, device_id, frequency, time, day_of_week=None, day_of_month=None):
         conn = self.get_connection()
         cursor = conn.cursor()
