@@ -258,11 +258,13 @@ def backups():
 
     all_backups = db.get_backups(device_id=device_id)
     total_backups = db.count_backups(device_id=device_id)
+    provedores = db.get_provedores()
 
     return render_template(
         'backups.html',
         recent_backups=all_backups,
-        total_backups=total_backups
+        total_backups=total_backups,
+        provedores=provedores
     )
 
 @app.route('/backups/<int:backup_id>/download')
