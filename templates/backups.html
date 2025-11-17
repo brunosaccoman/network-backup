@@ -242,6 +242,60 @@
         border-color: #3498db;
         color: white;
     }
+
+    .pagination {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        padding: 18px 0;
+        border-top: 1px solid #e0e6ed;
+        background: #fafbfc;
+    }
+
+    .page-btn {
+        all: unset;
+        width: 34px;
+        height: 34px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 6px;
+        border: 1px solid #dcdfe6;
+        background: white;
+
+        font-size: 13px;
+        cursor: pointer;
+        color: #444;
+
+        transition: all 0.18s ease;
+    }
+
+    .page-btn:hover:not(.active):not(:disabled) {
+        background: #f0f6ff;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 0 6px rgba(52, 152, 219, 0.35);
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 </style>
 {% endblock %}
 
@@ -347,7 +401,7 @@
 </div>
 
 <script>
-    const rowsPerPage = 15;
+    const rowsPerPage = 10;
     const tableBody = document.getElementById('backupsTableBody');
     const pagination = document.getElementById('pagination');
     const footer = document.getElementById('footerInfo');
