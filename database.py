@@ -163,7 +163,7 @@ class Database:
         cursor = conn.cursor()
         if device_id:
             cursor.execute('''
-                SELECT b.*, d.name as device_name, d.ip_address 
+                SELECT b.*, d.name as device_name, d.ip_address, d.provedor
                 FROM backups b
                 JOIN devices d ON b.device_id = d.id
                 WHERE b.device_id = ?
@@ -172,35 +172,38 @@ class Database:
             ''', (device_id, limit))
         else:
             cursor.execute('''
-                SELECT b.*, d.name as device_name, d.ip_address 
+                SELECT b.*, d.name as device_name, d.ip_address, d.provedor
                 FROM backups b
                 JOIN devices d ON b.device_id = d.id
                 ORDER BY b.backup_date DESC
                 LIMIT ?
             ''', (limit,))
+
         backups = cursor.fetchall()
         conn.close()
         return backups
     
-    def get_all_backups(self, device_id=None):
+    def get_all_backups(self, device_id=None, limit=None):
         conn = self.get_connection()
         cursor = conn.cursor()
 
         if device_id:
             cursor.execute('''
-                SELECT b.*, d.name as device_name, d.ip_address
+                SELECT b.*, d.name as device_name, d.ip_address, d.provedor
                 FROM backups b
                 JOIN devices d ON b.device_id = d.id
                 WHERE b.device_id = ?
                 ORDER BY b.backup_date DESC
-            ''', (device_id,))
+                LIMIT ?
+            ''', (device_id, limit))
         else:
             cursor.execute('''
-                SELECT b.*, d.name as device_name, d.ip_address
+                SELECT b.*, d.name as device_name, d.ip_address, d.provedor
                 FROM backups b
                 JOIN devices d ON b.device_id = d.id
                 ORDER BY b.backup_date DESC
-            ''')
+                LIMIT ?
+            ''', (limit,))
         
         backups = cursor.fetchall()
         conn.close()
@@ -211,7 +214,7 @@ class Database:
         cursor = conn.cursor()
 
         cursor.execute('''
-            SELECT b.*, d.name AS device_name, d.ip_address
+            SELECT b.*, d.name AS device_name, d.ip_address, d.provedor
             FROM backups b
             JOIN devices d ON d.id = b.device_id
             WHERE b.status = 'failed'
@@ -221,7 +224,6 @@ class Database:
 
         results = cursor.fetchall()
         conn.close()
-
         return results
 
     def count_backups(self, device_id=None):

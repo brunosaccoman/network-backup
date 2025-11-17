@@ -331,7 +331,7 @@
                             {% for provedor in provedores %}
                             <option value="{{ provedor }}">{{ provedor }}</option>
                             {% endfor %}
-                            <option value="Sem_Provedor">Sem Provedor</option>
+                            <option value="sem_provedor">Sem Provedor</option>
                         </select>
                     </div>
 
@@ -371,7 +371,7 @@
             </thead>
             <tbody id="backupsTableBody">
                 {% for backup in recent_backups %}
-                <tr data-provedor="{{ backup.provedor if backup.provedor else 'Sem_Provedor' }}"
+                <tr data-provedor="{{ backup.provedor if backup.provedor else 'sem_provedor' }}"
                     data-status="{{ backup.status }}">
                     <td><strong>#{{ backup.id }}</strong></td>
                     <td>{{ backup.device_name }}</td>
@@ -404,13 +404,6 @@
             <div id="pagination" class="pagination">
             </div>
         </div>
-
-        <!-- <div id="pagination" class="pagination"></div>
-
-        <div class="table-footer">
-            <div id="footerInfo">Mostrando 0 de 0 backups</div>
-        </div> -->
-
     </div>
 </div>
 
