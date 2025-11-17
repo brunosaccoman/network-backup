@@ -82,14 +82,12 @@
             <div class="form-group"><label>Nome *</label><input type="text" name="name" required></div>
             <div class="form-group"><label>IP *</label><input type="text" name="ip_address" required></div>
 
-            <!-- Campo Provedor/Cliente -->
             <div class="form-group">
                 <label for="provedor">
                     <i class="fas fa-building"></i> Provedor/Cliente
                 </label>
                 <select name="provedor" id="provedor" required>
                     <option value="Sem_Provedor" selected>Sem_Provedor</option>
-                    <!-- Provedores will be loaded dynamically -->
                 </select>
                 <small style="display: block; margin-top: 5px; color: #666; font-size: 0.85rem;">
                     Selecione um provedor cadastrado ou use "Sem_Provedor"
@@ -145,7 +143,6 @@
     </div>
 </div>
 
-<!-- Modal Gerenciar Provedores -->
 <div id="manageProvedoresModal" class="modal">
     <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
@@ -153,7 +150,6 @@
             <span class="close" onclick="closeModal('manageProvedoresModal')">&times;</span>
         </div>
 
-        <!-- Formulário para adicionar novo provedor -->
         <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
             <h3 style="margin-bottom: 10px; font-size: 16px;">Adicionar Novo Provedor</h3>
             <form id="addProvedorForm" style="display: flex; gap: 10px; align-items: flex-end;">
@@ -169,7 +165,7 @@
             </form>
         </div>
 
-        <!-- Lista de provedores cadastrados -->
+
         <div>
             <h3 style="margin-bottom: 10px; font-size: 16px;">Provedores Cadastrados</h3>
             <div id="provedoresList" style="max-height: 400px; overflow-y: auto;">
