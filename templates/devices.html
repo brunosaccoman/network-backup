@@ -88,14 +88,37 @@
         border-radius: 6px;
         border: 1px solid #e0e6ed;
         overflow: hidden;
+        margin-top: 20px;
     }
 
     .table-header {
-        padding: 20px 25px;
-        border-bottom: 1px solid #e0e6ed;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        background: #f9fafb;
+    }
+
+    .table-header-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .table-header-title {
+        margin: 0;
+    }
+
+    .table-header-subtitle {
+        margin: 0;
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .table-header-actions {
+        margin-left: auto;
     }
 
     .table-header h5 {
@@ -108,6 +131,8 @@
     .table-actions {
         display: flex;
         gap: 10px;
+        align-items: center;
+        margin-top: 15px;
     }
 
     .data-table {
@@ -128,11 +153,19 @@
         border-bottom: 2px solid #e0e6ed;
     }
 
+    .data-table th.text-right {
+        text-align: right;
+    }
+
     .data-table td {
         padding: 14px 20px;
         font-size: 13px;
         color: #555;
         border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table td.text-right {
+        text-align: right;
     }
 
     .data-table tbody tr:hover {
@@ -217,6 +250,8 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
+        max-height: 400px;
+        overflow-y: auto;
     }
 
     .provedor-item {
@@ -257,6 +292,73 @@
         gap: 8px;
         align-items: center;
     }
+
+    .search-input {
+        padding: 6px 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        width: 200px;
+    }
+
+    .action-buttons-end {
+        justify-content: flex-end;
+    }
+
+    .modal-content-large {
+        max-width: 700px;
+    }
+
+    .provedor-form-container {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .provedor-form-container h3 {
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+
+    .provedor-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+
+    .form-group-flex {
+        flex: 1;
+        margin-bottom: 0;
+    }
+
+    .btn-nowrap {
+        white-space: nowrap;
+    }
+
+    .provedores-section h3 {
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+
+    .provedores-loading {
+        text-align: center;
+        color: #999;
+        padding: 20px;
+    }
+
+    .modal-body-center {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .loading-spinner {
+        font-size: 40px;
+        color: #007bff;
+    }
+
+    .loading-text {
+        margin-top: 10px;
+    }
 </style>
 {% endblock %}
 
@@ -264,7 +366,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
 
-        // Verifique se o botão de fechar "Gerenciar Provedores" existe antes de adicionar o evento
         const closeManageProvedoresModal = document.getElementById('closeManageProvedoresModal');
         if (closeManageProvedoresModal) {
             closeManageProvedoresModal.addEventListener('click', function () {
@@ -272,7 +373,6 @@
             });
         }
 
-        // Verifique se o botão de fechar "Adicionar Dispositivo" existe antes de adicionar o evento
         const closeAddDeviceModal = document.getElementById('closeAddDeviceModal');
         if (closeAddDeviceModal) {
             closeAddDeviceModal.addEventListener('click', function () {
@@ -280,7 +380,6 @@
             });
         }
 
-        // Verifique se o botão de fechar "Editar Dispositivo" existe antes de adicionar o evento
         const closeEditDeviceModal = document.getElementById('closeEditDeviceModal');
         if (closeEditDeviceModal) {
             closeEditDeviceModal.addEventListener('click', function () {
@@ -326,7 +425,6 @@
             document.getElementById('visibleCount').innerText = visibleCount;
         });
 
-        // Função para adicionar dispositivo
         document.getElementById('addDeviceForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -351,7 +449,6 @@
             }
         });
 
-        // Função de edição de dispositivo
         async function editDevice(deviceId) {
             try {
                 const response = await fetch(`/devices/${deviceId}/get`);
@@ -402,10 +499,8 @@
             }
         }
 
-        // Função para salvar edição do dispositivo
         async function saveEdit(event) {
             console.log('Iniciando a função saveEdit...');
-            // Coleta os valores dos campos
             const deviceId = document.getElementById('editId').value;
             const deviceName = document.getElementById('editName').value;
             const deviceIp = document.getElementById('editIp').value;
@@ -413,7 +508,6 @@
             const devicePort = document.getElementById('editPort').value;
             const deviceProvedor = document.getElementById('editProvedor').value;
 
-            // Log para verificar os valores coletados
             console.log('Valores coletados para salvar:');
             console.log('ID:', deviceId);
             console.log('Nome:', deviceName);
@@ -422,7 +516,6 @@
             console.log('Porta:', devicePort);
             console.log('Provedor:', deviceProvedor);
 
-            // Exemplo de um objeto com os dados que você quer enviar
             const deviceData = {
                 id: deviceId,
                 name: deviceName,
@@ -432,7 +525,6 @@
                 provedor: deviceProvedor
             };
 
-            // Log para verificar o objeto antes de enviar
             console.log('Objeto para enviar:', deviceData);
 
             try {
@@ -445,18 +537,16 @@
                     body: JSON.stringify(deviceData)
                 });
 
-                // Verificando o status da resposta
                 console.log('Status da resposta:', response.status);
 
                 if (response.ok) {
-                    // Esperando a resposta e verificando os dados
                     const data = await response.json();
                     console.log('Resposta do servidor:', data);
 
                     if (data.success) {
                         showAlert('Dispositivo atualizado com sucesso!', 'success');
                         updateDeviceRowInTable(deviceId, deviceData);
-                        closeModal('editModal'); // Fechar o modal após salvar
+                        closeModal('editModal');
                     } else {
                         showAlert('Erro: ' + data.error, 'danger');
                     }
@@ -465,13 +555,11 @@
                     showAlert('Erro ao salvar dispositivo, tente novamente.', 'danger');
                 }
             } catch (error) {
-                // Em caso de erro, mostrar no log
                 console.log('Erro na requisição:', error);
                 showAlert('Erro: ' + error.message, 'danger');
             }
         }
 
-        // Função de backup de dispositivo
         async function backupDevice(deviceId) {
             event.preventDefault();
             if (!confirm('Backup agora?')) return;
@@ -485,7 +573,6 @@
             }
         }
 
-        // Função de deletação de dispositivo
         async function deleteDevice(deviceId) {
             console.log('Delete device', deviceId);
             if (!confirm('Deletar este dispositivo?')) return;
@@ -499,7 +586,6 @@
             }
         }
 
-        // Atribuindo os eventos de clique aos botões
         document.querySelectorAll('.editButton').forEach(button => {
             button.addEventListener('click', function () {
                 const deviceId = this.getAttribute('data-device-id');
@@ -521,7 +607,6 @@
             });
         })
 
-        // Função para carregar provedores na interface
         async function loadProvedores() {
             const provedoresList = document.getElementById('provedoresList');
             if (!provedoresList) return;
@@ -574,7 +659,6 @@
             }
         }
 
-        // Carrega os provedores no campo select
         async function loadProvedoresIntoSelect() {
             const selectElement = document.getElementById('provedor');
             if (!selectElement) return;
@@ -616,7 +700,6 @@
             }
         }
 
-        // Função para exibir modais
         window.showModal = function (modalId) {
             const modal = document.getElementById(modalId);
             if (modal) modal.style.display = 'block';
@@ -628,13 +711,11 @@
             }
         };
 
-        // Função de fechar o modal
         function closeModal(modalId, event) {
             const modal = document.getElementById(modalId);
             if (modal) modal.style.display = 'none';
         }
 
-        // Função para mostrar alertas (como "Dispositivo adicionado com sucesso")
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
             alertDiv.classList.add('alert', `alert-${type}`);
@@ -714,7 +795,6 @@
             });
         }
 
-        // Adicionar evento para salvar a edição do dispositivo
         const saveEditButton = document.getElementById('saveEditButton');
         if (saveEditButton) {
             saveEditButton.addEventListener('click', function (event) {
@@ -731,10 +811,8 @@
         }
 
         editDeviceForm.addEventListener('submit', async function (event) {
-            // Previne o comportamento padrão do formulário (evitar recarregar a página)
             event.preventDefault();
 
-            // Coleta os valores dos campos
             const deviceId = document.getElementById('editId').value;
             const deviceName = document.getElementById('editName').value;
             const deviceIp = document.getElementById('editIp').value;
@@ -742,7 +820,6 @@
             const devicePort = document.getElementById('editPort').value;
             const deviceProvedor = document.getElementById('editProvedor').value;
 
-            // Log para verificar os valores coletados
             console.log('Valores coletados para salvar:');
             console.log('ID:', deviceId);
             console.log('Nome:', deviceName);
@@ -751,7 +828,6 @@
             console.log('Porta:', devicePort);
             console.log('Provedor:', deviceProvedor);
 
-            // Exemplo de um objeto com os dados que você quer enviar
             const deviceData = {
                 id: deviceId,
                 name: deviceName,
@@ -761,7 +837,6 @@
                 provedor: deviceProvedor
             };
 
-            // Log para verificar o objeto antes de enviar
             console.log('Objeto para enviar:', deviceData);
 
             try {
@@ -774,18 +849,16 @@
                     body: JSON.stringify(deviceData)
                 });
 
-                // Verificando o status da resposta
                 console.log('Status da resposta:', response.status);
 
                 if (response.ok) {
-                    // Esperando a resposta e verificando os dados
                     const data = await response.json();
                     console.log('Resposta do servidor:', data);
 
                     if (data.success) {
                         showAlert('Dispositivo atualizado com sucesso!', 'success');
                         updateDeviceRowInTable(deviceId, deviceData);
-                        closeModal('editModal'); // Fechar o modal após salvar
+                        closeModal('editModal');
                     } else {
                         showAlert('Erro: ' + data.error, 'danger');
                     }
@@ -794,26 +867,108 @@
                     showAlert('Erro ao salvar dispositivo, tente novamente.', 'danger');
                 }
             } catch (error) {
-                // Em caso de erro, mostrar no log
                 console.log('Erro na requisição:', error);
                 showAlert('Erro: ' + error.message, 'danger');
             }
         });
+
+        function applyProvedorFilter() {
+            const provedorFilter = document.getElementById('deviceProvedorFilter');
+            if (!provedorFilter) return;
+
+            const selectedProvedor = provedorFilter.value.toLowerCase();
+            const tableBody = document.getElementById('devicesTableBody');
+            if (!tableBody) return;
+
+            let visibleCount = 0;
+            Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+                const provedorValue = row.getAttribute('data-provedor') || 'Sem_Provedor';
+                const provedorMatch = !selectedProvedor ||
+                    provedorValue.toLowerCase() === selectedProvedor.toLowerCase() ||
+                    (selectedProvedor === '' && provedorValue);
+
+                if (provedorMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('visibleCount').innerText = visibleCount;
+        }
+
+        const provedorFilterElement = document.getElementById('deviceProvedorFilter');
+        if (provedorFilterElement) {
+            provedorFilterElement.addEventListener('change', function () {
+                applyProvedorFilter();
+                const searchInput = document.getElementById('deviceSearch');
+                if (searchInput && searchInput.value) {
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        const originalSearchHandler = searchInput?.oninput;
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const query = this.value.toLowerCase();
+                const provedorFilter = document.getElementById('deviceProvedorFilter');
+                const selectedProvedor = provedorFilter ? provedorFilter.value.toLowerCase() : '';
+                let visibleCount = 0;
+                const tableBody = document.getElementById('devicesTableBody');
+
+                if (!tableBody) {
+                    console.error('Tabela de dispositivos não encontrada!');
+                    return;
+                }
+
+                Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+                    const deviceName = row.querySelector('td:nth-child(1) strong') ? row.querySelector('td:nth-child(1) strong').innerText.toLowerCase() : '';
+                    const deviceIp = row.querySelector('td:nth-child(2)') ? row.querySelector('td:nth-child(2)').innerText.toLowerCase() : '';
+                    const deviceProvedor = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').innerText.toLowerCase() : '';
+                    const devicePlatform = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').innerText.toLowerCase() : '';
+                    const deviceProtocol = row.querySelector('td:nth-child(5)') ? row.querySelector('td:nth-child(5)').innerText.toLowerCase() : '';
+                    const devicePort = row.querySelector('td:nth-child(6)') ? row.querySelector('td:nth-child(6)').innerText.toLowerCase() : '';
+
+                    const text = deviceName + ' ' + deviceIp + ' ' + deviceProvedor + ' ' + devicePlatform + ' ' + deviceProtocol + ' ' + devicePort;
+                    const provedorValue = row.getAttribute('data-provedor') || 'Sem_Provedor';
+                    const provedorMatch = !selectedProvedor ||
+                        provedorValue.toLowerCase() === selectedProvedor.toLowerCase();
+
+                    if (text.includes(query) && provedorMatch) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                console.log("Dispositivos visíveis:", visibleCount);
+                document.getElementById('visibleCount').innerText = visibleCount;
+            });
+        }
 
     });
 </script>
 {% endblock %}
 
 {% block content %}
-<div class="table-container" style="margin-top: 20px;">
-    <div class="table-header" style="background: #f9fafb;">
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap: wrap;">
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-header-content">
             <div>
-                <h5 style="margin:0;"><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
-                <p style="margin:0; font-size:12px; color:#6b7280;">Gerencie dispositivos e provedores em um só lugar
-                </p>
+                <h5 class="table-header-title"><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
+                <p class="table-header-subtitle">Gerencie dispositivos e provedores em um só lugar</p>
             </div>
-            <div class="d-flex justify-content-start align-items-center gap-2 flex-wrap" style="margin-left:auto;">
+        </div>
+        <div class="table-actions">
+            {% set filter_id = 'device' %}
+            {% set show_provedor_filter = true %}
+            {% set show_ip_search = false %}
+            {% include 'components/table_filters.html' %}
+            <input id="deviceSearch" type="text" placeholder="Buscar dispositivo..." class="search-input">
+            <div class="table-header-actions">
                 <button class="btn-gerenciar btn-gerenciar--ghost" onclick="showModal('manageProvedoresModal')">
                     <i class="fas fa-building"></i> Adicionar Provedor
                 </button>
@@ -821,14 +976,6 @@
                     <i class="fas fa-plus"></i> Novo Dispositivo
                 </button>
             </div>
-        </div>
-        <div class="table-actions" style="display: flex; gap: 10px; align-items: center; margin-top:15px;">
-            {% set filter_id = 'device' %}
-            {% set show_provedor_filter = true %}
-            {% set show_ip_search = false %}
-            {% include 'components/table_filters.html' %}
-            <input id="deviceSearch" type="text" placeholder="Buscar dispositivo..." class="search-input"
-                style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; width: 200px;">
         </div>
     </div>
 
@@ -842,7 +989,7 @@
                 <th>Protocolo</th>
                 <th>Porta</th>
                 <th>Status</th>
-                <th style="text-align: right;">Ações</th>
+                <th class="text-right">Ações</th>
             </tr>
         </thead>
         <tbody id="devicesTableBody">
@@ -865,8 +1012,8 @@
                         {{ 'Ativo' if device.active else 'Inativo' }}
                     </span>
                 </td>
-                <td style="text-align: right;">
-                    <div class="action-buttons" style="justify-content: flex-end;">
+                <td class="text-right">
+                    <div class="action-buttons action-buttons-end">
                         <button class="btn-action backupButton" data-device-id="{{ device.id }}" title="Fazer Backup">
                             <i class="fas fa-sync"></i>
                         </button>
@@ -972,33 +1119,33 @@
 </div>
 
 <div id="manageProvedoresModal" class="modal">
-    <div class="modal-content" style="max-width: 700px;">
+    <div class="modal-content modal-content-large">
         <div class="modal-header">
             <h2><i class="fas fa-building"></i> Gerenciar Provedores/Clientes</h2>
             <span class="close" onclick="closeModal('manageProvedoresModal')">&times;</span>
         </div>
 
-        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-            <h3 style="margin-bottom: 10px; font-size: 16px;">Adicionar Novo Provedor</h3>
-            <form id="addProvedorForm" style="display: flex; gap: 10px; align-items: flex-end;">
-                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+        <div class="provedor-form-container">
+            <h3>Adicionar Novo Provedor</h3>
+            <form id="addProvedorForm" class="provedor-form">
+                <div class="form-group form-group-flex">
                     <label>Nome do Provedor/Cliente *</label>
                     <input type="text" id="newProvedorName" required placeholder="Ex: OLLA, SPEEDNET, Cliente_A">
                 </div>
-                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <div class="form-group form-group-flex">
                     <label>Descrição (opcional)</label>
                     <input type="text" id="newProvedorDescription" placeholder="Descrição adicional">
                 </div>
-                <button type="submit" class="btn-gerenciar btn-gerenciar--primary" style="white-space: nowrap;">
+                <button type="submit" class="btn-gerenciar btn-gerenciar--primary btn-nowrap">
                     <i class="fas fa-plus"></i> Adicionar
                 </button>
             </form>
         </div>
 
         <div>
-            <h3 style="margin-bottom: 10px; font-size: 16px;">Provedores Cadastrados</h3>
-            <div id="provedoresList" class="provedores-wrapper" style="max-height: 400px; overflow-y: auto;">
-                <p style="text-align: center; color: #999; padding: 20px;">Carregando...</p>
+            <h3 class="provedores-section">Provedores Cadastrados</h3>
+            <div id="provedoresList" class="provedores-wrapper">
+                <p class="provedores-loading">Carregando...</p>
             </div>
         </div>
     </div>
@@ -1021,9 +1168,9 @@
 
 <div id="loadingModal" class="modal">
     <div class="modal-content">
-        <div class="modal-body" style="text-align: center; padding: 20px;">
-            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #007bff;"></i>
-            <p style="margin-top: 10px;">Carregando...</p>
+        <div class="modal-body modal-body-center">
+            <i class="fas fa-spinner fa-spin loading-spinner"></i>
+            <p class="loading-text">Carregando...</p>
         </div>
     </div>
 </div>
