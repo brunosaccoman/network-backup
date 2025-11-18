@@ -1,15 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Agendamentos{% endblock %}
-{% block extra_css %}
-<style>
-.action-buttons { display: flex; gap: 0.3rem; }
-.action-buttons .btn { padding: 0.5rem 0.8rem; font-size: 0.85rem; }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 {% block content %}
 <div class="card">
     <h2>Agendamentos</h2>
-    <button class="btn btn-success" onclick="showModal('addScheduleModal')">📅 Criar Agendamento</button>
+    <button class="btn-gerenciar btn-gerenciar--primary" onclick="showModal('addScheduleModal')">
+        <i class="fas fa-calendar-plus"></i> Criar Agendamento
+    </button>
 </div>
 
 <div class="card">
@@ -17,7 +14,14 @@
     {% if schedules %}
     <table>
         <thead>
-            <tr><th>ID</th><th>Dispositivo</th><th>Frequência</th><th>Horário</th><th>Status</th><th>Ações</th></tr>
+            <tr>
+                <th>ID</th>
+                <th>Dispositivo</th>
+                <th>Frequência</th>
+                <th>Horário</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
         </thead>
         <tbody>
             {% for schedule in schedules %}
@@ -39,8 +43,14 @@
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="editSchedule({{ schedule.id }})">✏️ Editar</button>
-                        <button class="btn btn-danger" onclick="deleteSchedule({{ schedule.id }})">🗑️</button>
+                        <button class="btn-action" type="button" onclick="editSchedule({{ schedule.id }})"
+                            title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn-action danger" type="button" onclick="deleteSchedule({{ schedule.id }})"
+                            title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -100,7 +110,9 @@
                 <label>Dia do Mês</label>
                 <input type="number" name="day_of_month" min="1" max="31" value="1">
             </div>
-            <button type="submit" class="btn btn-success">💾 Criar</button>
+            <button type="submit" class="btn-gerenciar btn-gerenciar--primary">
+                <i class="fas fa-save"></i> Criar
+            </button>
         </form>
     </div>
 </div>
@@ -153,7 +165,9 @@
                 <label>Dia do Mês</label>
                 <input type="number" id="editDayOfMonth" min="1" max="31">
             </div>
-            <button type="submit" class="btn btn-success">💾 Atualizar</button>
+            <button type="submit" class="btn-gerenciar btn-gerenciar--primary">
+                <i class="fas fa-save"></i> Atualizar
+            </button>
         </form>
     </div>
 </div>
@@ -161,100 +175,100 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-function updateFrequency() {
-    const freq = document.getElementById('frequency').value;
-    document.getElementById('weekDay').style.display = freq === 'weekly' ? 'block' : 'none';
-    document.getElementById('monthDay').style.display = freq === 'monthly' ? 'block' : 'none';
-}
-
-function updateEditFrequency() {
-    const freq = document.getElementById('editFrequency').value;
-    document.getElementById('editWeekDay').style.display = freq === 'weekly' ? 'block' : 'none';
-    document.getElementById('editMonthDay').style.display = freq === 'monthly' ? 'block' : 'none';
-}
-
-document.getElementById('addScheduleForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    try {
-        const response = await fetch('/schedules/add', {method: 'POST', body: formData});
-        const data = await response.json();
-        if (data.success) {
-            showAlert('Agendamento criado!', 'success');
-            closeModal('addScheduleModal');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('Erro: ' + data.error, 'danger');
-        }
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
+    function updateFrequency() {
+        const freq = document.getElementById('frequency').value;
+        document.getElementById('weekDay').style.display = freq === 'weekly' ? 'block' : 'none';
+        document.getElementById('monthDay').style.display = freq === 'monthly' ? 'block' : 'none';
     }
-});
 
-async function editSchedule(id) {
-    try {
-        const response = await fetch('/schedules/' + id + '/get');
-        const schedule = await response.json();
-        document.getElementById('editScheduleId').value = schedule.id;
-        document.getElementById('editDeviceId').value = schedule.device_id || '';
-        document.getElementById('editFrequency').value = schedule.frequency;
-        document.getElementById('editTime').value = schedule.time;
-        if (schedule.day_of_week !== null) {
-            document.getElementById('editDayOfWeek').value = schedule.day_of_week;
-        }
-        if (schedule.day_of_month !== null) {
-            document.getElementById('editDayOfMonth').value = schedule.day_of_month;
-        }
-        updateEditFrequency();
-        showModal('editScheduleModal');
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
+    function updateEditFrequency() {
+        const freq = document.getElementById('editFrequency').value;
+        document.getElementById('editWeekDay').style.display = freq === 'weekly' ? 'block' : 'none';
+        document.getElementById('editMonthDay').style.display = freq === 'monthly' ? 'block' : 'none';
     }
-}
 
-document.getElementById('editScheduleForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('editScheduleId').value;
-    const data = {
-        device_id: document.getElementById('editDeviceId').value || null,
-        frequency: document.getElementById('editFrequency').value,
-        time: document.getElementById('editTime').value,
-        day_of_week: document.getElementById('editDayOfWeek').value || null,
-        day_of_month: document.getElementById('editDayOfMonth').value || null
-    };
-    try {
-        const response = await fetch('/schedules/' + id + '/update', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        if (result.success) {
-            showAlert('Agendamento atualizado!', 'success');
-            closeModal('editScheduleModal');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('Erro: ' + result.error, 'danger');
+    document.getElementById('addScheduleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        try {
+            const response = await fetch('/schedules/add', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Agendamento criado!', 'success');
+                closeModal('addScheduleModal');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
         }
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
-    }
-});
+    });
 
-async function deleteSchedule(scheduleId) {
-    if (!confirm('Remover este agendamento?')) return;
-    try {
-        const response = await fetch('/schedules/' + scheduleId, {method: 'DELETE'});
-        const data = await response.json();
-        if (data.success) {
-            showAlert('Agendamento removido!', 'success');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('Erro: ' + data.error, 'danger');
+    async function editSchedule(id) {
+        try {
+            const response = await fetch('/schedules/' + id + '/get');
+            const schedule = await response.json();
+            document.getElementById('editScheduleId').value = schedule.id;
+            document.getElementById('editDeviceId').value = schedule.device_id || '';
+            document.getElementById('editFrequency').value = schedule.frequency;
+            document.getElementById('editTime').value = schedule.time;
+            if (schedule.day_of_week !== null) {
+                document.getElementById('editDayOfWeek').value = schedule.day_of_week;
+            }
+            if (schedule.day_of_month !== null) {
+                document.getElementById('editDayOfMonth').value = schedule.day_of_month;
+            }
+            updateEditFrequency();
+            showModal('editScheduleModal');
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
         }
-    } catch (error) {
-        showAlert('Erro: ' + error.message, 'danger');
     }
-}
+
+    document.getElementById('editScheduleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editScheduleId').value;
+        const data = {
+            device_id: document.getElementById('editDeviceId').value || null,
+            frequency: document.getElementById('editFrequency').value,
+            time: document.getElementById('editTime').value,
+            day_of_week: document.getElementById('editDayOfWeek').value || null,
+            day_of_month: document.getElementById('editDayOfMonth').value || null
+        };
+        try {
+            const response = await fetch('/schedules/' + id + '/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showAlert('Agendamento atualizado!', 'success');
+                closeModal('editScheduleModal');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + result.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    });
+
+    async function deleteSchedule(scheduleId) {
+        if (!confirm('Remover este agendamento?')) return;
+        try {
+            const response = await fetch('/schedules/' + scheduleId, { method: 'DELETE' });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Agendamento removido!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
 </script>
 {% endblock %}

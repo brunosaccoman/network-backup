@@ -3,8 +3,12 @@
 {% block content %}
 <div class="card">
     <h2>Visualização de Backup</h2>
-    <button class="btn btn-primary" onclick="history.back()">◀️ Voltar</button>
-    <a href="/backups/{{ backup_id }}/download" class="btn btn-success">⬇️ Download</a>
+    <button class="btn-gerenciar btn-gerenciar--ghost" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </button>
+    <a href="/backups/{{ backup_id }}/download" class="btn-gerenciar btn-gerenciar--primary">
+        <i class="fas fa-download"></i> Download
+    </a>
     <div style="background:#2d2d2d;color:#f8f8f2;padding:1.5rem;border-radius:8px;overflow-x:auto;margin-top:1rem;">
         <pre style="margin:0;white-space:pre-wrap;">{{ content }}</pre>
     </div>

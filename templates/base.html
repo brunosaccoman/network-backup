@@ -81,6 +81,107 @@
             background: #c0392b;
         }
 
+        .btn-gerenciar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.55rem 1.1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            border: 1px solid #e3e3e7;
+            background: #f5f5f7;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-gerenciar:hover {
+            background: #e9e9ec;
+            border-color: #d4d4d8;
+        }
+
+        .btn-gerenciar:active {
+            transform: scale(0.98);
+        }
+
+        .btn-gerenciar:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-gerenciar i {
+            font-size: 0.9rem;
+        }
+
+        .btn-gerenciar--primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .btn-gerenciar--primary:hover {
+            background: #1d4ed8;
+            border-color: #1d4ed8;
+            color: #fff;
+        }
+
+        .btn-gerenciar--danger {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+
+        .btn-gerenciar--danger:hover {
+            background: #fecaca;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+
+        .btn-gerenciar--ghost {
+            background: transparent;
+            border-color: #d4d4d8;
+            color: #4b5563;
+        }
+
+        .btn-gerenciar--ghost:hover {
+            background: #f5f5f7;
+        }
+
+        .action-buttons {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #555;
+        }
+
+        .btn-action:hover {
+            border-color: #3498db;
+            color: #3498db;
+            background: #f0f8ff;
+        }
+
+        .btn-action.danger:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            background: #fff5f5;
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -233,7 +334,6 @@
         {% block content %}{% endblock %}
     </div>
     {% endblock %}
-    <script src="{{ url_for('static', filename='js/table_filters.js') }}"></script>
     <script>
         function showModal(modalId) {
             document.getElementById(modalId).style.display = 'block';
@@ -257,29 +357,6 @@
     </script>
     {% block extra_js %}{% endblock %}
 
-    <!-- Modal de Edição de Dispositivo -->
-    <div class="modal" id="editModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5>Editar Dispositivo</h5>
-                <span class="close" onclick="closeModal('editModal')">&times;</span>
-            </div>
-
-            <input type="hidden" id="editId">
-
-            <div class="form-group">
-                <label>Nome</label>
-                <input type="text" id="editName">
-            </div>
-
-            <div class="form-group">
-                <label>Endereço IP</label>
-                <input type="text" id="editIp">
-            </div>
-
-            <button class="btn btn-primary" onclick="saveEdit()">Salvar</button>
-        </div>
-    </div>
 </body>
 
 </html>

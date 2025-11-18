@@ -13,63 +13,770 @@
         font-size: 0.85rem;
         white-space: nowrap;
     }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 6px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue {
+        background: #3498db;
+    }
+
+    .stat-icon.green {
+        background: #27ae60;
+    }
+
+    .stat-icon.red {
+        background: #e74c3c;
+    }
+
+    .stat-icon.orange {
+        background: #f39c12;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: left;
+    }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .table-footer {
+        padding: 15px 25px;
+        border-top: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+
+    .device-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-dot.online {
+        background: #27ae60;
+        box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+    }
+
+    .status-dot.offline {
+        background: #95a5a6;
+    }
+
+    #provedorFilter,
+    #backupProvedorFilter {
+        min-width: 200px;
+    }
+
+    #provedorFilter:focus,
+    #backupProvedorFilter:focus,
+    #backupIpSearch:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    #backupIpSearch::placeholder {
+        color: #999;
+    }
 </style>
 {% endblock %}
-{% block content %}
 
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // Verifique se o botão de fechar "Gerenciar Provedores" existe antes de adicionar o evento
+        const closeManageProvedoresModal = document.getElementById('closeManageProvedoresModal');
+        if (closeManageProvedoresModal) {
+            closeManageProvedoresModal.addEventListener('click', function () {
+                closeModal('manageProvedoresModal');
+            });
+        }
+
+        // Verifique se o botão de fechar "Adicionar Dispositivo" existe antes de adicionar o evento
+        const closeAddDeviceModal = document.getElementById('closeAddDeviceModal');
+        if (closeAddDeviceModal) {
+            closeAddDeviceModal.addEventListener('click', function () {
+                closeModal('addDeviceModal');
+            });
+        }
+
+        // Verifique se o botão de fechar "Editar Dispositivo" existe antes de adicionar o evento
+        const closeEditDeviceModal = document.getElementById('closeEditDeviceModal');
+        if (closeEditDeviceModal) {
+            closeEditDeviceModal.addEventListener('click', function () {
+                closeModal('editModal');
+            });
+        }
+
+        const searchInput = document.getElementById('deviceSearch');
+        if (!searchInput) {
+            console.error('Elemento de busca não encontrado!');
+            return;
+        }
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            let visibleCount = 0;
+            const tableBody = document.getElementById('devicesTableBody');
+
+            if (!tableBody) {
+                console.error('Tabela de dispositivos não encontrada!');
+                return;
+            }
+
+            Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+                const deviceName = row.querySelector('td:nth-child(1) strong') ? row.querySelector('td:nth-child(1) strong').innerText.toLowerCase() : '';
+                const deviceIp = row.querySelector('td:nth-child(2)') ? row.querySelector('td:nth-child(2)').innerText.toLowerCase() : '';
+                const deviceProvedor = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').innerText.toLowerCase() : '';
+                const devicePlatform = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').innerText.toLowerCase() : '';
+                const deviceProtocol = row.querySelector('td:nth-child(5)') ? row.querySelector('td:nth-child(5)').innerText.toLowerCase() : '';
+                const devicePort = row.querySelector('td:nth-child(6)') ? row.querySelector('td:nth-child(6)').innerText.toLowerCase() : '';
+
+                const text = deviceName + ' ' + deviceIp + ' ' + deviceProvedor + ' ' + devicePlatform + ' ' + deviceProtocol + ' ' + devicePort;
+
+                if (text.includes(query)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            console.log("Dispositivos visíveis:", visibleCount);
+            document.getElementById('visibleCount').innerText = visibleCount;
+        });
+
+        // Função para adicionar dispositivo
+        document.getElementById('addDeviceForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/devices/add', {
+                    method: 'POST',
+                    body: new URLSearchParams(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Dispositivo adicionado com sucesso!');
+                    this.reset();
+                } else {
+                    alert('Erro: ' + result.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao adicionar dispositivo');
+            }
+        });
+
+        // Função de edição de dispositivo
+        async function editDevice(deviceId) {
+            try {
+                const response = await fetch(`/devices/${deviceId}/get`);
+                const device = await response.json();
+
+                document.getElementById('editId').value = device.id;
+                document.getElementById('editName').value = device.name;
+                document.getElementById('editIp').value = device.ip_address;
+                document.getElementById('editProtocol').value = device.protocol;
+                document.getElementById('editPort').value = device.port;
+                document.getElementById('editProvedor').value = device.provedor || '';
+
+                showModal('editModal');
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        }
+
+        function updateDeviceRowInTable(deviceId, updatedData) {
+            const row = document.querySelector(`tr[data-device-id="${deviceId}"]`);
+            if (!row) return;
+
+            if (updatedData.name !== undefined) {
+                const nameElement = row.querySelector('.device-name');
+                if (nameElement) nameElement.textContent = updatedData.name;
+            }
+
+            if (updatedData.ip_address !== undefined) {
+                const ipElement = row.querySelector('.device-ip');
+                if (ipElement) ipElement.textContent = updatedData.ip_address;
+            }
+
+            if (updatedData.provedor !== undefined) {
+                const provedorValue = updatedData.provedor || 'Sem_Provedor';
+                const provedorElement = row.querySelector('.device-provedor');
+                if (provedorElement) provedorElement.textContent = provedorValue;
+                row.setAttribute('data-provedor', provedorValue);
+            }
+
+            if (updatedData.protocol !== undefined) {
+                const protocolElement = row.querySelector('.device-protocol');
+                if (protocolElement) protocolElement.textContent = updatedData.protocol.toUpperCase();
+            }
+
+            if (updatedData.port !== undefined) {
+                const portElement = row.querySelector('.device-port');
+                if (portElement) portElement.textContent = updatedData.port;
+            }
+        }
+
+        // Função para salvar edição do dispositivo
+        async function saveEdit(event) {
+            console.log('Iniciando a função saveEdit...');
+            // Coleta os valores dos campos
+            const deviceId = document.getElementById('editId').value;
+            const deviceName = document.getElementById('editName').value;
+            const deviceIp = document.getElementById('editIp').value;
+            const deviceProtocol = document.getElementById('editProtocol').value;
+            const devicePort = document.getElementById('editPort').value;
+            const deviceProvedor = document.getElementById('editProvedor').value;
+
+            // Log para verificar os valores coletados
+            console.log('Valores coletados para salvar:');
+            console.log('ID:', deviceId);
+            console.log('Nome:', deviceName);
+            console.log('IP:', deviceIp);
+            console.log('Protocolo:', deviceProtocol);
+            console.log('Porta:', devicePort);
+            console.log('Provedor:', deviceProvedor);
+
+            // Exemplo de um objeto com os dados que você quer enviar
+            const deviceData = {
+                id: deviceId,
+                name: deviceName,
+                ip_address: deviceIp,
+                protocol: deviceProtocol,
+                port: devicePort,
+                provedor: deviceProvedor
+            };
+
+            // Log para verificar o objeto antes de enviar
+            console.log('Objeto para enviar:', deviceData);
+
+            try {
+                console.log('Enviando requisição para atualizar dispositivo...');
+                const response = await fetch('/devices/' + deviceId + '/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deviceData)
+                });
+
+                // Verificando o status da resposta
+                console.log('Status da resposta:', response.status);
+
+                if (response.ok) {
+                    // Esperando a resposta e verificando os dados
+                    const data = await response.json();
+                    console.log('Resposta do servidor:', data);
+
+                    if (data.success) {
+                        showAlert('Dispositivo atualizado com sucesso!', 'success');
+                        updateDeviceRowInTable(deviceId, deviceData);
+                        closeModal('editModal'); // Fechar o modal após salvar
+                    } else {
+                        showAlert('Erro: ' + data.error, 'danger');
+                    }
+                } else {
+                    console.log('Erro: resposta do servidor com falha');
+                    showAlert('Erro ao salvar dispositivo, tente novamente.', 'danger');
+                }
+            } catch (error) {
+                // Em caso de erro, mostrar no log
+                console.log('Erro na requisição:', error);
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        }
+
+        // Função de backup de dispositivo
+        async function backupDevice(deviceId) {
+            event.preventDefault();
+            if (!confirm('Backup agora?')) return;
+            try {
+                const response = await fetch('/backup/' + deviceId, { method: 'POST' });
+                const data = await response.json();
+                if (data.success) showAlert('Backup realizado!', 'success');
+                else showAlert('Erro: ' + data.error, 'danger');
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        }
+
+        // Função de deletação de dispositivo
+        async function deleteDevice(deviceId) {
+            console.log('Delete device', deviceId);
+            if (!confirm('Deletar este dispositivo?')) return;
+            try {
+                const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) showAlert('Dispositivo deletado!', 'success');
+                else showAlert('Erro: ' + data.error, 'danger');
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        }
+
+        // Atribuindo os eventos de clique aos botões
+        document.querySelectorAll('.editButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const deviceId = this.getAttribute('data-device-id');
+                editDevice(deviceId);
+            });
+        });
+
+        document.querySelectorAll('.backupButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const deviceId = this.getAttribute('data-device-id');
+                backupDevice(deviceId);
+            });
+        });
+
+        document.querySelectorAll('.deleteButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const deviceId = this.getAttribute('data-device-id');
+                deleteDevice(deviceId);
+            });
+        })
+
+        // Função para carregar provedores na interface
+        function loadProvedores() {
+            fetch('/provedores/list')
+                .then(response => response.json())
+                .then(data => {
+                    const provedoresList = document.getElementById('provedoresList');
+                    provedoresList.innerHTML = ''; // Limpar a lista existente
+
+                    if (data && data.provedores) {
+                        data.provedores.forEach(provedor => {
+                            const item = document.createElement('div');
+                            item.classList.add('provedor-item');
+                            item.textContent = provedor.name;
+                            provedoresList.appendChild(item);
+                        });
+                    } else {
+                        provedoresList.innerHTML = '<p>Sem provedores cadastrados.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar provedores:', error);
+                    document.getElementById('provedoresList').innerHTML = '<p>Erro ao carregar provedores.</p>';
+                });
+        }
+
+        // Carrega os provedores no campo select
+        function loadProvedoresIntoSelect() {
+            fetch('/provedores/list')
+                .then(response => response.json())
+                .then(data => {
+                    const selectElement = document.getElementById('provedor');
+                    selectElement.innerHTML = ''; // Limpar as opções existentes
+
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = 'Sem_Provedor';
+                    defaultOption.textContent = 'Sem_Provedor';
+                    selectElement.appendChild(defaultOption);
+
+                    if (data && data.provedores) {
+                        data.provedores.forEach(provedor => {
+                            const option = document.createElement('option');
+                            option.value = provedor.name;
+                            option.textContent = provedor.name;
+                            selectElement.appendChild(option);
+                        });
+                    } else {
+                        const errorOption = document.createElement('option');
+                        errorOption.disabled = true;
+                        errorOption.textContent = 'Sem provedores cadastrados.';
+                        selectElement.appendChild(errorOption);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar provedores:', error);
+                    const selectElement = document.getElementById('provedor');
+                    const errorOption = document.createElement('option');
+                    errorOption.disabled = true;
+                    errorOption.textContent = 'Erro ao carregar provedores.';
+                    selectElement.appendChild(errorOption);
+                });
+        }
+
+        // Função para exibir modais
+        window.showModal = function (modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'block';
+
+            if (modalId === 'manageProvedoresModal') {
+                loadProvedores();
+            } else if (modalId === 'addDeviceModal') {
+                loadProvedoresIntoSelect();
+            }
+        };
+
+        // Função de fechar o modal
+        function closeModal(modalId, event) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'none';
+        }
+
+        // Função para mostrar alertas (como "Dispositivo adicionado com sucesso")
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.classList.add('alert', `alert-${type}`);
+            alertDiv.innerText = message;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+
+        // Adicionar evento para salvar a edição do dispositivo
+        const saveEditButton = document.getElementById('saveEditButton');
+        if (saveEditButton) {
+            saveEditButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                console.log("Botão de salvar clicado!");
+                saveEdit(event);
+            });
+        }
+
+        const editDeviceForm = document.getElementById('editDeviceForm');
+        if (!editDeviceForm) {
+            console.error('Formulário de edição não encontrado!');
+            return;
+        }
+
+        editDeviceForm.addEventListener('submit', async function (event) {
+            // Previne o comportamento padrão do formulário (evitar recarregar a página)
+            event.preventDefault();
+
+            // Coleta os valores dos campos
+            const deviceId = document.getElementById('editId').value;
+            const deviceName = document.getElementById('editName').value;
+            const deviceIp = document.getElementById('editIp').value;
+            const deviceProtocol = document.getElementById('editProtocol').value;
+            const devicePort = document.getElementById('editPort').value;
+            const deviceProvedor = document.getElementById('editProvedor').value;
+
+            // Log para verificar os valores coletados
+            console.log('Valores coletados para salvar:');
+            console.log('ID:', deviceId);
+            console.log('Nome:', deviceName);
+            console.log('IP:', deviceIp);
+            console.log('Protocolo:', deviceProtocol);
+            console.log('Porta:', devicePort);
+            console.log('Provedor:', deviceProvedor);
+
+            // Exemplo de um objeto com os dados que você quer enviar
+            const deviceData = {
+                id: deviceId,
+                name: deviceName,
+                ip_address: deviceIp,
+                protocol: deviceProtocol,
+                port: devicePort,
+                provedor: deviceProvedor
+            };
+
+            // Log para verificar o objeto antes de enviar
+            console.log('Objeto para enviar:', deviceData);
+
+            try {
+                console.log('Enviando requisição para atualizar dispositivo...');
+                const response = await fetch('/devices/' + deviceId + '/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deviceData)
+                });
+
+                // Verificando o status da resposta
+                console.log('Status da resposta:', response.status);
+
+                if (response.ok) {
+                    // Esperando a resposta e verificando os dados
+                    const data = await response.json();
+                    console.log('Resposta do servidor:', data);
+
+                    if (data.success) {
+                        showAlert('Dispositivo atualizado com sucesso!', 'success');
+                        updateDeviceRowInTable(deviceId, deviceData);
+                        closeModal('editModal'); // Fechar o modal após salvar
+                    } else {
+                        showAlert('Erro: ' + data.error, 'danger');
+                    }
+                } else {
+                    console.log('Erro: resposta do servidor com falha');
+                    showAlert('Erro ao salvar dispositivo, tente novamente.', 'danger');
+                }
+            } catch (error) {
+                // Em caso de erro, mostrar no log
+                console.log('Erro na requisição:', error);
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        });
+
+    });
+</script>
+{% endblock %}
+
+{% block content %}
 <div class="card">
     <h2>Gerenciar Dispositivos</h2>
     <div class="d-flex justify-content-start align-items-center gap-2 flex-wrap">
-        <button class="btn btn-success" onclick="showModal('addDeviceModal')">➕ Adicionar Novo Dispositivo</button>
-        <button class="btn btn-primary" onclick="showModal('manageProvedoresModal')" style="margin-left: 10px;">🏢
-            Adicionar Provedor</button>
+        <button class="btn-gerenciar btn-gerenciar--primary" onclick="showModal('addDeviceModal')">
+            <i class="fas fa-plus"></i> Novo Dispositivo
+        </button>
+        <button class="btn-gerenciar" onclick="showModal('manageProvedoresModal')" style="margin-left: 10px;">
+            <i class="fas fa-building"></i> Adicionar Provedor
+        </button>
     </div>
 </div>
 
-<div class="card">
-    <h2>Lista de Dispositivos</h2>
-    {% if devices %}
-    <table>
+<div class="table-container" style="margin-top: 20px;">
+    <div class="table-header">
+        <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
+        <div class="table-actions" style="display: flex; gap: 10px; align-items: center;">
+            {% set filter_id = 'device' %}
+            {% set show_provedor_filter = true %}
+            {% set show_ip_search = false %}
+            {% include 'components/table_filters.html' %}
+            <input id="deviceSearch" type="text" placeholder="Buscar dispositivo..." class="search-input"
+                style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; width: 200px;">
+            <button class="btn-gerenciar" onclick="location.href='/devices'">
+                <i class="fas fa-cog"></i> Gerenciar
+            </button>
+        </div>
+    </div>
+
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Nome</th>
-                <th>IP</th>
-                <th>Tipo</th>
+                <th>Endereço IP</th>
+                <th>Provedor/Cliente</th>
+                <th>Plataforma</th>
                 <th>Protocolo</th>
                 <th>Porta</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th style="text-align: right;">Ações</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="devicesTableBody">
             {% for device in devices %}
-            <tr>
-                <td>{{ device.name }}</td>
-                <td>{{ device.ip_address }}</td>
-                <td>{{ device.device_type }}</td>
-                <td>{{ device.protocol|upper }}</td>
-                <td>{{ device.port }}</td>
+            <tr data-device-id="{{ device.id }}"
+                data-provedor="{{ device.provedor if device.provedor else 'Sem_Provedor' }}">
                 <td>
-                    {% if device.active %}
-                    <span class="badge badge-success">Ativo</span>
-                    {% else %}
-                    <span class="badge badge-danger">Inativo</span>
-                    {% endif %}
+                    <div class="device-status">
+                        <span class="status-dot {{ 'online' if device.active else 'offline' }}"></span>
+                        <strong class="device-name">{{ device.name }}</strong>
+                    </div>
                 </td>
+                <td class="device-ip">{{ device.ip_address }}</td>
+                <td class="device-provedor">{{ device.provedor if device.provedor else 'Sem_Provedor' }}</td>
+                <td class="device-type">{{ device.device_type|title }}</td>
+                <td class="device-protocol">{{ device.protocol|upper }}</td>
+                <td class="device-port">{{ device.port }}</td>
                 <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="backupDevice({{ device.id }})">🔄 Backup</button>
-                        <button class="btn btn-primary" onclick="editDevice({{ device.id }})">✏️ Editar</button>
-                        <button class="btn btn-danger" onclick="deleteDevice({{ device.id }})">🗑️</button>
+                    <span class="badge-status badge-{{ 'active' if device.active else 'failed' }}">
+                        {{ 'Ativo' if device.active else 'Inativo' }}
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <div class="action-buttons" style="justify-content: flex-end;">
+                        <button class="btn-action backupButton" data-device-id="{{ device.id }}" title="Fazer Backup">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                        <button class="btn-action editButton" data-device-id="{{ device.id }}" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action deleteButton" data-device-id="{{ device.id }}" title="Deletar">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-    <p>Nenhum dispositivo cadastrado.</p>
-    {% endif %}
+
+    <div class="table-footer">
+        <div id="deviceCount">Mostrando <span id="visibleCount">{{ devices|length }}</span> de {{ devices|length }}
+            dispositivos</div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5>Editar Dispositivo</h5>
+            <span class="close" onclick="closeModal('editModal')">&times;</span>
+        </div>
+        <form id="editDeviceForm">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>Nome</label><input type="text" id="editName" class="form-control"></div>
+            <div class="form-group"><label>Endereço IP</label><input type="text" id="editIp" class="form-control"></div>
+            <div class="form-group">
+                <label>Protocolo</label>
+                <select id="editProtocol" class="form-control">
+                    <option value="ssh">SSH</option>
+                    <option value="ftp">FTP</option>
+                    <option value="sftp">SFTP</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Porta</label><input type="number" id="editPort" class="form-control"></div>
+            <div class="form-group">
+                <label for="editProvedor">Provedor</label>
+                <select id="editProvedor" class="form-control">
+                    <option value="">Todos</option>
+                    {% for prov in provedores %}
+                    <option value="{{ prov }}">{{ prov }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button id="saveEditButton" class="btn-gerenciar btn-gerenciar--primary" type="submit">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+        </form>
+    </div>
 </div>
 
 <div id="addDeviceModal" class="modal">
@@ -81,20 +788,15 @@
         <form id="addDeviceForm">
             <div class="form-group"><label>Nome *</label><input type="text" name="name" required></div>
             <div class="form-group"><label>IP *</label><input type="text" name="ip_address" required></div>
-
             <div class="form-group">
-                <label for="provedor">
-                    <i class="fas fa-building"></i> Provedor/Cliente
-                </label>
+                <label for="provedor">Provedor/Cliente</label>
                 <select name="provedor" id="provedor" required>
                     <option value="Sem_Provedor" selected>Sem_Provedor</option>
                 </select>
-                <small style="display: block; margin-top: 5px; color: #666; font-size: 0.85rem;">
-                    Selecione um provedor cadastrado ou use "Sem_Provedor"
-                </small>
+                <small>Selecione um provedor cadastrado ou use "Sem_Provedor"</small>
             </div>
-
-            <div class="form-group"><label>Tipo *</label>
+            <div class="form-group">
+                <label>Tipo *</label>
                 <select name="device_type" required>
                     <option value="">Selecione...</option>
                     <option value="ubiquiti_airos">Ubiquiti</option>
@@ -105,7 +807,8 @@
                     <option value="mikrotik_routeros">MikroTik</option>
                 </select>
             </div>
-            <div class="form-group"><label>Protocolo *</label>
+            <div class="form-group">
+                <label>Protocolo *</label>
                 <select name="protocol" required>
                     <option value="ssh">SSH</option>
                     <option value="http">HTTP</option>
@@ -114,31 +817,11 @@
             </div>
             <div class="form-group"><label>Porta</label><input type="number" name="port" value="22"></div>
             <div class="form-group"><label>Usuário *</label><input type="text" name="username" required></div>
-            <div class="form-group"><label>Senha *</label><input type="password" name="password" required></div>
-            <button type="submit" class="btn btn-success">💾 Salvar</button>
-        </form>
-    </div>
-</div>
-
-<div id="editDeviceModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Editar Dispositivo</h2>
-            <span class="close" onclick="closeModal('editDeviceModal')">&times;</span>
-        </div>
-        <form id="editDeviceForm">
-            <input type="hidden" id="editId">
-            <div class="form-group"><label>Nome *</label><input type="text" id="editName" required></div>
-            <div class="form-group"><label>IP *</label><input type="text" id="editIp" required></div>
-            <div class="form-group"><label>Protocolo *</label>
-                <select id="editProtocol" required>
-                    <option value="ssh">SSH</option>
-                    <option value="http">HTTP</option>
-                    <option value="https">HTTPS</option>
-                </select>
-            </div>
-            <div class="form-group"><label>Porta</label><input type="number" id="editPort" required></div>
-            <button type="submit" class="btn btn-success">💾 Atualizar</button>
+            <div class="form-group"><label>Senha *</label><input type="password" name="password" required
+                    autocomplete="current-password"></div>
+            <button type="submit" class="btn-gerenciar btn-gerenciar--primary">
+                <i class="fas fa-save"></i> Salvar
+            </button>
         </form>
     </div>
 </div>
@@ -146,7 +829,7 @@
 <div id="manageProvedoresModal" class="modal">
     <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
-            <h2>🏢 Gerenciar Provedores/Clientes</h2>
+            <h2><i class="fas fa-building"></i> Gerenciar Provedores/Clientes</h2>
             <span class="close" onclick="closeModal('manageProvedoresModal')">&times;</span>
         </div>
 
@@ -161,10 +844,11 @@
                     <label>Descrição (opcional)</label>
                     <input type="text" id="newProvedorDescription" placeholder="Descrição adicional">
                 </div>
-                <button type="submit" class="btn btn-success" style="white-space: nowrap;">➕ Adicionar</button>
+                <button type="submit" class="btn-gerenciar btn-gerenciar--primary" style="white-space: nowrap;">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
             </form>
         </div>
-
 
         <div>
             <h3 style="margin-bottom: 10px; font-size: 16px;">Provedores Cadastrados</h3>
@@ -174,250 +858,28 @@
         </div>
     </div>
 </div>
-{% endblock %}
-{% block extra_js %}
-<script>
-    document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        try {
-            const response = await fetch('/devices/add', { method: 'POST', body: formData });
-            const data = await response.json();
-            if (data.success) {
-                showAlert('Dispositivo adicionado!', 'success');
-                closeModal('addDeviceModal');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                showAlert('Erro: ' + data.error, 'danger');
-            }
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    });
 
-    async function editDevice(id) {
-        try {
-            const response = await fetch('/devices/' + id + '/get');
-            const device = await response.json();
-            document.getElementById('editId').value = device.id;
-            document.getElementById('editName').value = device.name;
-            document.getElementById('editIp').value = device.ip_address;
-            document.getElementById('editProtocol').value = device.protocol;
-            document.getElementById('editPort').value = device.port;
-            showModal('editDeviceModal');
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    }
+<div id="deleteProvedorModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-triangle-exclamation"></i> Excluir Provedor</h2>
+            <span class="close" onclick="closeModal('deleteProvedorModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Você tem certeza de que deseja excluir este provedor? Esta ação não pode ser desfeita.</p>
+            <button class="btn-gerenciar btn-gerenciar--danger" id="confirmDeleteProvedorBtn">Excluir</button>
+            <button class="btn-gerenciar btn-gerenciar--ghost"
+                onclick="closeModal('deleteProvedorModal')">Cancelar</button>
+        </div>
+    </div>
+</div>
 
-    document.getElementById('editDeviceForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('editId').value;
-        const data = {
-            name: document.getElementById('editName').value,
-            ip_address: document.getElementById('editIp').value,
-            protocol: document.getElementById('editProtocol').value,
-            port: document.getElementById('editPort').value
-        };
-        try {
-            const response = await fetch('/devices/' + id + '/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (result.success) {
-                showAlert('Atualizado!', 'success');
-                closeModal('editDeviceModal');
-                setTimeout(() => location.reload(), 1500);
-            }
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    });
-
-    async function backupDevice(deviceId) {
-        if (!confirm('Backup agora?')) return;
-        try {
-            const response = await fetch('/backup/' + deviceId, { method: 'POST' });
-            const data = await response.json();
-            if (data.success) showAlert('Backup realizado!', 'success');
-            else showAlert('Erro: ' + data.error, 'danger');
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    }
-
-    async function deleteDevice(deviceId) {
-        if (!confirm('Remover permanentemente?')) return;
-        try {
-            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
-            const data = await response.json();
-            if (data.success) {
-                showAlert('Removido!', 'success');
-                setTimeout(() => location.reload(), 1500);
-            }
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    }
-
-    // Load provedores into the select dropdown
-    function loadProvedoresIntoSelect() {
-        const select = document.getElementById('provedor');
-        if (!select) return;
-
-        // Keep the first option (Sem_Provedor) and clear the rest
-        const firstOption = select.querySelector('option[value="Sem_Provedor"]');
-        select.innerHTML = '';
-        if (firstOption) {
-            select.appendChild(firstOption);
-        } else {
-            const defaultOption = document.createElement('option');
-            defaultOption.value = 'Sem_Provedor';
-            defaultOption.textContent = 'Sem_Provedor';
-            defaultOption.selected = true;
-            select.appendChild(defaultOption);
-        }
-
-        fetch("/api/provedores")
-            .then(response => response.json())
-            .then(data => {
-                if (data.provedores && data.provedores.length > 0) {
-                    data.provedores.forEach(function (prov) {
-                        const option = document.createElement("option");
-                        option.value = prov;
-                        option.textContent = prov;
-                        select.appendChild(option);
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao carregar provedores:', error);
-            });
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        loadProvedoresIntoSelect();
-    });
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // Provedores Management
-    async function loadProvedores() {
-        const listDiv = document.getElementById('provedoresList');
-        try {
-            const response = await fetch('/api/provedores/all');
-            const data = await response.json();
-            const provedores = data.provedores || [];
-
-            if (provedores.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Nenhum provedor cadastrado ainda.</p>';
-                return;
-            }
-
-            listDiv.innerHTML = provedores.map(p => {
-                // Escape HTML and JavaScript special characters
-                const safeName = String(p.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-                const safeId = p.id || 'null';
-                return `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; border-radius: 4px;">
-                    <div>
-                        <strong>${escapeHtml(p.name)}</strong>
-                        ${p.description ? `<br><small style="color: #666;">${escapeHtml(p.description)}</small>` : ''}
-                    </div>
-                    <button class="btn btn-danger" onclick="deleteProvedor(${safeId}, '${safeName}')" style="padding: 4px 12px; font-size: 12px;">🗑️ Remover</button>
-                </div>
-            `;
-            }).join('');
-        } catch (error) {
-            listDiv.innerHTML = `<p style="text-align: center; color: #e74c3c; padding: 20px;">Erro ao carregar: ${error.message}</p>`;
-        }
-    }
-
-    document.getElementById('addProvedorForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('newProvedorName').value.trim();
-        const description = document.getElementById('newProvedorDescription').value.trim() || null;
-
-        if (!name) {
-            showAlert('Nome do provedor é obrigatório', 'danger');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/provedores/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description })
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert('Provedor adicionado com sucesso!', 'success');
-                document.getElementById('newProvedorName').value = '';
-                document.getElementById('newProvedorDescription').value = '';
-                loadProvedores();
-                loadProvedoresIntoSelect(); // Refresh the select dropdown
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert('Erro: ' + data.error, 'danger');
-            }
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    });
-
-    async function deleteProvedor(provedorId, provedorName) {
-        if (!confirm(`Tem certeza que deseja remover o provedor "${provedorName}"?\n\nNota: Isso não remove dispositivos associados a este provedor.`)) {
-            return;
-        }
-
-        try {
-            let response;
-            if (provedorId !== 'null' && !isNaN(provedorId)) {
-                response = await fetch(`/api/provedores/${provedorId}/delete`, { method: 'POST' });
-            } else {
-                response = await fetch('/api/provedores/delete-by-name', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: provedorName })
-                });
-            }
-
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert('Provedor removido!', 'success');
-                loadProvedores();
-                loadProvedoresIntoSelect(); // Refresh the select dropdown
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert('Erro: ' + data.error, 'danger');
-            }
-        } catch (error) {
-            showAlert('Erro: ' + error.message, 'danger');
-        }
-    }
-
-    // Load provedores when modal opens
-    const originalShowModal = window.showModal || function (modalId) {
-        document.getElementById(modalId).style.display = 'block';
-    };
-
-    window.showModal = function (modalId) {
-        originalShowModal(modalId);
-        if (modalId === 'manageProvedoresModal') {
-            loadProvedores();
-        } else if (modalId === 'addDeviceModal') {
-            // Refresh provedores dropdown when opening add device modal
-            loadProvedoresIntoSelect();
-        }
-    };
-</script>
+<div id="loadingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-body" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #007bff;"></i>
+            <p style="margin-top: 10px;">Carregando...</p>
+        </div>
+    </div>
+</div>
 {% endblock %}
