@@ -88,7 +88,8 @@ def index():
 @app.route('/devices')
 def devices():
     all_devices = db.get_all_devices(active_only=False)
-    return render_template('devices.html', devices=all_devices)
+    provedores = db.get_provedores()  # Adicionar esta linha
+    return render_template('devices.html', devices=all_devices, provedores=provedores)  # Adicionar provedores aqui
 
 @app.route('/devices/add', methods=['POST'])
 def add_device():
