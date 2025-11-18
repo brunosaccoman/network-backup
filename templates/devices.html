@@ -212,6 +212,51 @@
     #backupIpSearch::placeholder {
         color: #999;
     }
+
+    .provedores-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .provedor-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border: 1px solid #e0e6ed;
+        border-radius: 8px;
+        background: white;
+        gap: 12px;
+        transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    .provedor-item:hover {
+        border-color: #3498db;
+        box-shadow: 0 2px 6px rgba(52, 152, 219, 0.15);
+    }
+
+    .provedor-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .provedor-info strong {
+        font-size: 0.95rem;
+        color: #1f2937;
+    }
+
+    .provedor-info span {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .provedor-actions {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
 </style>
 {% endblock %}
 
@@ -477,65 +522,98 @@
         })
 
         // Função para carregar provedores na interface
-        function loadProvedores() {
-            fetch('/provedores/list')
-                .then(response => response.json())
-                .then(data => {
-                    const provedoresList = document.getElementById('provedoresList');
-                    provedoresList.innerHTML = ''; // Limpar a lista existente
+        async function loadProvedores() {
+            const provedoresList = document.getElementById('provedoresList');
+            if (!provedoresList) return;
 
-                    if (data && data.provedores) {
-                        data.provedores.forEach(provedor => {
-                            const item = document.createElement('div');
-                            item.classList.add('provedor-item');
-                            item.textContent = provedor.name;
-                            provedoresList.appendChild(item);
-                        });
-                    } else {
-                        provedoresList.innerHTML = '<p>Sem provedores cadastrados.</p>';
+            try {
+                const response = await fetch('/api/provedores/all');
+                if (!response.ok) throw new Error('Falha ao carregar provedores');
+                const data = await response.json();
+                const provedores = Array.isArray(data?.provedores) ? data.provedores : [];
+
+                provedoresList.innerHTML = '';
+
+                if (!provedores.length) {
+                    provedoresList.innerHTML = '<p>Sem provedores cadastrados.</p>';
+                    return;
+                }
+
+                provedores.forEach(provedor => {
+                    const id = typeof provedor === 'object' ? provedor?.id : undefined;
+                    const name = typeof provedor === 'string' ? provedor : provedor?.name;
+                    const description = typeof provedor === 'object' ? provedor?.description : undefined;
+                    if (!name) return;
+
+                    const item = document.createElement('div');
+                    item.classList.add('provedor-item');
+
+                    const info = document.createElement('div');
+                    info.classList.add('provedor-info');
+                    info.innerHTML = `<strong>${name}</strong>${description ? `<span>${description}</span>` : ''}`;
+
+                    const actions = document.createElement('div');
+                    actions.classList.add('provedor-actions');
+
+                    if (id) {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.classList.add('btn-action', 'danger');
+                        deleteBtn.title = `Remover ${name}`;
+                        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                        deleteBtn.addEventListener('click', () => deleteProvedor(id, name));
+                        actions.appendChild(deleteBtn);
                     }
-                })
-                .catch(error => {
-                    console.error('Erro ao carregar provedores:', error);
-                    document.getElementById('provedoresList').innerHTML = '<p>Erro ao carregar provedores.</p>';
+
+                    item.appendChild(info);
+                    item.appendChild(actions);
+                    provedoresList.appendChild(item);
                 });
+            } catch (error) {
+                console.error('Erro ao carregar provedores:', error);
+                provedoresList.innerHTML = '<p>Erro ao carregar provedores.</p>';
+            }
         }
 
         // Carrega os provedores no campo select
-        function loadProvedoresIntoSelect() {
-            fetch('/provedores/list')
-                .then(response => response.json())
-                .then(data => {
-                    const selectElement = document.getElementById('provedor');
-                    selectElement.innerHTML = ''; // Limpar as opções existentes
+        async function loadProvedoresIntoSelect() {
+            const selectElement = document.getElementById('provedor');
+            if (!selectElement) return;
 
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = 'Sem_Provedor';
-                    defaultOption.textContent = 'Sem_Provedor';
-                    selectElement.appendChild(defaultOption);
+            try {
+                const response = await fetch('/api/provedores');
+                if (!response.ok) throw new Error('Falha ao carregar provedores');
+                const data = await response.json();
+                const provedores = Array.isArray(data?.provedores) ? data.provedores : [];
 
-                    if (data && data.provedores) {
-                        data.provedores.forEach(provedor => {
-                            const option = document.createElement('option');
-                            option.value = provedor.name;
-                            option.textContent = provedor.name;
-                            selectElement.appendChild(option);
-                        });
-                    } else {
-                        const errorOption = document.createElement('option');
-                        errorOption.disabled = true;
-                        errorOption.textContent = 'Sem provedores cadastrados.';
-                        selectElement.appendChild(errorOption);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao carregar provedores:', error);
-                    const selectElement = document.getElementById('provedor');
-                    const errorOption = document.createElement('option');
-                    errorOption.disabled = true;
-                    errorOption.textContent = 'Erro ao carregar provedores.';
-                    selectElement.appendChild(errorOption);
-                });
+                selectElement.innerHTML = '';
+
+                const defaultOption = document.createElement('option');
+                defaultOption.value = 'Sem_Provedor';
+                defaultOption.textContent = 'Sem_Provedor';
+                selectElement.appendChild(defaultOption);
+
+                if (provedores.length) {
+                    provedores.forEach(provedor => {
+                        const name = typeof provedor === 'string' ? provedor : provedor?.name;
+                        if (!name) return;
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        selectElement.appendChild(option);
+                    });
+                } else {
+                    const emptyOption = document.createElement('option');
+                    emptyOption.disabled = true;
+                    emptyOption.textContent = 'Sem provedores cadastrados.';
+                    selectElement.appendChild(emptyOption);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar provedores:', error);
+                const errorOption = document.createElement('option');
+                errorOption.disabled = true;
+                errorOption.textContent = 'Erro ao carregar provedores.';
+                selectElement.appendChild(errorOption);
+            }
         }
 
         // Função para exibir modais
@@ -566,6 +644,74 @@
             setTimeout(() => {
                 alertDiv.remove();
             }, 3000);
+        }
+
+        async function deleteProvedor(id, name) {
+            if (!confirm(`Remover o provedor "${name}"?`)) return;
+
+            try {
+                const response = await fetch(`/api/provedores/${id}/delete`, {
+                    method: 'POST'
+                });
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.success !== false) {
+                    showAlert(`Provedor "${name}" removido.`, 'success');
+                    await loadProvedores();
+                    await loadProvedoresIntoSelect();
+                } else {
+                    const errorMessage = result?.error || 'Não foi possível remover o provedor.';
+                    showAlert(`Erro: ${errorMessage}`, 'danger');
+                }
+            } catch (error) {
+                console.error('Erro ao remover provedor:', error);
+                showAlert('Erro ao remover provedor: ' + error.message, 'danger');
+            }
+        }
+
+        const addProvedorForm = document.getElementById('addProvedorForm');
+        if (addProvedorForm) {
+            addProvedorForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const nameInput = document.getElementById('newProvedorName');
+                const descriptionInput = document.getElementById('newProvedorDescription');
+
+                const name = nameInput?.value.trim();
+                const description = descriptionInput?.value.trim();
+
+                if (!name) {
+                    showAlert('Informe o nome do provedor.', 'danger');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/provedores/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name,
+                            description: description || null
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showAlert('Provedor adicionado com sucesso!', 'success');
+                        addProvedorForm.reset();
+                        await loadProvedores();
+                        await loadProvedoresIntoSelect();
+                    } else {
+                        const errorMessage = result?.error || 'Não foi possível adicionar o provedor.';
+                        showAlert(`Erro: ${errorMessage}`, 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erro ao adicionar provedor:', error);
+                    showAlert('Erro ao adicionar provedor: ' + error.message, 'danger');
+                }
+            });
         }
 
         // Adicionar evento para salvar a edição do dispositivo
@@ -659,31 +805,30 @@
 {% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Gerenciar Dispositivos</h2>
-    <div class="d-flex justify-content-start align-items-center gap-2 flex-wrap">
-        <button class="btn-gerenciar btn-gerenciar--primary" onclick="showModal('addDeviceModal')">
-            <i class="fas fa-plus"></i> Novo Dispositivo
-        </button>
-        <button class="btn-gerenciar" onclick="showModal('manageProvedoresModal')" style="margin-left: 10px;">
-            <i class="fas fa-building"></i> Adicionar Provedor
-        </button>
-    </div>
-</div>
-
 <div class="table-container" style="margin-top: 20px;">
-    <div class="table-header">
-        <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
-        <div class="table-actions" style="display: flex; gap: 10px; align-items: center;">
+    <div class="table-header" style="background: #f9fafb;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap: wrap;">
+            <div>
+                <h5 style="margin:0;"><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
+                <p style="margin:0; font-size:12px; color:#6b7280;">Gerencie dispositivos e provedores em um só lugar
+                </p>
+            </div>
+            <div class="d-flex justify-content-start align-items-center gap-2 flex-wrap" style="margin-left:auto;">
+                <button class="btn-gerenciar btn-gerenciar--ghost" onclick="showModal('manageProvedoresModal')">
+                    <i class="fas fa-building"></i> Adicionar Provedor
+                </button>
+                <button class="btn-gerenciar btn-gerenciar--primary" onclick="showModal('addDeviceModal')">
+                    <i class="fas fa-plus"></i> Novo Dispositivo
+                </button>
+            </div>
+        </div>
+        <div class="table-actions" style="display: flex; gap: 10px; align-items: center; margin-top:15px;">
             {% set filter_id = 'device' %}
             {% set show_provedor_filter = true %}
             {% set show_ip_search = false %}
             {% include 'components/table_filters.html' %}
             <input id="deviceSearch" type="text" placeholder="Buscar dispositivo..." class="search-input"
                 style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; width: 200px;">
-            <button class="btn-gerenciar" onclick="location.href='/devices'">
-                <i class="fas fa-cog"></i> Gerenciar
-            </button>
         </div>
     </div>
 
@@ -852,7 +997,7 @@
 
         <div>
             <h3 style="margin-bottom: 10px; font-size: 16px;">Provedores Cadastrados</h3>
-            <div id="provedoresList" style="max-height: 400px; overflow-y: auto;">
+            <div id="provedoresList" class="provedores-wrapper" style="max-height: 400px; overflow-y: auto;">
                 <p style="text-align: center; color: #999; padding: 20px;">Carregando...</p>
             </div>
         </div>
