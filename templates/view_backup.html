@@ -1,16 +1,52 @@
 {% extends "base.html" %}
 {% block title %}Visualizar Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        .show-content {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 1rem;
+
+            pre {
+                margin: 0;
+                white-space: pre-wrap;
+            }
+        }
+
+        .btn-actions {
+            display: flex;
+            flex: 1;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+
+            button,
+            a {
+                width: 100%;
+            }
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h2>Visualização de Backup</h2>
-    <button class="btn-gerenciar btn-gerenciar--ghost" onclick="history.back()">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </button>
-    <a href="/backups/{{ backup_id }}/download" class="btn-gerenciar btn-gerenciar--primary">
-        <i class="fas fa-download"></i> Download
-    </a>
-    <div style="background:#2d2d2d;color:#f8f8f2;padding:1.5rem;border-radius:8px;overflow-x:auto;margin-top:1rem;">
-        <pre style="margin:0;white-space:pre-wrap;">{{ content }}</pre>
+    <div class="btn-actions">
+        <button class="btn-gerenciar btn-gerenciar--ghost" onclick="history.back()">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+        <a href="/backups/{{ backup_id }}/download" class="btn-gerenciar btn-gerenciar--primary">
+            <i class="fas fa-download"></i> Download
+        </a>
+    </div>
+    <div class="show-content">
+        <pre>{{ content }}</pre>
     </div>
 </div>
 {% endblock %}
