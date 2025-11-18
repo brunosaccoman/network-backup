@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: network-backup-db
+    restart: always
+    environment:
+      POSTGRES_USER: backup_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backup_password_CHANGE_ME}
+      POSTGRES_DB: network_backup
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - backup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backup_user -d network_backup"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Network Backup Application
+  app:
+    build: .
+    container_name: network-backup-app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Flask
+      FLASK_ENV: production
+      DEBUG: "False"
+
+      # Security (GENERATE NEW KEYS!)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      SECRET_KEY: ${SECRET_KEY}
+
+      # Database
+      DATABASE_URL: postgresql://backup_user:${POSTGRES_PASSWORD:-backup_password_CHANGE_ME}@postgres:5432/network_backup
+
+      # Session
+      SESSION_COOKIE_SECURE: "True"
+      SESSION_COOKIE_HTTPONLY: "True"
+
+      # SSL
+      SSL_VERIFY: "True"
+
+      # Timezone
+      TIMEZONE: America/Porto_Velho
+    volumes:
+      - backup_data:/app/backups
+      - app_logs:/app/logs
+    ports:
+      - "8000:5000"
+    networks:
+      - backup-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy (opcional)
+  nginx:
+    image: nginx:alpine
+    container_name: network-backup-nginx
+    restart: always
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - backup-network
+
+volumes:
+  postgres_data:
+    driver: local
+  backup_data:
+    driver: local
+  app_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  backup-network:
+    driver: bridge

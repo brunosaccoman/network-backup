@@ -1,0 +1,720 @@
+{% extends "base.html" %}
+{% block title %}Logs de Auditoria - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main container */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Stats cards at the top */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
+    .stat-icon.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon.red { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    /* Page header */
+    .page-header {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Filters */
+    .filters-section {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+    }
+
+    .table-filters {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+    }
+
+    .filter-group label {
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 0.4rem 0.6rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 0.9rem;
+        min-width: 150px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 3px rgba(74, 144, 226, 0.5);
+        outline: none;
+    }
+
+    /* Table container */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Badge for action types */
+    .badge-action {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-action.create { background: #d4edda; color: #155724; }
+    .badge-action.update { background: #d1ecf1; color: #0c5460; }
+    .badge-action.delete { background: #f8d7da; color: #721c24; }
+    .badge-action.backup { background: #cce5ff; color: #004085; }
+    .badge-action.login { background: #e2e3e5; color: #383d41; }
+    .badge-action.logout { background: #e2e3e5; color: #383d41; }
+    .badge-action.login_failed { background: #f8d7da; color: #721c24; }
+    .badge-action.default { background: #e2e3e5; color: #383d41; }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+
+    /* Details cell */
+    .details-cell {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .details-cell:hover {
+        overflow: visible;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        font-size: 13px;
+        color: #555;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .pagination-info {
+        flex: 1;
+    }
+
+    .pagination-controls {
+        display: flex;
+        justify-content: center;
+        flex: 1;
+        gap: 5px;
+    }
+
+    .page-btn {
+        all: unset;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: 1px solid #dcdfe6;
+        background: white;
+        font-size: 13px;
+        cursor: pointer;
+        color: #444;
+        transition: all 0.18s ease;
+    }
+
+    .page-btn:hover:not(.active):not(:disabled) {
+        background: #f0f6ff;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 0 6px rgba(52, 152, 219, 0.35);
+    }
+
+    .page-size-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .page-size-selector label {
+        color: #555;
+        font-weight: 500;
+    }
+
+    .page-size-selector select {
+        padding: 4px 8px;
+        border: 1px solid #dcdfe6;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Stats Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalLogs">0</h3>
+                <p>Total de Logs</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="successLogs">0</h3>
+                <p>Ações Bem-sucedidas</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="failedLogs">0</h3>
+                <p>Falhas de Login</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="activeUsers">0</h3>
+                <p>Usuários Ativos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2>
+            <i class="fas fa-clipboard-list"></i>
+            Logs de Auditoria
+        </h2>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="table-filters">
+            <div class="filter-group">
+                <label>Buscar:</label>
+                <input type="text" id="searchInput" class="filter-input" placeholder="Usuário, ação, recurso...">
+            </div>
+            <div class="filter-group">
+                <label>Ação:</label>
+                <select id="actionFilter" class="filter-select">
+                    <option value="">Todas</option>
+                    <option value="login">Login</option>
+                    <option value="logout">Logout</option>
+                    <option value="login_failed">Login Falhado</option>
+                    <option value="create">Criar</option>
+                    <option value="update">Atualizar</option>
+                    <option value="delete">Deletar</option>
+                    <option value="backup">Backup</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Recurso:</label>
+                <select id="resourceFilter" class="filter-select">
+                    <option value="">Todos</option>
+                    <option value="user">Usuário</option>
+                    <option value="device">Dispositivo</option>
+                    <option value="backup">Backup</option>
+                    <option value="schedule">Agendamento</option>
+                    <option value="provedor">Provedor</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <h5><i class="fas fa-list"></i> Histórico de Ações</h5>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Recurso</th>
+                    <th>Detalhes</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>Carregando logs...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="pagination-container">
+            <div class="pagination-info" id="paginationInfo">
+                Mostrando 0-0 de 0 logs
+            </div>
+            <div class="pagination-controls" id="paginationControls">
+                <!-- Botões de paginação serão inseridos aqui -->
+            </div>
+            <div class="page-size-selector">
+                <label>Itens por página:</label>
+                <select id="pageSizeSelect" onchange="changePageSize(this.value)">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allLogs = [];
+let filteredLogs = [];
+let currentPage = 1;
+let rowsPerPage = 20;
+
+// Load logs on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadLogs();
+
+    // Filter event listeners
+    document.getElementById('searchInput').addEventListener('input', filterLogs);
+    document.getElementById('actionFilter').addEventListener('change', filterLogs);
+    document.getElementById('resourceFilter').addEventListener('change', filterLogs);
+});
+
+async function loadLogs() {
+    try {
+        const response = await fetch('/api/audit-logs');
+        const data = await response.json();
+        allLogs = data.logs || [];
+        filteredLogs = [...allLogs];
+        updateStats();
+        updatePagination();
+    } catch (error) {
+        console.error('Erro ao carregar logs:', error);
+        showError('Erro ao carregar logs de auditoria');
+    }
+}
+
+function updateStats() {
+    const total = allLogs.length;
+    const successful = allLogs.filter(log => !log.action.includes('failed')).length;
+    const failed = allLogs.filter(log => log.action === 'login_failed').length;
+
+    // Count unique users
+    const uniqueUsers = new Set(allLogs.map(log => log.username).filter(Boolean)).size;
+
+    document.getElementById('totalLogs').textContent = total;
+    document.getElementById('successLogs').textContent = successful;
+    document.getElementById('failedLogs').textContent = failed;
+    document.getElementById('activeUsers').textContent = uniqueUsers;
+}
+
+function filterLogs() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const actionFilter = document.getElementById('actionFilter').value;
+    const resourceFilter = document.getElementById('resourceFilter').value;
+
+    filteredLogs = allLogs;
+
+    // Apply search filter
+    if (searchTerm) {
+        filteredLogs = filteredLogs.filter(log => {
+            return (log.username && log.username.toLowerCase().includes(searchTerm)) ||
+                   (log.action && log.action.toLowerCase().includes(searchTerm)) ||
+                   (log.resource_type && log.resource_type.toLowerCase().includes(searchTerm)) ||
+                   (log.details && log.details.toLowerCase().includes(searchTerm));
+        });
+    }
+
+    // Apply action filter
+    if (actionFilter) {
+        filteredLogs = filteredLogs.filter(log => log.action === actionFilter);
+    }
+
+    // Apply resource filter
+    if (resourceFilter) {
+        filteredLogs = filteredLogs.filter(log => log.resource_type === resourceFilter);
+    }
+
+    currentPage = 1;
+    updatePagination();
+}
+
+function changePageSize(newSize) {
+    rowsPerPage = parseInt(newSize);
+    currentPage = 1;
+    updatePagination();
+}
+
+function updatePagination() {
+    const totalItems = filteredLogs.length;
+    const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    // Get logs for current page
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const logsToShow = filteredLogs.slice(start, end);
+
+    // Render logs
+    renderLogs(logsToShow);
+
+    // Update pagination info
+    const showingStart = totalItems > 0 ? start + 1 : 0;
+    const showingEnd = Math.min(end, totalItems);
+    document.getElementById('paginationInfo').textContent = `Mostrando ${showingStart}-${showingEnd} de ${totalItems} logs`;
+
+    // Render pagination buttons
+    renderPaginationButtons(totalPages);
+}
+
+function renderPaginationButtons(totalPages) {
+    const controls = document.getElementById('paginationControls');
+    controls.innerHTML = '';
+
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.classList.add('page-btn');
+    prevBtn.innerHTML = '&laquo;';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => { currentPage--; updatePagination(); };
+    controls.appendChild(prevBtn);
+
+    // Page buttons logic
+    const maxVisiblePages = 7;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // First page
+    if (startPage > 1) {
+        const btn = document.createElement('button');
+        btn.classList.add('page-btn');
+        btn.innerText = '1';
+        btn.onclick = () => { currentPage = 1; updatePagination(); };
+        controls.appendChild(btn);
+
+        if (startPage > 2) {
+            const dots = document.createElement('span');
+            dots.style.padding = '0 5px';
+            dots.innerText = '...';
+            controls.appendChild(dots);
+        }
+    }
+
+    // Middle pages
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.classList.add('page-btn');
+        if (i === currentPage) btn.classList.add('active');
+        btn.innerText = i;
+        btn.onclick = () => { currentPage = i; updatePagination(); };
+        controls.appendChild(btn);
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const dots = document.createElement('span');
+            dots.style.padding = '0 5px';
+            dots.innerText = '...';
+            controls.appendChild(dots);
+        }
+
+        const btn = document.createElement('button');
+        btn.classList.add('page-btn');
+        btn.innerText = totalPages;
+        btn.onclick = () => { currentPage = totalPages; updatePagination(); };
+        controls.appendChild(btn);
+    }
+
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.classList.add('page-btn');
+    nextBtn.innerHTML = '&raquo;';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => { currentPage++; updatePagination(); };
+    controls.appendChild(nextBtn);
+}
+
+function renderLogs(logs) {
+    const tbody = document.getElementById('logsTableBody');
+
+    if (logs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>Nenhum log encontrado</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = logs.map(log => {
+        const date = new Date(log.timestamp);
+        const formattedDate = date.toLocaleDateString('pt-BR');
+        const formattedTime = date.toLocaleTimeString('pt-BR');
+
+        return `
+            <tr>
+                <td>
+                    <div><strong>${formattedDate}</strong></div>
+                    <div style="font-size: 11px; color: #7f8c8d;">${formattedTime}</div>
+                </td>
+                <td>
+                    <strong>${escapeHtml(log.username || 'Sistema')}</strong>
+                </td>
+                <td>
+                    <span class="badge-action ${getBadgeClass(log.action)}">
+                        ${getActionLabel(log.action)}
+                    </span>
+                </td>
+                <td>${getResourceLabel(log.resource_type)}</td>
+                <td class="details-cell" title="${escapeHtml(log.details || '')}">
+                    ${escapeHtml(log.details || '-')}
+                </td>
+                <td>${escapeHtml(log.ip_address || '-')}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getBadgeClass(action) {
+    const map = {
+        'create': 'create',
+        'update': 'update',
+        'delete': 'delete',
+        'backup': 'backup',
+        'backup_all': 'backup',
+        'login': 'login',
+        'logout': 'logout',
+        'login_failed': 'login_failed',
+        'toggle_active': 'update'
+    };
+    return map[action] || 'default';
+}
+
+function getActionLabel(action) {
+    const map = {
+        'create': 'Criar',
+        'update': 'Atualizar',
+        'delete': 'Deletar',
+        'backup': 'Backup',
+        'backup_all': 'Backup Todos',
+        'login': 'Login',
+        'logout': 'Logout',
+        'login_failed': 'Login Falhou',
+        'toggle_active': 'Ativar/Desativar',
+        'download': 'Download'
+    };
+    return map[action] || action;
+}
+
+function getResourceLabel(resource) {
+    const map = {
+        'user': 'Usuário',
+        'device': 'Dispositivo',
+        'backup': 'Backup',
+        'schedule': 'Agendamento',
+        'provedor': 'Provedor'
+    };
+    return map[resource] || resource || '-';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showError(message) {
+    alert('Erro: ' + message);
+}
+</script>
+{% endblock %}

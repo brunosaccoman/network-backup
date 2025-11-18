@@ -291,6 +291,15 @@
     #backupIpSearch::placeholder {
         color: #999;
     }
+
+    /* Pagination styles */
+    .pagination {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        padding: 18px 0;
+        background: #fafbfc;
+    }
 </style>
 {% endblock %}
 
@@ -298,184 +307,327 @@
 <script>
     console.log('Script carregado!');
 
+    // Funções globais para serem acessíveis pelos onclick
+    async function backupDevice(deviceId) {
+        console.log('Backup device', deviceId);
+        if (!confirm('Backup agora?')) return;
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/backup/' + deviceId, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Backup realizado!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function editDevice(deviceId) {
+        try {
+            const response = await fetch(`/devices/${deviceId}/get`);
+            const device = await response.json();
+
+            document.getElementById('editId').value = device.id;
+            document.getElementById('editName').value = device.name;
+            document.getElementById('editIp').value = device.ip_address;
+            document.getElementById('editProtocol').value = device.protocol;
+            document.getElementById('editPort').value = device.port;
+            document.getElementById('editProvedor').value = device.provedor || '';
+
+            showModal('editModal');
+
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function saveEdit() {
+        const id = document.getElementById('editId').value;
+
+        const payload = {
+            name: document.getElementById('editName').value.trim(),
+            ip_address: document.getElementById('editIp').value.trim(),
+            protocol: document.getElementById('editProtocol').value,
+            port: document.getElementById('editPort').value,
+            provedor: document.getElementById('editProvedor').value.trim()
+        };
+
+        try {
+            const response = await fetch(`/devices/${id}/update`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert("Dispositivo atualizado!", "success");
+                closeModal("editModal");
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert("Erro: " + data.error, "danger");
+            }
+
+        } catch (error) {
+            showAlert("Erro: " + error.message, "danger");
+        }
+    }
+
+    async function deleteDevice(deviceId) {
+        console.log('Delete device', deviceId);
+        if (!confirm('Deletar este dispositivo?')) return;
+        try {
+            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo deletado!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         console.log('DOM completamente carregado!');
 
-        const searchInput = document.getElementById('deviceSearch');
-        if (!searchInput) {
-            console.error('Elemento de busca não encontrado!');
+    });
+
+    // ========================================================================
+    // GRÁFICOS COM CHART.JS
+    // ========================================================================
+
+    // Inicializar os gráficos (DOM já está carregado porque estamos no extra_js block)
+    function loadChartsLibrary() {
+        if (typeof Chart === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            script.onload = initCharts;
+            script.onerror = function() {
+                console.error('Erro ao carregar Chart.js');
+            };
+            document.head.appendChild(script);
+        } else {
+            initCharts();
+        }
+    }
+
+    // Executar imediatamente se DOM já carregado, ou aguardar DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadChartsLibrary);
+    } else {
+        // DOM já está pronto, executar imediatamente
+        loadChartsLibrary();
+    }
+
+    function initCharts() {
+        console.log('Iniciando carregamento dos gráficos...');
+        console.log('Verificando elementos canvas:', {
+            backupsChart: !!document.getElementById('backupsChart'),
+            successRateChart: !!document.getElementById('successRateChart'),
+            devicesChart: !!document.getElementById('devicesChart')
+        });
+
+        // Buscar dados dos gráficos
+        fetch('/api/charts')
+            .then(response => {
+                console.log('Resposta recebida:', response.status);
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar dados: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dados dos gráficos recebidos:', data);
+
+                if (!data) {
+                    console.error('Dados vazios recebidos');
+                    return;
+                }
+
+                renderBackupsChart(data.backups_by_day);
+                renderSuccessRateChart(data.success_rate);
+                renderDevicesChart(data.devices_by_provider);
+
+                console.log('Gráficos renderizados com sucesso!');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar dados dos gráficos:', error);
+                alert('Erro ao carregar gráficos: ' + error.message);
+            });
+    }
+
+    function renderBackupsChart(data) {
+        console.log('renderBackupsChart chamado com:', data);
+        const ctx = document.getElementById('backupsChart');
+        if (!ctx) {
+            console.error('Elemento canvas backupsChart não encontrado!');
             return;
         }
 
-        searchInput.addEventListener('input', function () {
-            const query = this.value.toLowerCase();
-            console.log("Buscando por:", query);
+        if (!data || !data.labels || !data.data) {
+            console.error('Dados inválidos para backupsChart:', data);
+            return;
+        }
 
-            let visibleCount = 0;
-            const tableBody = document.getElementById('devicesTableBody');
+        // Formatar labels de data
+        const labels = data.labels.map(date => {
+            const d = new Date(date);
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        });
 
-            if (!tableBody) {
-                console.error('Tabela de dispositivos não encontrada!');
-                return;
-            }
+        console.log('Criando gráfico de backups com labels:', labels);
 
-            Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
-                const deviceName = row.querySelector('td:nth-child(1) strong') ? row.querySelector('td:nth-child(1) strong').innerText.toLowerCase() : '';
-                const deviceIp = row.querySelector('td:nth-child(2)') ? row.querySelector('td:nth-child(2)').innerText.toLowerCase() : '';
-                const deviceProvedor = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').innerText.toLowerCase() : '';
-                const devicePlatform = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').innerText.toLowerCase() : '';
-                const deviceProtocol = row.querySelector('td:nth-child(5)') ? row.querySelector('td:nth-child(5)').innerText.toLowerCase() : '';
-                const devicePort = row.querySelector('td:nth-child(6)') ? row.querySelector('td:nth-child(6)').innerText.toLowerCase() : '';
-
-                console.log({
-                    deviceName,
-                    deviceIp,
-                    deviceProvedor,
-                    devicePlatform,
-                    deviceProtocol,
-                    devicePort
-                });
-
-                const text = deviceName + ' ' + deviceIp + ' ' + deviceProvedor + ' ' + devicePlatform + ' ' + deviceProtocol + ' ' + devicePort;
-
-                if (text.includes(query)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Sucesso',
+                        data: data.data.success,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Falha',
+                        data: data.data.failed,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
                 }
-            });
-
-            console.log("Dispositivos visíveis:", visibleCount);
-            document.getElementById('visibleCount').innerText = visibleCount;
+            }
         });
+    }
 
-        document.getElementById('addDeviceForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
+    function renderSuccessRateChart(data) {
+        console.log('renderSuccessRateChart chamado com:', data);
+        const ctx = document.getElementById('successRateChart');
+        if (!ctx) {
+            console.error('Elemento canvas successRateChart não encontrado!');
+            return;
+        }
 
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
+        if (!data || !data.labels || !data.data) {
+            console.error('Dados inválidos para successRateChart:', data);
+            return;
+        }
 
-            try {
-                const response = await fetch('/devices/add', {
-                    method: 'POST',
-                    body: new URLSearchParams(data)
-                });
-                const result = await response.json();
+        console.log('Criando gráfico de taxa de sucesso');
 
-                if (result.success) {
-                    alert('Device adicionado com sucesso!');
-                    this.reset();
-                } else {
-                    alert('Erro: ' + result.error);
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.data,
+                    backgroundColor: [
+                        '#27ae60',
+                        '#e74c3c'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
                 }
-            } catch (err) {
-                console.error(err);
-                alert('Erro ao adicionar device');
             }
         });
+    }
 
-        async function backupDevice(deviceId) {
-            console.log('Backup device', deviceId);
-            if (!confirm('Backup agora?')) return;
-            try {
-                const response = await fetch('/backup/' + deviceId, { method: 'POST' });
-                const data = await response.json();
-                if (data.success) showAlert('Backup realizado!', 'success');
-                else showAlert('Erro: ' + data.error, 'danger');
-            } catch (error) {
-                showAlert('Erro: ' + error.message, 'danger');
-            }
-        }
+    function renderDevicesChart(data) {
+        const ctx = document.getElementById('devicesChart');
+        if (!ctx) return;
 
-        async function editDevice(deviceId) {
-            try {
-                const response = await fetch(`/devices/${deviceId}/get`);
-                const device = await response.json();
+        // Cores diferentes para cada provedor
+        const colors = [
+            '#3498db', '#27ae60', '#f39c12', '#e74c3c', '#9b59b6',
+            '#1abc9c', '#34495e', '#16a085', '#e67e22', '#2ecc71'
+        ];
 
-                document.getElementById('editId').value = device.id;
-                document.getElementById('editName').value = device.name;
-                document.getElementById('editIp').value = device.ip_address;
-                document.getElementById('editProtocol').value = device.protocol;
-                document.getElementById('editPort').value = device.port;
-                document.getElementById('editProvedor').value = device.provedor || '';
-
-                showModal('editModal');
-
-            } catch (error) {
-                showAlert('Erro: ' + error.message, 'danger');
-            }
-        }
-
-        async function saveEdit() {
-            const id = document.getElementById('editId').value;
-
-            const payload = {
-                name: document.getElementById('editName').value.trim(),
-                ip_address: document.getElementById('editIp').value.trim(),
-                protocol: document.getElementById('editProtocol').value,
-                port: document.getElementById('editPort').value,
-                provedor: document.getElementById('editProvedor').value.trim()
-            };
-
-            try {
-                const response = await fetch(`/devices/${id}/update`, {
-                    method: 'POST',
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert("Dispositivo atualizado!", "success");
-                    closeModal("editModal");
-
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    showAlert("Erro: " + data.error, "danger");
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Dispositivos',
+                    data: data.data,
+                    backgroundColor: colors.slice(0, data.labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
                 }
-
-            } catch (error) {
-                showAlert("Erro: " + error.message, "danger");
             }
-        }
-
-        async function deleteDevice(deviceId) {
-            console.log('Delete device', deviceId);
-            if (!confirm('Deletar este dispositivo?')) return;
-            try {
-                const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
-                const data = await response.json();
-                if (data.success) showAlert('Dispositivo deletado!', 'success');
-                else showAlert('Erro: ' + data.error, 'danger');
-            } catch (error) {
-                showAlert('Erro: ' + error.message, 'danger');
-            }
-        }
-
-        document.querySelectorAll('.editButton').forEach(button => {
-            button.addEventListener('click', function () {
-                const deviceId = this.getAttribute('data-device-id');
-                editDevice(deviceId);
-            });
         });
-
-        document.querySelectorAll('.backupButton').forEach(button => {
-            button.addEventListener('click', function () {
-                const deviceId = this.getAttribute('data-device-id');
-                backupDevice(deviceId);
-            });
-        });
-
-        document.querySelectorAll('.deleteButton').forEach(button => {
-            button.addEventListener('click', function () {
-                const deviceId = this.getAttribute('data-device-id');
-                deleteDevice(deviceId);
-            });
-        });
-
-    });
+    }
 </script>
 {% endblock %}
 
@@ -520,6 +672,38 @@
         </div>
     </div>
 
+    <!-- Gráficos -->
+    <div class="stats-row" style="margin-top: 25px;">
+        <div class="table-container" style="flex: 1; margin-right: 15px;">
+            <div class="table-header">
+                <h5><i class="fas fa-chart-line"></i> Backups por Dia (Últimos 7 Dias)</h5>
+            </div>
+            <div style="padding: 20px;">
+                <canvas id="backupsChart" height="80"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container" style="flex: 1;">
+            <div class="table-header">
+                <h5><i class="fas fa-chart-pie"></i> Taxa de Sucesso</h5>
+            </div>
+            <div style="padding: 20px;">
+                <canvas id="successRateChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row" style="margin-top: 25px;">
+        <div class="table-container" style="flex: 1;">
+            <div class="table-header">
+                <h5><i class="fas fa-chart-bar"></i> Dispositivos por Provedor</h5>
+            </div>
+            <div style="padding: 20px;">
+                <canvas id="devicesChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
     <div class="stats-row" style="margin-top: 25px;">
 
         <div class="table-container" style="flex: 1; margin-right: 15px;">
@@ -541,7 +725,7 @@
                     <tr>
                         <td>#{{ backup.id }}</td>
                         <td>{{ backup.device_name }}</td>
-                        <td>{{ backup.backup_date }}</td>
+                        <td>{{ backup.backup_date | datetime_br }}</td>
                         <td>
                             <span
                                 class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
@@ -572,7 +756,7 @@
                     {% for error in last_errors %}
                     <tr>
                         <td>{{ error.device_name }}</td>
-                        <td>{{ error.backup_date }}</td>
+                        <td>{{ error.backup_date | datetime_br }}</td>
                         <td>{{ error.error_message or 'Erro desconhecido' }}</td>
                     </tr>
                     {% endfor %}
@@ -580,78 +764,6 @@
             </table>
         </div>
 
-    </div>
-
-    <div class="table-container" style="margin-top: 20px;">
-        <div class="table-header">
-            <h5><i class="fas fa-server"></i> Dispositivos Monitorados</h5>
-            <div class="table-actions" style="display: flex; gap: 10px; align-items: center;">
-                {% set filter_id = 'device' %}
-                {% set show_provedor_filter = true %}
-                {% set show_ip_search = false %}
-                {% include 'components/table_filters.html' %}
-                <input id="deviceSearch" type="text" placeholder="Buscar dispositivo..." class="search-input"
-                    style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; width: 200px;">
-                <button class="btn-gerenciar" onclick="location.href='/devices'">
-                    <i class="fas fa-cog"></i> Gerenciar
-                </button>
-            </div>
-        </div>
-
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Endereço IP</th>
-                    <th>Provedor/Cliente</th>
-                    <th>Plataforma</th>
-                    <th>Protocolo</th>
-                    <th>Porta</th>
-                    <th>Status</th>
-                    <th style="text-align: right;">Ações</th>
-                </tr>
-            </thead>
-            <tbody id="devicesTableBody">
-                {% for device in devices %}
-                <tr data-provedor="{{ device.provedor if device.provedor else 'Sem_Provedor' }}">
-                    <td>
-                        <div class="device-status">
-                            <span class="status-dot {{ 'online' if device.active else 'offline' }}"></span>
-                            <strong>{{ device.name }}</strong>
-                        </div>
-                    </td>
-                    <td>{{ device.ip_address }}</td>
-                    <td>{{ device.provedor if device.provedor else 'Sem_Provedor' }}</td>
-                    <td>{{ device.device_type|title }}</td>
-                    <td>{{ device.protocol|upper }}</td>
-                    <td>{{ device.port }}</td>
-                    <td>
-                        <span class="badge-status badge-{{ 'active' if device.active else 'failed' }}">
-                            {{ 'Ativo' if device.active else 'Inativo' }}
-                        </span>
-                    </td>
-                    <td style="text-align: right;">
-                        <div class="action-buttons" style="justify-content: flex-end;">
-                            <button onclick="backupDevice({{ device.id }})" class="btn-action" title="Fazer Backup">
-                                <i class="fas fa-sync"></i>
-                            </button>
-                            <button onclick="editDevice({{ device.id }})" class="btn-action" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteDevice({{ device.id }})" class="btn-action" title="Deletar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="table-footer">
-            <div id="deviceCount">Mostrando <span id="visibleCount">{{ devices|length }}</span> de {{ devices|length }}
-                dispositivos</div>
-        </div>
     </div>
 
     <div id="editModal" class="modal">

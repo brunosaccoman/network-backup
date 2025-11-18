@@ -12,18 +12,19 @@
 
     .table-filters-wrapper {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 20px;
+        width: 100%;
     }
 
     .table-filters {
         display: flex;
-        align-items: center;
+        align-items: flex-end;
         flex-wrap: wrap;
         gap: 1rem;
-        margin-bottom: 1rem;
+        flex: 1;
     }
 
     .filter-group {
@@ -65,22 +66,20 @@
     .table-header {
         padding: 20px 25px;
         border-bottom: 1px solid #e0e6ed;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
     }
 
     .table-header h5 {
         font-size: 16px;
         font-weight: 600;
         color: #2c3e50;
-        margin: 0;
+        margin: 0 0 15px 0;
     }
 
     .table-actions {
         display: flex;
+        align-items: center;
         gap: 10px;
-        margin-top: 9px;
+        flex-wrap: wrap;
     }
 
     .data-table {
@@ -122,7 +121,8 @@
     }
 
     .btn-atualizar,
-    .btn-backup {
+    .btn-backup,
+    .btn-comparar {
         all: unset;
         display: inline-flex;
         align-items: center;
@@ -153,6 +153,20 @@
         &:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+    }
+
+    .btn-comparar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+
+        &:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #64408a 100%);
+        }
+
+        &:active {
+            background: linear-gradient(135deg, #4a5bc4 0%, #533778 100%);
         }
     }
 
@@ -293,6 +307,8 @@
         background: #f8f9fa;
         font-size: 13px;
         color: #555;
+        flex-wrap: wrap;
+        gap: 15px;
     }
 
     #footerInfo {
@@ -305,6 +321,27 @@
         flex: 1;
         gap: 5px;
     }
+
+    .page-size-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .page-size-selector label {
+        color: #555;
+        font-weight: 500;
+    }
+
+    .page-size-selector select {
+        padding: 4px 8px;
+        border: 1px solid #dcdfe6;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 13px;
+    }
 </style>
 {% endblock %}
 
@@ -315,9 +352,8 @@
         <div class="table-header">
             <h5><i class="fas fa-history"></i> Backups Recentes</h5>
 
-            <div class="table-filters-wrapper"
-                style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
-                <div class="table-filters" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+            <div class="table-filters-wrapper">
+                <div class="table-filters">
                     <div class="filter-group">
                         <label for="searchDevice"><i class="fas fa-search"></i> Pesquisar:</label>
                         <input type="text" id="searchDevice" placeholder="Dispositivo..." class="filter-input">
@@ -351,6 +387,9 @@
                     <button class="btn-backup" onclick="location.href='/devices'">
                         <i class="fas fa-plus"></i> Novo Backup
                     </button>
+                    <button id="compareBtn" class="btn-comparar" onclick="compareBackups()" disabled title="Selecione 2 backups do mesmo dispositivo">
+                        <i class="fas fa-code-branch"></i> Comparar Backups
+                    </button>
                 </div>
             </div>
         </div>
@@ -358,6 +397,7 @@
         <table class="data-table">
             <thead>
                 <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAll" title="Selecionar todos"></th>
                     <th>ID</th>
                     <th>Dispositivo</th>
                     <th>Endereço IP</th>
@@ -371,12 +411,18 @@
             <tbody id="backupsTableBody">
                 {% for backup in recent_backups %}
                 <tr data-provedor="{{ backup.provedor if backup.provedor else 'sem_provedor' }}"
-                    data-status="{{ backup.status }}">
+                    data-status="{{ backup.status }}"
+                    data-device-id="{{ backup.device_id }}">
+                    <td>
+                        <input type="checkbox" class="backup-checkbox" value="{{ backup.id }}"
+                               data-device-id="{{ backup.device_id }}"
+                               onchange="updateCompareButton()">
+                    </td>
                     <td><strong>#{{ backup.id }}</strong></td>
                     <td>{{ backup.device_name }}</td>
-                    <td>{{ backup.ip_address }}</td>
+                    <td>{{ backup.device_ip }}</td>
                     <td>{{ backup.provedor if backup.provedor else 'Sem Provedor' }}</td>
-                    <td>{{ backup.backup_date }}</td>
+                    <td>{{ backup.backup_date | datetime_br }}</td>
                     <td>{{ (backup.file_size / 1024) | round(2) }} KB</td>
                     <td>
                         <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
@@ -402,20 +448,35 @@
             <div id="footerInfo">Mostrando 0 de 0 backups</div>
             <div id="pagination" class="pagination">
             </div>
+            <div class="page-size-selector">
+                <label>Itens por página:</label>
+                <select id="pageSizeSelect" onchange="changePageSize(this.value)">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const rowsPerPage = 10;
     const tableBody = document.getElementById('backupsTableBody');
     const pagination = document.getElementById('pagination');
     const footer = document.getElementById('footerInfo');
 
     let rows = Array.from(tableBody.querySelectorAll('tr'));
     let currentPage = 1;
+    let rowsPerPage = 20;
 
     rows.forEach(row => row.dataset.visible = "1");
+
+    function changePageSize(newSize) {
+        rowsPerPage = parseInt(newSize);
+        currentPage = 1;
+        showPage(currentPage);
+    }
 
     function applyFilters() {
         const provedorFilter = document.getElementById("filterProvedor").value.toLowerCase();
@@ -474,12 +535,54 @@
         prevBtn.addEventListener('click', () => showPage(currentPage - 1));
         pagination.appendChild(prevBtn);
 
-        for (let i = 1; i <= totalPages; i++) {
+        // Mostrar apenas páginas relevantes se houver muitas
+        const maxVisiblePages = 7;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Primeira página
+        if (startPage > 1) {
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            btn.innerText = '1';
+            btn.addEventListener('click', () => showPage(1));
+            pagination.appendChild(btn);
+
+            if (startPage > 2) {
+                const dots = document.createElement('span');
+                dots.style.padding = '0 5px';
+                dots.innerText = '...';
+                pagination.appendChild(dots);
+            }
+        }
+
+        // Páginas do meio
+        for (let i = startPage; i <= endPage; i++) {
             const btn = document.createElement('button');
             btn.classList.add('page-btn');
             if (i === currentPage) btn.classList.add('active');
             btn.innerText = i;
             btn.addEventListener('click', () => showPage(i));
+            pagination.appendChild(btn);
+        }
+
+        // Última página
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dots = document.createElement('span');
+                dots.style.padding = '0 5px';
+                dots.innerText = '...';
+                pagination.appendChild(dots);
+            }
+
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            btn.innerText = totalPages;
+            btn.addEventListener('click', () => showPage(totalPages));
             pagination.appendChild(btn);
         }
 
@@ -494,6 +597,62 @@
     document.getElementById("filterProvedor").addEventListener("change", applyFilters);
     document.getElementById("filterStatus").addEventListener("change", applyFilters);
     document.getElementById("searchDevice").addEventListener("input", applyFilters);
+
+    // Função para atualizar botão de comparar
+    function updateCompareButton() {
+        const checkboxes = document.querySelectorAll('.backup-checkbox:checked');
+        const compareBtn = document.getElementById('compareBtn');
+
+        if (checkboxes.length === 2) {
+            // Verificar se são do mesmo dispositivo
+            const deviceId1 = checkboxes[0].getAttribute('data-device-id');
+            const deviceId2 = checkboxes[1].getAttribute('data-device-id');
+
+            if (deviceId1 === deviceId2) {
+                compareBtn.disabled = false;
+                compareBtn.title = 'Comparar os 2 backups selecionados';
+            } else {
+                compareBtn.disabled = true;
+                compareBtn.title = 'Selecione backups do mesmo dispositivo';
+                alert('Selecione backups do mesmo dispositivo para comparar');
+                checkboxes[checkboxes.length - 1].checked = false;
+            }
+        } else if (checkboxes.length > 2) {
+            // Limitar a 2 seleções
+            checkboxes[checkboxes.length - 1].checked = false;
+            alert('Selecione apenas 2 backups para comparar');
+        } else {
+            compareBtn.disabled = true;
+            if (checkboxes.length === 0) {
+                compareBtn.title = 'Selecione 2 backups do mesmo dispositivo';
+            } else if (checkboxes.length === 1) {
+                compareBtn.title = 'Selecione mais 1 backup do mesmo dispositivo';
+            }
+        }
+    }
+
+    // Função para comparar backups
+    function compareBackups() {
+        const checkboxes = document.querySelectorAll('.backup-checkbox:checked');
+        if (checkboxes.length !== 2) {
+            alert('Selecione exatamente 2 backups para comparar');
+            return;
+        }
+
+        const backup1 = checkboxes[0].value;
+        const backup2 = checkboxes[1].value;
+
+        window.location.href = `/backups/compare?backup1=${backup1}&backup2=${backup2}`;
+    }
+
+    // Selecionar todos
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.backup-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateCompareButton();
+    });
 
     applyFilters();
 </script>

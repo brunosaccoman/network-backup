@@ -47,7 +47,7 @@
             {% for backup in backups %}
             <tr>
                 <td>{{ backup.device_name }}</td>
-                <td>{{ backup.ip_address }}</td>
+                <td>{{ backup.device_ip }}</td>
                 <td>{{ backup.backup_date }}</td>
                 <td>{{ (backup.file_size / 1024)|round(2) }} KB</td>
                 <td>

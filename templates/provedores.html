@@ -1,0 +1,925 @@
+{% extends "base.html" %}
+{% block title %}Provedores - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main container */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Stats cards at the top */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
+    .stat-icon.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    /* Page header */
+    .page-header {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Modern buttons */
+    .btn-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: 1px solid #e3e3e7;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #f5f5f7;
+        color: #333;
+    }
+
+    .btn-modern:hover {
+        background: #e9e9ec;
+        transform: scale(0.98);
+    }
+
+    .btn-modern:active {
+        background: #dcdce0;
+        transform: scale(0.98);
+    }
+
+    /* Filters */
+    .filters-section {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+    }
+
+    .table-filters {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+    }
+
+    .filter-group label {
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .filter-input {
+        padding: 0.4rem 0.6rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 0.9rem;
+        min-width: 200px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-input:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 3px rgba(74, 144, 226, 0.5);
+        outline: none;
+    }
+
+    /* Table container */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #3498db;
+        margin: 0;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Action buttons in table */
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    .btn-table {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #e3e3e7;
+        background: #f5f5f7;
+        color: #333;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-table:hover {
+        background: #e9e9ec;
+    }
+
+    .btn-table.btn-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .btn-table.btn-danger:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    /* Badge status */
+    .badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge.bg-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge.bg-secondary {
+        background: #000;
+        color: white;
+    }
+
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 2% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 900px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 20px;
+    }
+
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+    }
+
+    .close:hover {
+        color: #000;
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+    }
+
+    .form-section h4 {
+        font-size: 16px;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+        font-size: 13px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #4a90e2;
+        outline: none;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .form-check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .modal-footer {
+        padding: 20px 25px;
+        border-top: 1px solid #e0e6ed;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Stats Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalProvedores">0</h3>
+                <p>Total de Provedores</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="provedoresAtivos">0</h3>
+                <p>Provedores Ativos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalDispositivos">0</h3>
+                <p>Dispositivos Associados</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2>
+            <i class="fas fa-building"></i>
+            Gerenciar Provedores
+        </h2>
+        <button class="btn-modern" onclick="openAddModal()">
+            <i class="fas fa-plus"></i>
+            Novo Provedor
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="table-filters">
+            <div class="filter-group">
+                <label>Buscar:</label>
+                <input type="text" id="searchInput" class="filter-input" placeholder="Nome, CNPJ, cidade...">
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <h5><i class="fas fa-list"></i> Lista de Provedores</h5>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>CNPJ</th>
+                    <th>Cidade/Estado</th>
+                    <th>Contato</th>
+                    <th>Dispositivos</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="providersTableBody">
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <i class="fas fa-building"></i>
+                        <p>Carregando provedores...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="providerModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Novo Provedor</h3>
+            <button class="close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="providerForm">
+            <div class="modal-body">
+                <!-- Informações Básicas -->
+                <div class="form-section">
+                    <h4><i class="fas fa-info-circle"></i> Informações Básicas</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome * <small>(identificador único)</small></label>
+                            <input type="text" id="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>CNPJ</label>
+                            <input type="text" id="cnpj" maxlength="18" placeholder="00.000.000/0000-00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Razão Social</label>
+                            <input type="text" id="razaoSocial">
+                        </div>
+                        <div class="form-group">
+                            <label>Nome Fantasia</label>
+                            <input type="text" id="nomeFantasia">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contato -->
+                <div class="form-section">
+                    <h4><i class="fas fa-phone"></i> Contato</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Telefone</label>
+                            <input type="text" id="telefone" placeholder="(00) 0000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label>WhatsApp</label>
+                            <input type="text" id="whatsapp" placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" placeholder="contato@exemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Website</label>
+                            <input type="url" id="website" placeholder="https://exemplo.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Contato Principal</label>
+                            <input type="text" id="contatoPrincipal" placeholder="Nome do responsável">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Endereço -->
+                <div class="form-section">
+                    <h4><i class="fas fa-map-marker-alt"></i> Endereço</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>CEP</label>
+                            <input type="text" id="cep" maxlength="9" placeholder="00000-000">
+                        </div>
+                        <div class="form-group">
+                            <label>Cidade</label>
+                            <input type="text" id="cidade">
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select id="estado">
+                                <option value="">Selecione...</option>
+                                <option value="AC">AC</option>
+                                <option value="AL">AL</option>
+                                <option value="AP">AP</option>
+                                <option value="AM">AM</option>
+                                <option value="BA">BA</option>
+                                <option value="CE">CE</option>
+                                <option value="DF">DF</option>
+                                <option value="ES">ES</option>
+                                <option value="GO">GO</option>
+                                <option value="MA">MA</option>
+                                <option value="MT">MT</option>
+                                <option value="MS">MS</option>
+                                <option value="MG">MG</option>
+                                <option value="PA">PA</option>
+                                <option value="PB">PB</option>
+                                <option value="PR">PR</option>
+                                <option value="PE">PE</option>
+                                <option value="PI">PI</option>
+                                <option value="RJ">RJ</option>
+                                <option value="RN">RN</option>
+                                <option value="RS">RS</option>
+                                <option value="RO">RO</option>
+                                <option value="RR">RR</option>
+                                <option value="SC">SC</option>
+                                <option value="SP">SP</option>
+                                <option value="SE">SE</option>
+                                <option value="TO">TO</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Endereço</label>
+                            <input type="text" id="endereco">
+                        </div>
+                        <div class="form-group">
+                            <label>Número</label>
+                            <input type="text" id="numero">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Complemento</label>
+                            <input type="text" id="complemento">
+                        </div>
+                        <div class="form-group">
+                            <label>Bairro</label>
+                            <input type="text" id="bairro">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outras Informações -->
+                <div class="form-section">
+                    <h4><i class="fas fa-sticky-note"></i> Outras Informações</h4>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <textarea id="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Observações</label>
+                        <textarea id="observacoes"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="active" checked>
+                        <label for="active">Provedor ativo</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modern" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-modern">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let providers = [];
+let editingProviderId = null;
+
+// Load providers on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadProviders();
+
+    // Search filter
+    document.getElementById('searchInput').addEventListener('input', function() {
+        renderProviders();
+    });
+});
+
+async function loadProviders() {
+    try {
+        const response = await fetch('/api/provedores/all');
+        const data = await response.json();
+        providers = data.provedores || [];
+        updateStats();
+        renderProviders();
+    } catch (error) {
+        console.error('Erro ao carregar provedores:', error);
+        showError('Erro ao carregar provedores');
+    }
+}
+
+function updateStats() {
+    const total = providers.length;
+    const ativos = providers.filter(p => p.active).length;
+    const totalDispositivos = providers.reduce((sum, p) => sum + (p.device_count || 0), 0);
+
+    document.getElementById('totalProvedores').textContent = total;
+    document.getElementById('provedoresAtivos').textContent = ativos;
+    document.getElementById('totalDispositivos').textContent = totalDispositivos;
+}
+
+function renderProviders() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const tbody = document.getElementById('providersTableBody');
+
+    // Filter providers
+    let filteredProviders = providers;
+    if (searchTerm) {
+        filteredProviders = providers.filter(p => {
+            return (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+                   (p.cnpj && p.cnpj.toLowerCase().includes(searchTerm)) ||
+                   (p.cidade && p.cidade.toLowerCase().includes(searchTerm)) ||
+                   (p.estado && p.estado.toLowerCase().includes(searchTerm)) ||
+                   (p.razao_social && p.razao_social.toLowerCase().includes(searchTerm));
+        });
+    }
+
+    if (filteredProviders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>Nenhum provedor encontrado</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filteredProviders.map(provider => `
+        <tr>
+            <td>
+                <strong>${escapeHtml(provider.name)}</strong>
+                ${provider.razao_social ? `<br><small style="color: #7f8c8d;">${escapeHtml(provider.razao_social)}</small>` : ''}
+            </td>
+            <td>${provider.cnpj ? formatCNPJ(provider.cnpj) : '-'}</td>
+            <td>${[provider.cidade, provider.estado].filter(Boolean).join(' / ') || '-'}</td>
+            <td>
+                ${provider.telefone ? `<i class="fas fa-phone"></i> ${escapeHtml(provider.telefone)}<br>` : ''}
+                ${provider.email ? `<i class="fas fa-envelope"></i> ${escapeHtml(provider.email)}` : '-'}
+            </td>
+            <td><span class="badge bg-secondary">${provider.device_count || 0} dispositivos</span></td>
+            <td>
+                <span class="badge ${provider.active ? 'bg-success' : 'bg-secondary'}">
+                    ${provider.active ? 'Ativo' : 'Inativo'}
+                </span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-table" onclick="openEditModal(${provider.id})" title="Editar">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn-table btn-danger" onclick="deleteProvider(${provider.id}, '${escapeHtml(provider.name)}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openAddModal() {
+    editingProviderId = null;
+    document.getElementById('modalTitle').textContent = 'Novo Provedor';
+    document.getElementById('providerForm').reset();
+    document.getElementById('active').checked = true;
+    document.getElementById('providerModal').style.display = 'block';
+}
+
+async function openEditModal(id) {
+    editingProviderId = id;
+    document.getElementById('modalTitle').textContent = 'Editar Provedor';
+
+    try {
+        const response = await fetch(`/provedores/${id}`);
+        const provider = await response.json();
+
+        document.getElementById('name').value = provider.name || '';
+        document.getElementById('razaoSocial').value = provider.razao_social || '';
+        document.getElementById('nomeFantasia').value = provider.nome_fantasia || '';
+        document.getElementById('cnpj').value = provider.cnpj || '';
+        document.getElementById('telefone').value = provider.telefone || '';
+        document.getElementById('whatsapp').value = provider.whatsapp || '';
+        document.getElementById('email').value = provider.email || '';
+        document.getElementById('website').value = provider.website || '';
+        document.getElementById('contatoPrincipal').value = provider.contato_principal || '';
+        document.getElementById('cep').value = provider.cep || '';
+        document.getElementById('endereco').value = provider.endereco || '';
+        document.getElementById('numero').value = provider.numero || '';
+        document.getElementById('complemento').value = provider.complemento || '';
+        document.getElementById('bairro').value = provider.bairro || '';
+        document.getElementById('cidade').value = provider.cidade || '';
+        document.getElementById('estado').value = provider.estado || '';
+        document.getElementById('description').value = provider.description || '';
+        document.getElementById('observacoes').value = provider.observacoes || '';
+        document.getElementById('active').checked = provider.active;
+
+        document.getElementById('providerModal').style.display = 'block';
+    } catch (error) {
+        console.error('Erro:', error);
+        showError('Erro ao carregar dados do provedor');
+    }
+}
+
+document.getElementById('providerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const providerId = editingProviderId;
+    const url = providerId ? `/provedores/${providerId}/update` : '/provedores/add';
+    const method = 'POST';
+
+    const formData = {
+        name: document.getElementById('name').value,
+        razao_social: document.getElementById('razaoSocial').value,
+        nome_fantasia: document.getElementById('nomeFantasia').value,
+        cnpj: document.getElementById('cnpj').value,
+        telefone: document.getElementById('telefone').value,
+        whatsapp: document.getElementById('whatsapp').value,
+        email: document.getElementById('email').value,
+        website: document.getElementById('website').value,
+        contato_principal: document.getElementById('contatoPrincipal').value,
+        cep: document.getElementById('cep').value,
+        endereco: document.getElementById('endereco').value,
+        numero: document.getElementById('numero').value,
+        complemento: document.getElementById('complemento').value,
+        bairro: document.getElementById('bairro').value,
+        cidade: document.getElementById('cidade').value,
+        estado: document.getElementById('estado').value,
+        description: document.getElementById('description').value,
+        observacoes: document.getElementById('observacoes').value,
+        active: document.getElementById('active').checked
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showSuccess(providerId ? 'Provedor atualizado com sucesso!' : 'Provedor cadastrado com sucesso!');
+            closeModal();
+            loadProviders();
+        } else {
+            showError(result.error || 'Erro ao salvar provedor');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showError('Erro ao salvar provedor');
+    }
+});
+
+async function deleteProvider(id, name) {
+    if (!confirm(`Tem certeza que deseja excluir o provedor "${name}"?\n\nAtenção: Os dispositivos associados não serão excluídos, apenas desvinculados deste provedor.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/provedores/${id}/delete`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showSuccess('Provedor excluído com sucesso!');
+            loadProviders();
+        } else {
+            showError(result.error || 'Erro ao excluir provedor');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showError('Erro ao excluir provedor');
+    }
+}
+
+function closeModal() {
+    document.getElementById('providerModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('providerModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatCNPJ(cnpj) {
+    if (!cnpj) return '';
+    return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+function showSuccess(message) {
+    alert(message);
+}
+
+function showError(message) {
+    alert('Erro: ' + message);
+}
+
+// Auto-format CNPJ input
+document.getElementById('cnpj').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 14) {
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    e.target.value = value;
+});
+
+// Auto-format CEP input
+document.getElementById('cep').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 8) {
+        value = value.replace(/^(\d{5})(\d)/, '$1-$2');
+    }
+    e.target.value = value;
+});
+</script>
+{% endblock %}

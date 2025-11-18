@@ -1,6 +1,62 @@
+# Core Framework
 Flask==3.1.0
-paramiko==3.5.0
-APScheduler==3.10.4
-python-dotenv==1.0.1
-netmiko==4.4.0
 gunicorn==23.0.0
+
+# Networking e Backup
+paramiko==3.5.0
+netmiko==4.4.0
+requests>=2.31.0
+urllib3>=2.1.0
+
+# Agendamento (será migrado para Celery na Fase 3)
+APScheduler==3.10.4
+
+# Configuração
+python-dotenv==1.0.1
+
+# === FASE 1: Segurança e Fundações ===
+
+# Criptografia
+cryptography>=41.0.0
+
+# Autenticação e Sessões
+Flask-Login>=0.6.2
+bcrypt>=4.0.1
+
+# Proteção CSRF e Formulários
+Flask-WTF>=1.2.1
+WTForms>=3.1.0
+
+# Rate Limiting
+Flask-Limiter>=3.5.0
+
+# Database ORM e Migrações
+SQLAlchemy>=2.0.23
+Flask-SQLAlchemy>=3.1.1
+Flask-Migrate>=4.0.5
+alembic>=1.13.0
+
+# PostgreSQL Driver
+psycopg2-binary>=2.9.9
+
+# Timezone handling
+pytz>=2023.3
+
+# === FASE 2: Observabilidade ===
+
+# Logging Estruturado
+structlog>=23.2.0
+
+# Métricas (Prometheus)
+prometheus-client>=0.19.0
+
+# System Monitoring (Health Checks)
+psutil>=5.9.0
+
+# === Utilitários ===
+
+# CLI
+click>=8.1.7
+
+# YAML (para configurações futuras)
+PyYAML>=6.0.1

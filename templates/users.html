@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Usuários - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.red { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
+    .stat-icon.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    .page-header {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-modern:hover {
+        background: #e9e9ec;
+        transform: scale(0.98);
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fb;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 13px;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+        padding: 15px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr {
+        transition: background 0.2s;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge.admin { background: #fee; color: #c00; }
+    .badge.operator { background: #e3f2fd; color: #1976d2; }
+    .badge.viewer { background: #f3f4f6; color: #666; }
+    .badge.active { background: #d4edda; color: #155724; }
+    .badge.inactive { background: #f8d7da; color: #721c24; }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #555;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .btn-action:hover {
+        background: #e9e9ec;
+    }
+
+    .btn-action.danger:hover {
+        background: #fee;
+        color: #c00;
+        border-color: #fcc;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        max-width: 500px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #2c3e50;
+    }
+
+    .close {
+        font-size: 28px;
+        font-weight: bold;
+        color: #999;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .close:hover {
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        color: #555;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e3e3e7;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Stats Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalUsers">{{ users|length }}</h3>
+                <p>Total de Usuários</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="adminCount">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h3>
+                <p>Administradores</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-user-cog"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="operatorCount">{{ users|selectattr('role', 'equalto', 'operator')|list|length }}</h3>
+                <p>Operadores</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="viewerCount">{{ users|selectattr('role', 'equalto', 'viewer')|list|length }}</h3>
+                <p>Visualizadores</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2><i class="fas fa-users-cog"></i> Gerenciar Usuários</h2>
+        <button class="btn-modern" onclick="showModal('addUserModal')">
+            <i class="fas fa-user-plus"></i> Adicionar Usuário
+        </button>
+    </div>
+
+    <!-- Users Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuário</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Último Login</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td><strong>#{{ user.id }}</strong></td>
+                    <td><i class="fas fa-user"></i> {{ user.username }}</td>
+                    <td>{{ user.email or 'N/A' }}</td>
+                    <td><span class="badge {{ user.role }}">{{ user.role }}</span></td>
+                    <td><span class="badge {{ 'active' if user.active else 'inactive' }}">{{ 'Ativo' if user.active else 'Inativo' }}</span></td>
+                    <td>{{ user.last_login | datetime_br if user.last_login else 'Nunca' }}</td>
+                    <td style="text-align: right;">
+                        <div class="action-buttons">
+                            <button class="btn-action" onclick="editUser({{ user.id }})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action" onclick="toggleUserActive({{ user.id }})" title="{{ 'Desativar' if user.active else 'Ativar' }}">
+                                <i class="fas fa-{{ 'toggle-on' if user.active else 'toggle-off' }}"></i>
+                            </button>
+                            <button class="btn-action danger" onclick="deleteUser({{ user.id }}, '{{ user.username }}')" title="Deletar">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-user-plus"></i> Adicionar Usuário</h2>
+            <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+        </div>
+        <form id="addUserForm" style="padding: 25px;">
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Nome de Usuário *</label>
+                <input type="text" name="username" required placeholder="admin, operador1, etc">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" name="email" placeholder="usuario@exemplo.com">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Senha *</label>
+                <input type="password" name="password" required placeholder="••••••••">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-user-tag"></i> Role *</label>
+                <select name="role" required>
+                    <option value="viewer">Viewer (Somente Leitura)</option>
+                    <option value="operator">Operator (Gerenciar Devices)</option>
+                    <option value="admin">Admin (Acesso Total)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-modern" style="width: 100%;">
+                <i class="fas fa-save"></i> Criar Usuário
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit"></i> Editar Usuário</h2>
+            <span class="close" onclick="closeModal('editUserModal')">&times;</span>
+        </div>
+        <form id="editUserForm" style="padding: 25px;">
+            <input type="hidden" id="editUserId">
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" id="editEmail" placeholder="usuario@exemplo.com">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-user-tag"></i> Role</label>
+                <select id="editRole">
+                    <option value="viewer">Viewer (Somente Leitura)</option>
+                    <option value="operator">Operator (Gerenciar Devices)</option>
+                    <option value="admin">Admin (Acesso Total)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Nova Senha (deixe vazio para não alterar)</label>
+                <input type="password" id="editPassword" placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-modern" style="width: 100%;">
+                <i class="fas fa-check"></i> Atualizar Usuário
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add user form submission
+    document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/users/add', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('Usuário criado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    });
+
+    // Edit user
+    async function editUser(userId) {
+        try {
+            const response = await fetch(`/users/${userId}/get`);
+            const user = await response.json();
+
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editEmail').value = user.email || '';
+            document.getElementById('editRole').value = user.role;
+            document.getElementById('editPassword').value = '';
+
+            showModal('editUserModal');
+        } catch (error) {
+            showAlert('Erro ao carregar dados do usuário', 'danger');
+        }
+    }
+
+    // Edit user form submission
+    document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const userId = document.getElementById('editUserId').value;
+
+        const data = {
+            email: document.getElementById('editEmail').value,
+            role: document.getElementById('editRole').value,
+            password: document.getElementById('editPassword').value
+        };
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch(`/users/${userId}/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert('Usuário atualizado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + result.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    });
+
+    // Toggle user active/inactive
+    async function toggleUserActive(userId) {
+        if (!confirm('Deseja ativar/desativar este usuário?')) return;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch(`/users/${userId}/toggle-active`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('Status do usuário alterado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    // Delete user
+    async function deleteUser(userId, username) {
+        if (!confirm(`Tem certeza que deseja deletar o usuário "${username}"? Esta ação não pode ser desfeita.`)) return;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch(`/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('Usuário deletado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+</script>
+{% endblock %}
