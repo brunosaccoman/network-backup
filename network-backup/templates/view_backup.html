@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Visualizar Backup{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Visualização de Backup</h2>
+    <a href="/backups" class="btn btn-primary">◀️ Voltar</a>
+    <a href="/backups/{{ backup_id }}/download" class="btn btn-success">⬇️ Download</a>
+    <div style="background:#2d2d2d;color:#f8f8f2;padding:1.5rem;border-radius:8px;overflow-x:auto;margin-top:1rem;">
+        <pre style="margin:0;white-space:pre-wrap;">{{ content }}</pre>
+    </div>
+</div>
+{% endblock %}

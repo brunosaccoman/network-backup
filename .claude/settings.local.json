@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(docker --version:*)",
+      "Bash(docker info:*)",
+      "Bash(timeout 5 docker:*)",
+      "Bash(dir:*)",
+      "Bash(test:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(curl:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(flask db migrate:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose ps:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

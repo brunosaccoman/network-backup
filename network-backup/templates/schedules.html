@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+{% block title %}Agendamentos - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main container */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Stats cards at the top */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
+    .stat-icon.orange { background: linear-gradient(135deg, #f39c12 0%, #f5b922 100%); }
+    .stat-icon.purple { background: linear-gradient(135deg, #9D50BB 0%, #6E48AA 100%); }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    /* Header section */
+    .page-header {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Modern buttons */
+    .btn-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: 1px solid #e3e3e7;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #f5f5f7;
+        color: #333;
+    }
+
+    .btn-modern:hover {
+        background: #e9e9ec;
+        transform: scale(0.98);
+    }
+
+    .btn-modern:active {
+        background: #dcdce0;
+        transform: scale(0.98);
+    }
+
+    /* Table */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr {
+        transition: background 0.2s;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .schedule-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .schedule-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: white;
+    }
+
+    .schedule-icon.daily { background: #3498db; }
+    .schedule-icon.weekly { background: #9b59b6; }
+    .schedule-icon.monthly { background: #e67e22; }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge.active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .badge.inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+        font-size: 13px;
+    }
+
+    .btn-action:hover {
+        border-color: #667eea;
+        color: #667eea;
+        background: #f0f8ff;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    /* Empty state */
+    .empty-state {
+        background: white;
+        border-radius: 8px;
+        padding: 60px 20px;
+        text-align: center;
+        border: 2px dashed #e0e6ed;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #e0e6ed;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        color: #7f8c8d;
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        color: #95a5a6;
+        margin-bottom: 20px;
+    }
+
+    /* Modal improvements */
+    .modal-content {
+        border-radius: 8px;
+        max-width: 600px;
+    }
+
+    .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #2c3e50;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .table-footer {
+        padding: 15px 25px;
+        border-top: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+
+    .frequency-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .frequency-badge.daily {
+        background: #d6eaf8;
+        color: #1f618d;
+    }
+
+    .frequency-badge.weekly {
+        background: #e8daef;
+        color: #633974;
+    }
+
+    .frequency-badge.monthly {
+        background: #fdebd0;
+        color: #a84300;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateFrequency() {
+    const freq = document.getElementById('frequency').value;
+    document.getElementById('weekDay').style.display = freq === 'weekly' ? 'block' : 'none';
+    document.getElementById('monthDay').style.display = freq === 'monthly' ? 'block' : 'none';
+}
+
+function updateEditFrequency() {
+    const freq = document.getElementById('editFrequency').value;
+    document.getElementById('editWeekDay').style.display = freq === 'weekly' ? 'block' : 'none';
+    document.getElementById('editMonthDay').style.display = freq === 'monthly' ? 'block' : 'none';
+}
+
+document.getElementById('addScheduleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+        const response = await fetch('/schedules/add', {method: 'POST', body: formData});
+        const data = await response.json();
+        if (data.success) {
+            showAlert('Agendamento criado com sucesso!', 'success');
+            closeModal('addScheduleModal');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('Erro: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+});
+
+async function editSchedule(id) {
+    try {
+        const response = await fetch('/schedules/' + id + '/get');
+        const schedule = await response.json();
+        document.getElementById('editScheduleId').value = schedule.id;
+        document.getElementById('editDeviceId').value = schedule.device_id || '';
+        document.getElementById('editFrequency').value = schedule.frequency;
+        document.getElementById('editTime').value = schedule.time;
+        if (schedule.day_of_week !== null) {
+            document.getElementById('editDayOfWeek').value = schedule.day_of_week;
+        }
+        if (schedule.day_of_month !== null) {
+            document.getElementById('editDayOfMonth').value = schedule.day_of_month;
+        }
+        updateEditFrequency();
+        showModal('editScheduleModal');
+    } catch (error) {
+        showAlert('Erro ao carregar agendamento: ' + error.message, 'danger');
+    }
+}
+
+document.getElementById('editScheduleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editScheduleId').value;
+    const data = {
+        device_id: document.getElementById('editDeviceId').value || null,
+        frequency: document.getElementById('editFrequency').value,
+        time: document.getElementById('editTime').value,
+        day_of_week: document.getElementById('editDayOfWeek').value || null,
+        day_of_month: document.getElementById('editDayOfMonth').value || null
+    };
+    try {
+        const response = await fetch('/schedules/' + id + '/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.success) {
+            showAlert('Agendamento atualizado com sucesso!', 'success');
+            closeModal('editScheduleModal');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('Erro: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+});
+
+async function deleteSchedule(scheduleId) {
+    if (!confirm('Tem certeza que deseja remover este agendamento?')) return;
+    try {
+        const response = await fetch('/schedules/' + scheduleId, {method: 'DELETE'});
+        const data = await response.json();
+        if (data.success) {
+            showAlert('Agendamento removido com sucesso!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('Erro: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Erro: ' + error.message, 'danger');
+    }
+}
+</script>
+{% endblock %}
+
+{% block main_container %}
+<div class="main-container">
+    <!-- Statistics Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ schedules|length }}</h3>
+                <p>Total de Agendamentos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ schedules|selectattr('active', 'equalto', True)|list|length }}</h3>
+                <p>Agendamentos Ativos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ schedules|selectattr('frequency', 'equalto', 'daily')|list|length }}</h3>
+                <p>Backups Diários</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ schedules|selectattr('frequency', 'equalto', 'weekly')|list|length }}</h3>
+                <p>Backups Semanais</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2>
+            <i class="fas fa-calendar-alt"></i>
+            {{ 'Gerenciar Agendamentos' if current_user.role in ['admin', 'operator'] else 'Agendamentos' }}
+        </h2>
+        {% if current_user.role in ['admin', 'operator'] %}
+        <button class="btn-modern" onclick="showModal('addScheduleModal')">
+            <i class="fas fa-plus"></i>
+            Criar Agendamento
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Schedules Table -->
+    {% if schedules %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Dispositivo</th>
+                    <th>Frequência</th>
+                    <th>Horário</th>
+                    <th>Detalhes</th>
+                    <th>Status</th>
+                    {% if current_user.role in ['admin', 'operator'] %}
+                    <th style="text-align: right;">Ações</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in schedules %}
+                <tr>
+                    <td><strong>#{{ schedule.id }}</strong></td>
+                    <td>
+                        <div class="schedule-info">
+                            <i class="fas fa-{{ 'globe' if not schedule.device_name else 'server' }}" style="color: #667eea;"></i>
+                            <span>{{ schedule.device_name or 'Todos os dispositivos' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="schedule-info">
+                            <div class="schedule-icon {{ schedule.frequency }}">
+                                <i class="fas fa-{{ 'sun' if schedule.frequency == 'daily' else 'calendar' if schedule.frequency == 'weekly' else 'calendar-alt' }}"></i>
+                            </div>
+                            <div>
+                                <strong>
+                                    {% if schedule.frequency == 'daily' %}Diário{% endif %}
+                                    {% if schedule.frequency == 'weekly' %}Semanal{% endif %}
+                                    {% if schedule.frequency == 'monthly' %}Mensal{% endif %}
+                                </strong>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <i class="fas fa-clock" style="color: #667eea;"></i>
+                        {{ schedule.time }}
+                    </td>
+                    <td>
+                        {% if schedule.frequency == 'weekly' %}
+                            <span class="frequency-badge weekly">
+                                {% if schedule.day_of_week == 0 %}Segunda{% endif %}
+                                {% if schedule.day_of_week == 1 %}Terça{% endif %}
+                                {% if schedule.day_of_week == 2 %}Quarta{% endif %}
+                                {% if schedule.day_of_week == 3 %}Quinta{% endif %}
+                                {% if schedule.day_of_week == 4 %}Sexta{% endif %}
+                                {% if schedule.day_of_week == 5 %}Sábado{% endif %}
+                                {% if schedule.day_of_week == 6 %}Domingo{% endif %}
+                            </span>
+                        {% elif schedule.frequency == 'monthly' %}
+                            <span class="frequency-badge monthly">
+                                Dia {{ schedule.day_of_month }}
+                            </span>
+                        {% else %}
+                            <span class="frequency-badge daily">Todos os dias</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {{ 'active' if schedule.active else 'inactive' }}">
+                            {{ 'Ativo' if schedule.active else 'Inativo' }}
+                        </span>
+                    </td>
+                    {% if current_user.role in ['admin', 'operator'] %}
+                    <td>
+                        <div class="action-buttons">
+                            <button onclick="editSchedule({{ schedule.id }})" class="btn-action" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteSchedule({{ schedule.id }})" class="btn-action danger" title="Remover">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="table-footer">
+            <div>Total: {{ schedules|length }} agendamentos</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-alt"></i>
+        <h3>Nenhum agendamento configurado</h3>
+        <p>Crie seu primeiro agendamento para automatizar os backups dos seus dispositivos</p>
+        <button class="btn-modern" onclick="showModal('addScheduleModal')">
+            <i class="fas fa-plus"></i>
+            Criar Primeiro Agendamento
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Schedule Modal -->
+<div id="addScheduleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle"></i> Criar Novo Agendamento</h2>
+            <span class="close" onclick="closeModal('addScheduleModal')">&times;</span>
+        </div>
+        <form id="addScheduleForm" style="padding: 25px;">
+            <div class="form-group">
+                <label><i class="fas fa-server"></i> Dispositivo</label>
+                <select name="device_id">
+                    <option value="">Todos os dispositivos</option>
+                    {% for device in devices %}
+                    {% if device.active %}
+                    <option value="{{ device.id }}">{{ device.name }} ({{ device.ip_address }})</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-calendar"></i> Frequência *</label>
+                <select name="frequency" required id="frequency" onchange="updateFrequency()">
+                    <option value="">Selecione a frequência...</option>
+                    <option value="daily">Diário</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensal</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-clock"></i> Horário *</label>
+                <input type="time" name="time" required value="02:00">
+            </div>
+            <div class="form-group" id="weekDay" style="display:none;">
+                <label><i class="fas fa-calendar-week"></i> Dia da Semana</label>
+                <select name="day_of_week">
+                    <option value="0">Segunda-feira</option>
+                    <option value="1">Terça-feira</option>
+                    <option value="2">Quarta-feira</option>
+                    <option value="3">Quinta-feira</option>
+                    <option value="4">Sexta-feira</option>
+                    <option value="5">Sábado</option>
+                    <option value="6">Domingo</option>
+                </select>
+            </div>
+            <div class="form-group" id="monthDay" style="display:none;">
+                <label><i class="fas fa-calendar-day"></i> Dia do Mês</label>
+                <input type="number" name="day_of_month" min="1" max="31" value="1" placeholder="1-31">
+            </div>
+            <button type="submit" class="btn-modern" style="width: 100%;">
+                <i class="fas fa-save"></i>
+                Criar Agendamento
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Schedule Modal -->
+<div id="editScheduleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit"></i> Editar Agendamento</h2>
+            <span class="close" onclick="closeModal('editScheduleModal')">&times;</span>
+        </div>
+        <form id="editScheduleForm" style="padding: 25px;">
+            <input type="hidden" id="editScheduleId">
+            <div class="form-group">
+                <label><i class="fas fa-server"></i> Dispositivo</label>
+                <select id="editDeviceId">
+                    <option value="">Todos os dispositivos</option>
+                    {% for device in devices %}
+                    {% if device.active %}
+                    <option value="{{ device.id }}">{{ device.name }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-calendar"></i> Frequência *</label>
+                <select id="editFrequency" required onchange="updateEditFrequency()">
+                    <option value="daily">Diário</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensal</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-clock"></i> Horário *</label>
+                <input type="time" id="editTime" required>
+            </div>
+            <div class="form-group" id="editWeekDay" style="display:none;">
+                <label><i class="fas fa-calendar-week"></i> Dia da Semana</label>
+                <select id="editDayOfWeek">
+                    <option value="0">Segunda-feira</option>
+                    <option value="1">Terça-feira</option>
+                    <option value="2">Quarta-feira</option>
+                    <option value="3">Quinta-feira</option>
+                    <option value="4">Sexta-feira</option>
+                    <option value="5">Sábado</option>
+                    <option value="6">Domingo</option>
+                </select>
+            </div>
+            <div class="form-group" id="editMonthDay" style="display:none;">
+                <label><i class="fas fa-calendar-day"></i> Dia do Mês</label>
+                <input type="number" id="editDayOfMonth" min="1" max="31">
+            </div>
+            <button type="submit" class="btn-modern" style="width: 100%;">
+                <i class="fas fa-check"></i>
+                Atualizar Agendamento
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

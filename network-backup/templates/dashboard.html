@@ -1,0 +1,816 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard-specific styles only, no reset/bootstrap/icon includes */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 6px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue {
+        background: #3498db;
+    }
+
+    .stat-icon.green {
+        background: #27ae60;
+    }
+
+    .stat-icon.red {
+        background: #e74c3c;
+    }
+
+    .stat-icon.orange {
+        background: #f39c12;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: left;
+    }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-clean {
+        background: white;
+        border: 1px solid #ddd;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #555;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-clean:hover {
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .btn-gerenciar {
+        all: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        border-radius: 8px;
+
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #e9e9ec;
+        }
+
+        &:active {
+            background: #dcdce0;
+            transform: scale(0.98);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+    }
+
+    .btn-action:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: #f0f8ff;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    .table-footer {
+        padding: 15px 25px;
+        border-top: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+
+    .device-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-dot.online {
+        background: #27ae60;
+        box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+    }
+
+    .status-dot.offline {
+        background: #95a5a6;
+    }
+
+    /* Filter styles */
+    #provedorFilter,
+    #backupProvedorFilter {
+        min-width: 200px;
+    }
+
+    #provedorFilter:focus,
+    #backupProvedorFilter:focus,
+    #backupIpSearch:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    #backupIpSearch::placeholder {
+        color: #999;
+    }
+
+    /* Pagination styles */
+    .pagination {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        padding: 18px 0;
+        background: #fafbfc;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    console.log('Script carregado!');
+
+    // Funções globais para serem acessíveis pelos onclick
+    async function backupDevice(deviceId) {
+        console.log('Backup device', deviceId);
+        if (!confirm('Backup agora?')) return;
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/backup/' + deviceId, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Backup realizado!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function editDevice(deviceId) {
+        try {
+            const response = await fetch(`/devices/${deviceId}/get`);
+            const device = await response.json();
+
+            document.getElementById('editId').value = device.id;
+            document.getElementById('editName').value = device.name;
+            document.getElementById('editIp').value = device.ip_address;
+            document.getElementById('editProtocol').value = device.protocol;
+            document.getElementById('editPort').value = device.port;
+            document.getElementById('editProvedor').value = device.provedor || '';
+
+            showModal('editModal');
+
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function saveEdit() {
+        const id = document.getElementById('editId').value;
+
+        const payload = {
+            name: document.getElementById('editName').value.trim(),
+            ip_address: document.getElementById('editIp').value.trim(),
+            protocol: document.getElementById('editProtocol').value,
+            port: document.getElementById('editPort').value,
+            provedor: document.getElementById('editProvedor').value.trim()
+        };
+
+        try {
+            const response = await fetch(`/devices/${id}/update`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert("Dispositivo atualizado!", "success");
+                closeModal("editModal");
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showAlert("Erro: " + data.error, "danger");
+            }
+
+        } catch (error) {
+            showAlert("Erro: " + error.message, "danger");
+        }
+    }
+
+    async function deleteDevice(deviceId) {
+        console.log('Delete device', deviceId);
+        if (!confirm('Deletar este dispositivo?')) return;
+        try {
+            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo deletado!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM completamente carregado!');
+
+    });
+
+    // ========================================================================
+    // GRÁFICOS COM CHART.JS
+    // ========================================================================
+
+    // Inicializar os gráficos (DOM já está carregado porque estamos no extra_js block)
+    function loadChartsLibrary() {
+        if (typeof Chart === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            script.onload = initCharts;
+            script.onerror = function() {
+                console.error('Erro ao carregar Chart.js');
+            };
+            document.head.appendChild(script);
+        } else {
+            initCharts();
+        }
+    }
+
+    // Executar imediatamente se DOM já carregado, ou aguardar DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadChartsLibrary);
+    } else {
+        // DOM já está pronto, executar imediatamente
+        loadChartsLibrary();
+    }
+
+    function initCharts() {
+        console.log('Iniciando carregamento dos gráficos...');
+        console.log('Verificando elementos canvas:', {
+            backupsChart: !!document.getElementById('backupsChart'),
+            successRateChart: !!document.getElementById('successRateChart'),
+            devicesChart: !!document.getElementById('devicesChart')
+        });
+
+        // Buscar dados dos gráficos
+        fetch('/api/charts')
+            .then(response => {
+                console.log('Resposta recebida:', response.status);
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar dados: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dados dos gráficos recebidos:', data);
+
+                if (!data) {
+                    console.error('Dados vazios recebidos');
+                    return;
+                }
+
+                renderBackupsChart(data.backups_by_day);
+                renderSuccessRateChart(data.success_rate);
+                renderDevicesChart(data.devices_by_provider);
+
+                console.log('Gráficos renderizados com sucesso!');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar dados dos gráficos:', error);
+                alert('Erro ao carregar gráficos: ' + error.message);
+            });
+    }
+
+    function renderBackupsChart(data) {
+        console.log('renderBackupsChart chamado com:', data);
+        const ctx = document.getElementById('backupsChart');
+        if (!ctx) {
+            console.error('Elemento canvas backupsChart não encontrado!');
+            return;
+        }
+
+        if (!data || !data.labels || !data.data) {
+            console.error('Dados inválidos para backupsChart:', data);
+            return;
+        }
+
+        // Formatar labels de data
+        const labels = data.labels.map(date => {
+            const d = new Date(date);
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        });
+
+        console.log('Criando gráfico de backups com labels:', labels);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Sucesso',
+                        data: data.data.success,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Falha',
+                        data: data.data.failed,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderSuccessRateChart(data) {
+        console.log('renderSuccessRateChart chamado com:', data);
+        const ctx = document.getElementById('successRateChart');
+        if (!ctx) {
+            console.error('Elemento canvas successRateChart não encontrado!');
+            return;
+        }
+
+        if (!data || !data.labels || !data.data) {
+            console.error('Dados inválidos para successRateChart:', data);
+            return;
+        }
+
+        console.log('Criando gráfico de taxa de sucesso');
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.data,
+                    backgroundColor: [
+                        '#27ae60',
+                        '#e74c3c'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderDevicesChart(data) {
+        const ctx = document.getElementById('devicesChart');
+        if (!ctx) return;
+
+        // Cores diferentes para cada provedor
+        const colors = [
+            '#3498db', '#27ae60', '#f39c12', '#e74c3c', '#9b59b6',
+            '#1abc9c', '#34495e', '#16a085', '#e67e22', '#2ecc71'
+        ];
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Dispositivos',
+                    data: data.data,
+                    backgroundColor: colors.slice(0, data.labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+{% block main_container %}
+<div class="main-container">
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_devices }}</h3>
+                <p>Dispositivos Ativos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ successful_backups }}</h3>
+                <p>Backups com Sucesso</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ failed_backups }}</h3>
+                <p>Backups Falhados</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-database"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_size_gb }} GB</h3>
+                <p>Espaço Utilizado</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="stats-row" style="margin-top: 25px;">
+        <div class="table-container" style="flex: 1; margin-right: 15px;">
+            <div class="table-header">
+                <h5><i class="fas fa-chart-line"></i> Backups por Dia (Últimos 7 Dias)</h5>
+            </div>
+            <div style="padding: 20px;">
+                <canvas id="backupsChart" height="80"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container" style="flex: 1;">
+            <div class="table-header">
+                <h5><i class="fas fa-chart-pie"></i> Taxa de Sucesso</h5>
+            </div>
+            <div style="padding: 20px;">
+                <canvas id="successRateChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row" style="margin-top: 25px;">
+        <div class="table-container" style="flex: 1;">
+            <div class="table-header">
+                <h5><i class="fas fa-chart-bar"></i> Dispositivos por Provedor</h5>
+            </div>
+            <div style="padding: 20px;">
+                <canvas id="devicesChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row" style="margin-top: 25px;">
+
+        <div class="table-container" style="flex: 1; margin-right: 15px;">
+            <div class="table-header">
+                <h5><i class="fas fa-clock"></i> Últimos 10 Backups</h5>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Dispositivo</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for backup in last_backups %}
+                    <tr>
+                        <td>#{{ backup.id }}</td>
+                        <td>{{ backup.device_name }}</td>
+                        <td>{{ backup.backup_date | datetime_br }}</td>
+                        <td>
+                            <span
+                                class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
+                                {{ backup.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Últimos Erros -->
+        <div class="table-container" style="flex: 1;">
+            <div class="table-header">
+                <h5><i class="fas fa-exclamation-triangle"></i> Últimos Erros</h5>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Dispositivo</th>
+                        <th>Data</th>
+                        <th>Erro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for error in last_errors %}
+                    <tr>
+                        <td>{{ error.device_name }}</td>
+                        <td>{{ error.backup_date | datetime_br }}</td>
+                        <td>{{ error.error_message or 'Erro desconhecido' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Editar Dispositivo</h5>
+                <span class="close" onclick="closeModal('editModal')">&times;</span>
+            </div>
+
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="editName" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Endereço IP</label>
+                <input type="text" id="editIp" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Protocolo</label>
+                <select id="editProtocol" class="form-control">
+                    <option value="ssh">SSH</option>
+                    <option value="ftp">FTP</option>
+                    <option value="sftp">SFTP</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Porta</label>
+                <input type="number" id="editPort" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="editProvedor">Provedor</label>
+                <select id="editProvedor" class="form-control">
+                    <option value="">Todos</option>
+                    {% for prov in provedores %}
+                    <option value="{{ prov }}">{{ prov }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <input type="hidden" id="editId">
+
+            <button class="btn btn-primary" onclick="saveEdit()">Salvar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

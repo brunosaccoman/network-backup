@@ -1,0 +1,714 @@
+# CLAUDE.RC - Contexto de Melhorias do Sistema de Backup de Rede
+
+## MISSÃO
+Transformar o sistema de backup de rede de um protótipo funcional em uma solução enterprise-ready, segura, escalável e robusta para produção.
+
+## ANÁLISE ATUAL
+
+### Estado Atual do Sistema
+- **Linguagem**: Python 3.x com Flask
+- **Banco de Dados**: SQLite (arquivo local)
+- **Frontend**: Jinja2 templates + Bootstrap
+- **Agendamento**: APScheduler (in-memory)
+- **Protocolos**: SSH (Netmiko), Telnet, HTTP/HTTPS
+- **Estrutura**: Monolítico, single-instance
+- **Testes**: 0% de cobertura
+- **Segurança**: Vulnerabilidades críticas identificadas
+
+### Problemas Identificados por Severidade
+- **CRÍTICO**: 12 problemas (segurança, arquitetura)
+- **ALTO**: 8 problemas (funcionalidades, escalabilidade)
+- **MÉDIO**: 8 problemas (UX, performance)
+- **BAIXO**: 5 problemas (melhorias incrementais)
+- **TOTAL**: 33 problemas documentados
+
+## ROADMAP DE MELHORIAS
+
+### 🔴 FASE 1: SEGURANÇA E FUNDAÇÕES (Semana 1-2) - CRÍTICO
+**Objetivo**: Tornar o sistema seguro para uso em produção
+
+#### 1.1 Segurança de Credenciais
+- [ ] Implementar criptografia AES-256 para senhas no banco
+- [ ] Criar classe `CredentialManager` com key derivation (Argon2)
+- [ ] Migrar senhas existentes para formato criptografado
+- [ ] Adicionar variável de ambiente `ENCRYPTION_KEY` (32 bytes)
+- [ ] Implementar rotação de chaves
+
+**Arquivos afetados**: `database.py`, `backup_manager.py`, novo `crypto_manager.py`
+
+**Implementação**:
+```python
+# crypto_manager.py
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
+import os
+
+class CredentialManager:
+    def __init__(self):
+        self.key = self._get_encryption_key()
+        self.fernet = Fernet(self.key)
+
+    def _get_encryption_key(self):
+        # Derivar chave de ENCRYPTION_KEY env var
+        password = os.environ.get('ENCRYPTION_KEY', '').encode()
+        if not password:
+            raise ValueError("ENCRYPTION_KEY não configurada!")
+
+        salt = b'network_backup_salt_v1'  # Deve ser armazenado com segurança
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+        )
+        return base64.urlsafe_b64encode(kdf.derive(password))
+
+    def encrypt(self, plaintext: str) -> str:
+        return self.fernet.encrypt(plaintext.encode()).decode()
+
+    def decrypt(self, ciphertext: str) -> str:
+        return self.fernet.decrypt(ciphertext.encode()).decode()
+```
+
+#### 1.2 Sistema de Autenticação
+- [ ] Implementar tabela `users` com roles (admin, operator, viewer)
+- [ ] Adicionar Flask-Login para gerenciamento de sessão
+- [ ] Criar tela de login/logout
+- [ ] Implementar hash de senha com bcrypt
+- [ ] Adicionar proteção CSRF em todos os forms
+- [ ] Implementar rate limiting (Flask-Limiter)
+- [ ] Criar sistema de permissões por role
+
+**Novo schema**:
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('admin', 'operator', 'viewer')),
+    active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+);
+
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id INTEGER,
+    details TEXT,
+    ip_address TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
+```
+
+**Arquivos afetados**: `app.py`, `database.py`, novos `auth.py`, `models.py`
+
+#### 1.3 Validação e Sanitização
+- [ ] Criar classe `InputValidator` com métodos para cada tipo
+- [ ] Validar IP addresses com módulo `ipaddress`
+- [ ] Whitelist de protocolos permitidos
+- [ ] Validar port range (1-65535)
+- [ ] Whitelist de backup_commands por device_type
+- [ ] Sanitizar todos os inputs antes de salvar
+- [ ] Adicionar validação de path traversal em downloads
+
+**Arquivos afetados**: `app.py`, novo `validators.py`
+
+#### 1.4 SSL/TLS Enforcement
+- [ ] Remover `urllib3.disable_warnings()`
+- [ ] Implementar verificação de certificados
+- [ ] Adicionar suporte a certificados auto-assinados via CA bundle
+- [ ] Forçar HTTPS em produção
+- [ ] Adicionar headers de segurança (CSP, HSTS, etc)
+
+**Arquivos afetados**: `backup_manager.py`, `app.py`
+
+#### 1.5 Migração para PostgreSQL
+- [ ] Criar schema PostgreSQL equivalente
+- [ ] Implementar conexão via SQLAlchemy
+- [ ] Criar models com ORM
+- [ ] Script de migração de dados SQLite → PostgreSQL
+- [ ] Adicionar connection pooling
+- [ ] Implementar health check do banco
+
+**Novo arquivo**: `models.py` com SQLAlchemy models
+**Reescrever**: `database.py` para usar SQLAlchemy
+
+---
+
+### 🟠 FASE 2: OBSERVABILIDADE E CONFIABILIDADE (Semana 3-4)
+
+#### 2.1 Logging Estruturado
+- [ ] Implementar logging JSON com `structlog`
+- [ ] Configurar log rotation (10MB por arquivo, manter 10 arquivos)
+- [ ] Adicionar trace IDs em todas as operações
+- [ ] Criar diferentes níveis de log por ambiente (dev/prod)
+- [ ] Integrar com ELK stack ou Loki
+- [ ] Adicionar logging de performance (tempo de backup, tamanho)
+
+**Configuração**:
+```python
+import structlog
+import logging
+from logging.handlers import RotatingFileHandler
+
+def setup_logging():
+    # Console handler para desenvolvimento
+    console_handler = logging.StreamHandler()
+
+    # File handler com rotation
+    file_handler = RotatingFileHandler(
+        'logs/app.log',
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=10
+    )
+
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.JSONRenderer()
+        ],
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+```
+
+**Arquivos afetados**: Todos os `.py`, novo `logging_config.py`
+
+#### 2.2 Health Checks e Métricas
+- [ ] Criar endpoint `/health` com verificação de:
+  - Database connectivity
+  - Filesystem writable
+  - Últimos backups (24h)
+  - Scheduler status
+- [ ] Implementar Prometheus metrics:
+  - `backup_duration_seconds` (histogram)
+  - `backup_total` (counter by status)
+  - `backup_size_bytes` (histogram)
+  - `devices_total` (gauge)
+  - `scheduler_jobs_total` (gauge)
+- [ ] Criar endpoint `/metrics` para Prometheus scraping
+- [ ] Adicionar Grafana dashboards
+
+**Novo arquivo**: `metrics.py` com prometheus_client
+
+#### 2.3 Audit Logging
+- [ ] Registrar todas as ações de usuários:
+  - CREATE/UPDATE/DELETE de devices
+  - Execução manual de backups
+  - Mudanças em schedules
+  - Login/logout
+- [ ] Incluir: user_id, IP, timestamp, ação, before/after
+- [ ] Criar endpoint para visualizar audit logs
+- [ ] Implementar retenção de 90 dias
+
+**Arquivos afetados**: `app.py`, `database.py`, novo `audit.py`
+
+#### 2.4 Sistema de Notificações
+- [ ] Criar classe abstrata `NotificationProvider`
+- [ ] Implementar providers:
+  - Email (SMTP)
+  - Webhook (genérico para Slack/Discord/Teams)
+  - Telegram Bot
+- [ ] Configurar notificações por evento:
+  - Backup failed
+  - Backup success (opcional)
+  - Device unreachable
+  - Disk space low
+- [ ] Adicionar templates de mensagem
+- [ ] Configuração de destinatários por provedor
+
+**Novo arquivo**: `notifications.py` com providers
+
+---
+
+### 🟡 FASE 3: FUNCIONALIDADES AVANÇADAS (Semana 5-8)
+
+#### 3.1 Backup Incremental e Compressão
+- [ ] Calcular hash SHA256 de cada backup
+- [ ] Detectar se configuração mudou comparando hash
+- [ ] Armazenar apenas delta se configuração igual
+- [ ] Comprimir backups com gzip (nível 6)
+- [ ] Manter última versão descomprimida para acesso rápido
+- [ ] Implementar deduplicação por hash
+
+**Novo schema**:
+```sql
+ALTER TABLE backups ADD COLUMN file_hash TEXT;
+ALTER TABLE backups ADD COLUMN compressed INTEGER DEFAULT 0;
+ALTER TABLE backups ADD COLUMN is_delta INTEGER DEFAULT 0;
+ALTER TABLE backups ADD COLUMN parent_backup_id INTEGER REFERENCES backups(id);
+
+CREATE INDEX idx_backup_hash ON backups(file_hash);
+```
+
+**Arquivos afetados**: `backup_manager.py`, `database.py`
+
+#### 3.2 Backup Diff e Restore
+- [ ] Implementar diff entre versões de backup (difflib)
+- [ ] Criar visualização colorida de mudanças
+- [ ] Endpoint `/backups/<id>/diff/<other_id>`
+- [ ] Implementar restore:
+  - Validar sintaxe da configuração
+  - Dry-run mode
+  - Aplicar via SSH/Telnet/HTTP
+  - Registrar restore em audit log
+- [ ] Criar interface de restore com confirmação dupla
+
+**Novo arquivo**: `restore_manager.py`
+
+#### 3.3 Paralelização de Backups
+- [ ] Refatorar `backup_all_devices()` para usar ThreadPoolExecutor
+- [ ] Configurar pool size (default: 10 workers)
+- [ ] Implementar progress tracking
+- [ ] Adicionar cancelamento de jobs em progresso
+- [ ] Rate limiting por dispositivo (evitar sobrecarregar switch)
+
+**Implementação**:
+```python
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def backup_all_devices_parallel(self, max_workers=10):
+    devices = self.db.get_all_devices(active_only=True)
+    results = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_device = {
+            executor.submit(self.backup_device, device['id']): device
+            for device in devices
+        }
+
+        for future in as_completed(future_to_device):
+            device = future_to_device[future]
+            try:
+                result = future.result()
+                results.append({
+                    'device': device['name'],
+                    'ip': device['ip_address'],
+                    'result': result
+                })
+            except Exception as e:
+                logger.exception(f"Erro no backup de {device['name']}: {e}")
+                results.append({
+                    'device': device['name'],
+                    'ip': device['ip_address'],
+                    'result': {'success': False, 'error': str(e)}
+                })
+
+    return results
+```
+
+**Arquivos afetados**: `backup_manager.py`
+
+#### 3.4 Suporte a SSH Keys
+- [ ] Adicionar campo `ssh_key_path` em devices
+- [ ] Suportar upload de chave privada (armazenar criptografada)
+- [ ] Permitir escolha entre password ou key
+- [ ] Validar formato de chave (RSA, ED25519)
+- [ ] Suportar passphrase em chaves
+
+**Arquivos afetados**: `database.py`, `backup_manager.py`, templates
+
+#### 3.5 Plugin System para Device Types
+- [ ] Criar interface `DeviceTypePlugin`
+- [ ] Carregar plugins dinamicamente de `plugins/`
+- [ ] Cada plugin define:
+  - Device type name
+  - Protocolos suportados
+  - Default commands
+  - Validação de output
+  - Parsing de configuração
+- [ ] Documentação de como criar plugins
+
+**Estrutura**:
+```
+plugins/
+  cisco_ios/
+    __init__.py
+    plugin.py
+    commands.yaml
+  huawei_vrp/
+    __init__.py
+    plugin.py
+    commands.yaml
+  fortinet/
+    __init__.py
+    plugin.py
+    commands.yaml
+```
+
+**Novo arquivo**: `plugin_manager.py`
+
+#### 3.6 Agendamento Distribuído com Celery
+- [ ] Instalar Redis como message broker
+- [ ] Migrar de APScheduler para Celery Beat
+- [ ] Criar tasks:
+  - `backup_device_task(device_id)`
+  - `backup_all_devices_task()`
+  - `cleanup_old_backups_task()`
+  - `send_notification_task()`
+- [ ] Configurar retry com exponential backoff
+- [ ] Implementar circuit breaker
+- [ ] Adicionar Flower para monitoramento
+
+**Novo arquivo**: `tasks.py` com Celery tasks
+
+---
+
+### 🟢 FASE 4: ENTERPRISE FEATURES (Semana 9-12)
+
+#### 4.1 Multi-tenancy
+- [ ] Adicionar conceito de "Organization"
+- [ ] Cada usuário pertence a uma organização
+- [ ] Devices, backups e schedules são isolados por org
+- [ ] Super-admin pode ver todas as orgs
+- [ ] Billing por organização (número de devices)
+
+#### 4.2 API RESTful Completa
+- [ ] Reescrever endpoints como REST puro
+- [ ] Usar Flask-RESTX para Swagger/OpenAPI
+- [ ] Versionamento de API (v1, v2)
+- [ ] Autenticação via API Key ou JWT
+- [ ] Rate limiting por API key
+- [ ] Documentação interativa (Swagger UI)
+
+#### 4.3 Frontend Moderno (Opcional)
+- [ ] Reescrever frontend com React/Vue
+- [ ] SPA (Single Page Application)
+- [ ] WebSocket para updates em tempo real
+- [ ] Gráficos com Chart.js
+- [ ] Dark mode
+- [ ] Mobile-responsive
+
+#### 4.4 Backup para Cloud Storage
+- [ ] Suporte a S3-compatible storage
+- [ ] Suporte a Azure Blob Storage
+- [ ] Suporte a Google Cloud Storage
+- [ ] Configuração de retenção por storage
+- [ ] Lifecycle policies
+
+#### 4.5 Compliance e Relatórios
+- [ ] Relatórios de compliance:
+  - Devices sem backup nos últimos X dias
+  - Histórico de mudanças
+  - Auditoria de acessos
+- [ ] Export para PDF
+- [ ] Agendamento de relatórios (semanal/mensal)
+- [ ] Envio automático por email
+
+#### 4.6 High Availability
+- [ ] Deployment em múltiplas instâncias
+- [ ] Load balancing (nginx/HAProxy)
+- [ ] PostgreSQL replication
+- [ ] Redis Sentinel
+- [ ] Health checks com failover automático
+
+---
+
+### 🔵 FASE 5: DEVOPS E QUALIDADE (Contínuo)
+
+#### 5.1 Testes Automatizados
+- [ ] Testes unitários com pytest (80%+ coverage)
+- [ ] Testes de integração
+- [ ] Testes E2E com Selenium
+- [ ] Fixtures para dados de teste
+- [ ] Mocks para dispositivos de rede
+- [ ] CI/CD com GitHub Actions ou GitLab CI
+
+#### 5.2 Containerização
+- [ ] Dockerfile otimizado (multi-stage)
+- [ ] Docker Compose para desenvolvimento
+- [ ] Kubernetes manifests para produção
+- [ ] Helm chart
+- [ ] Healthcheck em containers
+
+#### 5.3 Infrastructure as Code
+- [ ] Terraform para provisionamento
+- [ ] Ansible para configuração
+- [ ] Secrets management (Vault)
+- [ ] Backup automático do PostgreSQL
+
+#### 5.4 Documentação
+- [ ] Documentação de API (Swagger)
+- [ ] Guia de instalação
+- [ ] Guia de desenvolvimento
+- [ ] Arquitetura (diagramas)
+- [ ] Troubleshooting guide
+- [ ] Security best practices
+
+---
+
+## DEPENDÊNCIAS ADICIONAIS
+
+### Python Packages
+```txt
+# Segurança
+cryptography>=41.0.0
+bcrypt>=4.0.1
+flask-login>=0.6.2
+flask-limiter>=3.5.0
+flask-wtf>=1.2.1
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+alembic>=1.12.0
+
+# Logging e Monitoring
+structlog>=23.2.0
+prometheus-client>=0.19.0
+sentry-sdk[flask]>=1.39.0
+
+# Agendamento
+celery>=5.3.4
+redis>=5.0.1
+flower>=2.0.1
+
+# Notificações
+requests>=2.31.0
+python-telegram-bot>=20.7
+
+# API
+flask-restx>=1.3.0
+marshmallow>=3.20.0
+apispec>=6.3.0
+
+# Testes
+pytest>=7.4.3
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+factory-boy>=3.3.0
+faker>=20.1.0
+
+# Utils
+python-dotenv>=1.0.0
+click>=8.1.7
+pyyaml>=6.0.1
+```
+
+### Infraestrutura
+- PostgreSQL 14+
+- Redis 7+
+- Nginx (reverse proxy)
+- Prometheus + Grafana
+- ELK Stack ou Loki (logs)
+
+---
+
+## MÉTRICAS DE SUCESSO
+
+### Fase 1
+- [ ] 0 vulnerabilidades CRÍTICAS
+- [ ] Todas as senhas criptografadas
+- [ ] Sistema de autenticação funcionando
+- [ ] PostgreSQL em produção
+
+### Fase 2
+- [ ] Logs estruturados em 100% do código
+- [ ] Health check endpoint retornando 200
+- [ ] Métricas sendo coletadas pelo Prometheus
+- [ ] Notificações de falhas funcionando
+
+### Fase 3
+- [ ] Backups paralelos 10x mais rápidos
+- [ ] Economia de 50%+ em disco com compressão
+- [ ] Diff funcionando entre versões
+- [ ] Restore testado com sucesso
+
+### Fase 4
+- [ ] API REST completa com Swagger
+- [ ] Multi-tenancy funcionando
+- [ ] Backup para S3 implementado
+- [ ] 99.9% uptime
+
+### Fase 5
+- [ ] 80%+ test coverage
+- [ ] CI/CD automatizado
+- [ ] Deploy via Kubernetes
+- [ ] Documentação completa
+
+---
+
+## COMANDOS DE DESENVOLVIMENTO
+
+### Setup Inicial
+```bash
+# Clone e setup
+cd network-backup
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Configurar .env
+cp .env.example .env
+# Editar .env com suas configurações
+
+# Inicializar banco
+flask db init
+flask db migrate -m "Initial migration"
+flask db upgrade
+
+# Criar usuário admin
+flask create-admin --username admin --email admin@example.com
+```
+
+### Testes
+```bash
+# Rodar todos os testes
+pytest
+
+# Com coverage
+pytest --cov=. --cov-report=html
+
+# Testes específicos
+pytest tests/test_backup_manager.py
+
+# Watch mode
+pytest-watch
+```
+
+### Docker
+```bash
+# Build
+docker build -t network-backup:latest .
+
+# Run com compose
+docker-compose up -d
+
+# Logs
+docker-compose logs -f app
+
+# Stop
+docker-compose down
+```
+
+### Celery
+```bash
+# Worker
+celery -A tasks worker --loglevel=info
+
+# Beat (scheduler)
+celery -A tasks beat --loglevel=info
+
+# Flower (monitoring)
+celery -A tasks flower
+```
+
+---
+
+## ARQUITETURA ALVO (Pós-melhorias)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Load Balancer                         │
+│                      (Nginx/HAProxy)                         │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+        ┌─────────┴──────────┐
+        │                    │
+┌───────▼────────┐  ┌────────▼───────┐
+│  Flask App 1   │  │  Flask App 2   │  ... (N instances)
+│  (Gunicorn)    │  │  (Gunicorn)    │
+└───────┬────────┘  └────────┬───────┘
+        │                    │
+        └─────────┬──────────┘
+                  │
+        ┌─────────┴──────────┐
+        │                    │
+┌───────▼────────┐  ┌────────▼───────┐
+│  PostgreSQL    │  │     Redis      │
+│  (Primary)     │  │   (Sentinel)   │
+│       +        │  │                │
+│  (Replica)     │  │  Message Broker│
+└────────────────┘  └────────────────┘
+                           │
+                  ┌────────┴────────┐
+                  │                 │
+          ┌───────▼───────┐ ┌──────▼────────┐
+          │ Celery Worker │ │ Celery Beat   │
+          │  (N workers)  │ │  (Scheduler)  │
+          └───────────────┘ └───────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                   Monitoring Stack                           │
+│  - Prometheus (Metrics)                                      │
+│  - Grafana (Dashboards)                                      │
+│  - ELK/Loki (Logs)                                          │
+│  - Sentry (Error Tracking)                                  │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                   Storage Layer                              │
+│  - Local Filesystem (hot backups)                           │
+│  - S3/Azure/GCS (cold backups)                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## PRÓXIMOS PASSOS
+
+1. **Revisar este documento** e priorizar fases
+2. **Criar branch** `feature/security-improvements` para Fase 1
+3. **Implementar Fase 1** seguindo checklist
+4. **Code review** e testes antes de merge
+5. **Deploy em staging** para validação
+6. **Repetir** para próximas fases
+
+---
+
+## NOTAS IMPORTANTES
+
+### Segurança
+- NUNCA commitar `.env` com secrets reais
+- Rotar ENCRYPTION_KEY regularmente (trimestral)
+- Manter dependências atualizadas (Dependabot)
+- Realizar pentest após Fase 1
+
+### Performance
+- Monitorar query performance com pg_stat_statements
+- Configurar connection pooling adequadamente
+- Implementar caching agressivo onde possível
+- Profile código antes de otimizações prematuras
+
+### Escalabilidade
+- Planejar para 1000+ dispositivos
+- Testar com carga realista (locust/k6)
+- Implementar backpressure em Celery
+- Monitorar uso de recursos (CPU, RAM, Disk I/O)
+
+---
+
+## CONTATOS E RECURSOS
+
+### Documentação
+- Flask: https://flask.palletsprojects.com/
+- SQLAlchemy: https://docs.sqlalchemy.org/
+- Celery: https://docs.celeryq.dev/
+- Netmiko: https://github.com/ktbyers/netmiko
+
+### Comunidade
+- Stack Overflow: [flask], [python], [sqlalchemy]
+- Reddit: r/flask, r/Python
+- Discord: Python Discord Server
+
+---
+
+**Última atualização**: 2025-01-18
+**Versão**: 1.0
+**Autor**: Claude Code Analysis

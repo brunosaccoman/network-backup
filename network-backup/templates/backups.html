@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+{% block title %}Backups{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Usa exatamente os mesmos estilos do dashboard */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .table-filters-wrapper {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 20px;
+        width: 100%;
+    }
+
+    .table-filters {
+        display: flex;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+    }
+
+    .filter-group label {
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 0.4rem 0.6rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 0.9rem;
+        min-width: 150px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 3px rgba(74, 144, 226, 0.5);
+        outline: none;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+    }
+
+    .table-header h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0 0 15px 0;
+    }
+
+    .table-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    .btn-atualizar,
+    .btn-backup,
+    .btn-comparar {
+        all: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        border-radius: 8px;
+
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #e9e9ec;
+        }
+
+        &:active {
+            background: #dcdce0;
+            transform: scale(0.98);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .btn-comparar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+
+        &:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #64408a 100%);
+        }
+
+        &:active {
+            background: linear-gradient(135deg, #4a5bc4 0%, #533778 100%);
+        }
+    }
+
+    .btn-backup.danger {
+        background: #ffe9e9;
+        border-color: #ffc6c6;
+        color: #c62828;
+
+        &:hover {
+            background: #ffdede;
+        }
+
+        &:active {
+            background: #ffd3d3;
+        }
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+    }
+
+    .btn-action:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: #f0f8ff;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    .badge-status {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .page-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+
+    .page-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        padding: 18px 0;
+        background: #fafbfc;
+    }
+
+    .page-btn {
+        all: unset;
+        width: 34px;
+        height: 34px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 6px;
+        border: 1px solid #dcdfe6;
+        background: white;
+
+        font-size: 13px;
+        cursor: pointer;
+        color: #444;
+
+        transition: all 0.18s ease;
+    }
+
+    .page-btn:hover:not(.active):not(:disabled) {
+        background: #f0f6ff;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 0 6px rgba(52, 152, 219, 0.35);
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        font-size: 13px;
+        color: #555;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    #footerInfo {
+        flex: 1;
+    }
+
+    #pagination {
+        display: flex;
+        justify-content: center;
+        flex: 1;
+        gap: 5px;
+    }
+
+    .page-size-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .page-size-selector label {
+        color: #555;
+        font-weight: 500;
+    }
+
+    .page-size-selector select {
+        padding: 4px 8px;
+        border: 1px solid #dcdfe6;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="table-container">
+
+        <div class="table-header">
+            <h5><i class="fas fa-history"></i> Backups Recentes</h5>
+
+            <div class="table-filters-wrapper">
+                <div class="table-filters">
+                    <div class="filter-group">
+                        <label for="searchDevice"><i class="fas fa-search"></i> Pesquisar:</label>
+                        <input type="text" id="searchDevice" placeholder="Dispositivo..." class="filter-input">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterProvedor"><i class="fas fa-server"></i> Provedor:</label>
+                        <select id="filterProvedor" class="filter-select">
+                            <option value="">Todos</option>
+                            {% for provedor in provedores %}
+                            <option value="{{ provedor }}">{{ provedor }}</option>
+                            {% endfor %}
+                            <option value="sem_provedor">Sem Provedor</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterStatus"><i class="fas fa-info-circle"></i> Status:</label>
+                        <select id="filterStatus" class="filter-select">
+                            <option value="">Todos</option>
+                            <option value="success">Sucesso</option>
+                            <option value="failed">Falhou</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-actions">
+                    <button class="btn-atualizar" onclick="location.reload()">
+                        <i class="fas fa-sync"></i> Atualizar
+                    </button>
+                    <button class="btn-backup" onclick="location.href='/devices'">
+                        <i class="fas fa-plus"></i> Novo Backup
+                    </button>
+                    <button id="compareBtn" class="btn-comparar" onclick="compareBackups()" disabled title="Selecione 2 backups do mesmo dispositivo">
+                        <i class="fas fa-code-branch"></i> Comparar Backups
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAll" title="Selecionar todos"></th>
+                    <th>ID</th>
+                    <th>Dispositivo</th>
+                    <th>Endereço IP</th>
+                    <th>Provedor</th>
+                    <th>Data/Hora</th>
+                    <th>Tamanho</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="backupsTableBody">
+                {% for backup in recent_backups %}
+                <tr data-provedor="{{ backup.provedor if backup.provedor else 'sem_provedor' }}"
+                    data-status="{{ backup.status }}"
+                    data-device-id="{{ backup.device_id }}">
+                    <td>
+                        <input type="checkbox" class="backup-checkbox" value="{{ backup.id }}"
+                               data-device-id="{{ backup.device_id }}"
+                               onchange="updateCompareButton()">
+                    </td>
+                    <td><strong>#{{ backup.id }}</strong></td>
+                    <td>{{ backup.device_name }}</td>
+                    <td>{{ backup.device_ip }}</td>
+                    <td>{{ backup.provedor if backup.provedor else 'Sem Provedor' }}</td>
+                    <td>{{ backup.backup_date | datetime_br }}</td>
+                    <td>{{ (backup.file_size / 1024) | round(2) }} KB</td>
+                    <td>
+                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
+                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <div class="action-buttons">
+                            <a href="/backups/{{ backup.id }}/download" class="btn-action">
+                                <i class="fa fa-download"></i>
+                            </a>
+                            <a href="/backups/{{ backup.id }}/view" class="btn-action" target="_blank">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="table-footer">
+            <div id="footerInfo">Mostrando 0 de 0 backups</div>
+            <div id="pagination" class="pagination">
+            </div>
+            <div class="page-size-selector">
+                <label>Itens por página:</label>
+                <select id="pageSizeSelect" onchange="changePageSize(this.value)">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tableBody = document.getElementById('backupsTableBody');
+    const pagination = document.getElementById('pagination');
+    const footer = document.getElementById('footerInfo');
+
+    let rows = Array.from(tableBody.querySelectorAll('tr'));
+    let currentPage = 1;
+    let rowsPerPage = 20;
+
+    rows.forEach(row => row.dataset.visible = "1");
+
+    function changePageSize(newSize) {
+        rowsPerPage = parseInt(newSize);
+        currentPage = 1;
+        showPage(currentPage);
+    }
+
+    function applyFilters() {
+        const provedorFilter = document.getElementById("filterProvedor").value.toLowerCase();
+        const statusFilter = document.getElementById("filterStatus").value.toLowerCase();
+        const searchFilter = document.getElementById("searchDevice").value.toLowerCase();
+
+        rows.forEach(row => {
+            const provedor = row.getAttribute("data-provedor")?.toLowerCase() || "sem_provedor";
+            const status = row.getAttribute("data-status")?.toLowerCase() || "";
+            const deviceName = row.children[1].textContent.toLowerCase();
+
+            const match =
+                (!provedorFilter || provedor === provedorFilter) &&
+                (!statusFilter || status === statusFilter) &&
+                (!searchFilter || deviceName.includes(searchFilter));
+
+            row.dataset.visible = match ? "1" : "0";
+        });
+
+        currentPage = 1;
+        showPage(currentPage);
+    }
+
+    function showPage(page) {
+        const visibleRows = rows.filter(row => row.dataset.visible === "1");
+        const totalPages = Math.ceil(visibleRows.length / rowsPerPage) || 1;
+
+        currentPage = Math.min(page, totalPages);
+
+        rows.forEach(row => row.style.display = 'none');
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+
+        visibleRows.slice(start, end).forEach(row => row.style.display = '');
+
+        renderPagination(totalPages);
+        updateFooter(visibleRows.length, start, end);
+    }
+
+    function updateFooter(total, start, end) {
+        if (total === 0) {
+            footer.textContent = 'Nenhum backup encontrado';
+        } else {
+            footer.textContent = `Mostrando ${start + 1} a ${Math.min(end, total)} de ${total} backups`;
+        }
+    }
+
+    function renderPagination(totalPages) {
+        pagination.innerHTML = '';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.classList.add('page-btn');
+        prevBtn.innerHTML = '&laquo;';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => showPage(currentPage - 1));
+        pagination.appendChild(prevBtn);
+
+        // Mostrar apenas páginas relevantes se houver muitas
+        const maxVisiblePages = 7;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Primeira página
+        if (startPage > 1) {
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            btn.innerText = '1';
+            btn.addEventListener('click', () => showPage(1));
+            pagination.appendChild(btn);
+
+            if (startPage > 2) {
+                const dots = document.createElement('span');
+                dots.style.padding = '0 5px';
+                dots.innerText = '...';
+                pagination.appendChild(dots);
+            }
+        }
+
+        // Páginas do meio
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            if (i === currentPage) btn.classList.add('active');
+            btn.innerText = i;
+            btn.addEventListener('click', () => showPage(i));
+            pagination.appendChild(btn);
+        }
+
+        // Última página
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dots = document.createElement('span');
+                dots.style.padding = '0 5px';
+                dots.innerText = '...';
+                pagination.appendChild(dots);
+            }
+
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            btn.innerText = totalPages;
+            btn.addEventListener('click', () => showPage(totalPages));
+            pagination.appendChild(btn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.classList.add('page-btn');
+        nextBtn.innerHTML = '&raquo;';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => showPage(currentPage + 1));
+        pagination.appendChild(nextBtn);
+    }
+
+    document.getElementById("filterProvedor").addEventListener("change", applyFilters);
+    document.getElementById("filterStatus").addEventListener("change", applyFilters);
+    document.getElementById("searchDevice").addEventListener("input", applyFilters);
+
+    // Função para atualizar botão de comparar
+    function updateCompareButton() {
+        const checkboxes = document.querySelectorAll('.backup-checkbox:checked');
+        const compareBtn = document.getElementById('compareBtn');
+
+        if (checkboxes.length === 2) {
+            // Verificar se são do mesmo dispositivo
+            const deviceId1 = checkboxes[0].getAttribute('data-device-id');
+            const deviceId2 = checkboxes[1].getAttribute('data-device-id');
+
+            if (deviceId1 === deviceId2) {
+                compareBtn.disabled = false;
+                compareBtn.title = 'Comparar os 2 backups selecionados';
+            } else {
+                compareBtn.disabled = true;
+                compareBtn.title = 'Selecione backups do mesmo dispositivo';
+                alert('Selecione backups do mesmo dispositivo para comparar');
+                checkboxes[checkboxes.length - 1].checked = false;
+            }
+        } else if (checkboxes.length > 2) {
+            // Limitar a 2 seleções
+            checkboxes[checkboxes.length - 1].checked = false;
+            alert('Selecione apenas 2 backups para comparar');
+        } else {
+            compareBtn.disabled = true;
+            if (checkboxes.length === 0) {
+                compareBtn.title = 'Selecione 2 backups do mesmo dispositivo';
+            } else if (checkboxes.length === 1) {
+                compareBtn.title = 'Selecione mais 1 backup do mesmo dispositivo';
+            }
+        }
+    }
+
+    // Função para comparar backups
+    function compareBackups() {
+        const checkboxes = document.querySelectorAll('.backup-checkbox:checked');
+        if (checkboxes.length !== 2) {
+            alert('Selecione exatamente 2 backups para comparar');
+            return;
+        }
+
+        const backup1 = checkboxes[0].value;
+        const backup2 = checkboxes[1].value;
+
+        window.location.href = `/backups/compare?backup1=${backup1}&backup2=${backup2}`;
+    }
+
+    // Selecionar todos
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.backup-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateCompareButton();
+    });
+
+    applyFilters();
+</script>
+
+{% endblock %}

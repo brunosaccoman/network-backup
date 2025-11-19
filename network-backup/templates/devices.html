@@ -1,0 +1,1464 @@
+{% extends "base.html" %}
+{% block title %}Dispositivos - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main container */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Stats cards at the top */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
+    .stat-icon.red { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+    .stat-icon.purple { background: linear-gradient(135deg, #9D50BB 0%, #6E48AA 100%); }
+
+    .stat-info h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .stat-info p {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    /* Header section */
+    .page-header {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Modern buttons */
+    .btn-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: 1px solid #e3e3e7;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-modern:hover {
+        background: #e9e9ec;
+        transform: scale(0.98);
+    }
+
+    .btn-modern:active {
+        background: #dcdce0;
+        transform: scale(0.98);
+    }
+
+    .btn-modern.primary {
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        color: #333;
+    }
+
+    .btn-modern.primary:hover {
+        background: #e9e9ec;
+    }
+
+    .btn-modern.success {
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        color: #333;
+    }
+
+    .btn-modern.success:hover {
+        background: #e9e9ec;
+    }
+
+    .btn-modern.secondary {
+        background: white;
+        color: #667eea;
+        border: 1px solid #667eea;
+    }
+
+    .btn-modern.secondary:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    /* Filters section */
+    .filters-section {
+        background: white;
+        border-radius: 8px;
+        padding: 15px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-input {
+        padding: 8px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        min-width: 200px;
+        transition: border-color 0.3s;
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    /* Toggle view buttons */
+    .view-toggle {
+        display: flex;
+        gap: 5px;
+        background: #f0f0f0;
+        padding: 4px;
+        border-radius: 6px;
+    }
+
+    .view-toggle button {
+        padding: 6px 12px;
+        border: none;
+        background: transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        color: #666;
+        transition: all 0.2s;
+        font-size: 14px;
+    }
+
+    .view-toggle button.active {
+        background: white;
+        color: #667eea;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .view-toggle button:hover:not(.active) {
+        color: #667eea;
+    }
+
+    /* Table view (default) */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr {
+        transition: background 0.2s;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .device-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-dot.online {
+        background: #27ae60;
+        box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+        animation: pulse-dot 2s infinite;
+    }
+
+    .status-dot.offline {
+        background: #95a5a6;
+    }
+
+    @keyframes pulse-dot {
+        0%, 100% { box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2); }
+        50% { box-shadow: 0 0 0 4px rgba(39, 174, 96, 0.1); }
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge.active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .badge.inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .provider-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        background: #e3f2fd;
+        color: #3498db;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+        font-size: 13px;
+    }
+
+    .btn-action:hover {
+        border-color: #667eea;
+        color: #667eea;
+        background: #f0f8ff;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    /* Cards view (optional) */
+    .devices-grid {
+        display: none;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+
+    .devices-grid.active {
+        display: grid;
+    }
+
+    .device-card {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        padding: 15px;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .device-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .device-card:hover::before {
+        opacity: 1;
+    }
+
+    .device-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .device-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .device-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    .status-indicator.online {
+        background: #27ae60;
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+    }
+
+    .status-indicator.offline {
+        background: #95a5a6;
+        animation: none;
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2); }
+        50% { box-shadow: 0 0 0 5px rgba(39, 174, 96, 0.1); }
+    }
+
+    .device-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-row i {
+        width: 16px;
+        color: #667eea;
+        font-size: 11px;
+    }
+
+    .device-actions-card {
+        display: flex;
+        gap: 6px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .btn-action-card {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+    }
+
+    .btn-action-card:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .btn-action-card.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    /* Empty state */
+    .empty-state {
+        background: white;
+        border-radius: 8px;
+        padding: 60px 20px;
+        text-align: center;
+        border: 2px dashed #e0e6ed;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #e0e6ed;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        color: #7f8c8d;
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        color: #95a5a6;
+        margin-bottom: 20px;
+    }
+
+    /* Modal improvements */
+    .modal-content {
+        border-radius: 8px;
+        max-width: 600px;
+    }
+
+    .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #2c3e50;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .table-footer {
+        padding: 15px 25px;
+        border-top: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+
+    /* Pagination controls */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 25px;
+        background: white;
+        border-top: 1px solid #e0e6ed;
+        border-radius: 0 0 8px 8px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .pagination-info {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .pagination-btn {
+        padding: 8px 12px;
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: #e9e9ec;
+        transform: scale(0.98);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-btn.active {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+    .page-size-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .page-size-selector select {
+        padding: 6px 10px;
+        border: 1px solid #e3e3e7;
+        border-radius: 6px;
+        background: #f5f5f7;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    /* Estilos dos botões de página individuais */
+    .page-btn {
+        all: unset;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: 1px solid #dcdfe6;
+        background: white;
+        font-size: 13px;
+        cursor: pointer;
+        color: #444;
+        transition: all 0.18s ease;
+    }
+
+    .page-btn:hover:not(.active):not(:disabled) {
+        background: #f0f6ff;
+        border-color: #3498db;
+        color: #3498db;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .page-btn.active {
+        background: #3498db;
+        border-color: #3498db;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 0 6px rgba(52, 152, 219, 0.35);
+    }
+
+    .pagination-controls {
+        display: flex;
+        justify-content: center;
+        flex: 1;
+        gap: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // View toggle functionality
+    let currentView = localStorage.getItem('devicesView') || 'table';
+
+    function toggleView(view) {
+        currentView = view;
+        localStorage.setItem('devicesView', view);
+
+        const tableView = document.getElementById('tableView');
+        const cardsView = document.getElementById('cardsView');
+        const tableBtn = document.getElementById('tableBtnToggle');
+        const cardsBtn = document.getElementById('cardsBtnToggle');
+
+        if (view === 'table') {
+            tableView.style.display = 'block';
+            cardsView.classList.remove('active');
+            tableBtn.classList.add('active');
+            cardsBtn.classList.remove('active');
+        } else {
+            tableView.style.display = 'none';
+            cardsView.classList.add('active');
+            tableBtn.classList.remove('active');
+            cardsBtn.classList.add('active');
+        }
+    }
+
+    // Apply saved view on load
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleView(currentView);
+        initPagination();
+    });
+
+    // Pagination functionality
+    let currentPage = 1;
+    let pageSize = 20;
+    let allRows = [];
+    let filteredRows = [];
+
+    function initPagination() {
+        allRows = Array.from(document.querySelectorAll('#deviceTableBody tr'));
+        filteredRows = [...allRows];
+        updatePagination();
+    }
+
+    function updatePagination() {
+        const totalItems = filteredRows.length;
+        const totalPages = Math.ceil(totalItems / pageSize);
+
+        // Ensure current page is valid
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        // Hide all rows first
+        allRows.forEach(row => row.style.display = 'none');
+
+        // Show only rows for current page
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const rowsToShow = filteredRows.slice(start, end);
+        rowsToShow.forEach(row => row.style.display = '');
+
+        // Update pagination info
+        const showingStart = totalItems > 0 ? start + 1 : 0;
+        const showingEnd = Math.min(end, totalItems);
+        document.getElementById('paginationInfo').textContent =
+            `Mostrando ${showingStart}-${showingEnd} de ${totalItems} dispositivos`;
+
+        // Render pagination buttons
+        renderPageNumbers(totalPages);
+    }
+
+    function renderPageNumbers(totalPages) {
+        const container = document.getElementById('paginationControls');
+        container.innerHTML = '';
+
+        // Botão anterior
+        const prevBtn = document.createElement('button');
+        prevBtn.classList.add('page-btn');
+        prevBtn.innerHTML = '&laquo;';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.onclick = () => { currentPage--; updatePagination(); };
+        container.appendChild(prevBtn);
+
+        // Lógica de páginas visíveis
+        const maxVisiblePages = 7;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Primeira página
+        if (startPage > 1) {
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            btn.innerText = '1';
+            btn.onclick = () => { currentPage = 1; updatePagination(); };
+            container.appendChild(btn);
+
+            if (startPage > 2) {
+                const dots = document.createElement('span');
+                dots.style.padding = '0 5px';
+                dots.innerText = '...';
+                container.appendChild(dots);
+            }
+        }
+
+        // Páginas do meio
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            if (i === currentPage) btn.classList.add('active');
+            btn.innerText = i;
+            btn.onclick = () => { currentPage = i; updatePagination(); };
+            container.appendChild(btn);
+        }
+
+        // Última página
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dots = document.createElement('span');
+                dots.style.padding = '0 5px';
+                dots.innerText = '...';
+                container.appendChild(dots);
+            }
+
+            const btn = document.createElement('button');
+            btn.classList.add('page-btn');
+            btn.innerText = totalPages;
+            btn.onclick = () => { currentPage = totalPages; updatePagination(); };
+            container.appendChild(btn);
+        }
+
+        // Botão próximo
+        const nextBtn = document.createElement('button');
+        nextBtn.classList.add('page-btn');
+        nextBtn.innerHTML = '&raquo;';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.onclick = () => { currentPage++; updatePagination(); };
+        container.appendChild(nextBtn);
+    }
+
+    function changePageSize(newSize) {
+        pageSize = parseInt(newSize);
+        currentPage = 1;
+        updatePagination();
+    }
+
+    // Global functions for device management
+    async function backupDevice(deviceId) {
+        if (!confirm('Iniciar backup deste dispositivo agora?')) return;
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/backup/' + deviceId, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Backup realizado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro ao fazer backup: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function editDevice(id) {
+        try {
+            // Carregar provedores primeiro
+            await loadProvedoresIntoEditSelect();
+
+            const response = await fetch('/devices/' + id + '/get');
+            const device = await response.json();
+            document.getElementById('editId').value = device.id;
+            document.getElementById('editName').value = device.name;
+            document.getElementById('editIp').value = device.ip_address;
+            document.getElementById('editProtocol').value = device.protocol;
+            document.getElementById('editPort').value = device.port;
+            document.getElementById('editProvedor').value = device.provedor || '';
+            showModal('editDeviceModal');
+        } catch (error) {
+            showAlert('Erro ao carregar dispositivo: ' + error.message, 'danger');
+        }
+    }
+
+    // Load provedores into edit select
+    async function loadProvedoresIntoEditSelect() {
+        const select = document.getElementById('editProvedor');
+        if (!select) return;
+
+        try {
+            const response = await fetch("/api/provedores");
+            const data = await response.json();
+
+            // Limpar e adicionar opção padrão
+            select.innerHTML = '<option value="">Sem Provedor</option>';
+
+            if (data.provedores && data.provedores.length > 0) {
+                data.provedores.forEach(prov => {
+                    const option = document.createElement("option");
+                    option.value = prov;
+                    option.textContent = prov;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar provedores:', error);
+        }
+    }
+
+    async function deleteDevice(deviceId) {
+        if (!confirm('Tem certeza que deseja remover este dispositivo permanentemente?')) return;
+        try {
+            const deviceName = document.querySelector(`tr[data-id="${deviceId}"]`)?.dataset?.name || 'Dispositivo';
+            const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo removido com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    // Search and filter functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('deviceSearch');
+        const provedorFilter = document.getElementById('provedorFilter');
+
+        function filterDevices() {
+            const searchQuery = searchInput.value.toLowerCase();
+            const selectedProvedor = provedorFilter.value;
+
+            // Filter table rows with pagination
+            filteredRows = allRows.filter(row => {
+                const name = row.dataset.name.toLowerCase();
+                const ip = row.dataset.ip.toLowerCase();
+                const provedor = row.dataset.provedor;
+                const type = row.dataset.type.toLowerCase();
+
+                const matchesSearch = name.includes(searchQuery) ||
+                                     ip.includes(searchQuery) ||
+                                     type.includes(searchQuery);
+                const matchesProvedor = !selectedProvedor || selectedProvedor === 'todos' || provedor === selectedProvedor;
+
+                return matchesSearch && matchesProvedor;
+            });
+
+            // Reset to first page and update pagination
+            currentPage = 1;
+            updatePagination();
+
+            // Filter cards
+            const cards = document.querySelectorAll('.device-card');
+            let cardsVisibleCount = 0;
+
+            cards.forEach(card => {
+                const name = card.dataset.name.toLowerCase();
+                const ip = card.dataset.ip.toLowerCase();
+                const provedor = card.dataset.provedor;
+                const type = card.dataset.type.toLowerCase();
+
+                const matchesSearch = name.includes(searchQuery) ||
+                                     ip.includes(searchQuery) ||
+                                     type.includes(searchQuery);
+                const matchesProvedor = !selectedProvedor || selectedProvedor === 'todos' || provedor === selectedProvedor;
+
+                if (matchesSearch && matchesProvedor) {
+                    card.style.display = '';
+                    cardsVisibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            document.getElementById('deviceCount').textContent =
+                `Mostrando ${currentView === 'table' ? filteredRows.length : cardsVisibleCount} de {{ devices|length }} dispositivos`;
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', filterDevices);
+        }
+
+        if (provedorFilter) {
+            provedorFilter.addEventListener('change', filterDevices);
+        }
+
+        // Load provedores
+        loadProvedoresIntoSelect();
+        loadProvedoresIntoFilter();
+    });
+
+    // Add device form
+    document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        try {
+            const response = await fetch('/devices/add', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo adicionado com sucesso!', 'success');
+                closeModal('addDeviceModal');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    });
+
+    // Edit device form
+    document.getElementById('editDeviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const data = {
+            name: document.getElementById('editName').value,
+            ip_address: document.getElementById('editIp').value,
+            protocol: document.getElementById('editProtocol').value,
+            port: document.getElementById('editPort').value,
+            provedor: document.getElementById('editProvedor').value
+        };
+        try {
+            const response = await fetch('/devices/' + id + '/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showAlert('Dispositivo atualizado com sucesso!', 'success');
+                closeModal('editDeviceModal');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + result.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    });
+
+    // Load provedores into select
+    function loadProvedoresIntoSelect() {
+        const select = document.getElementById('provedor');
+        if (!select) return;
+
+        fetch("/api/provedores")
+            .then(response => response.json())
+            .then(data => {
+                // Limpar options existentes (exceto a primeira "Sem Provedor")
+                const firstOption = select.options[0];
+                select.innerHTML = '';
+                select.appendChild(firstOption);
+
+                if (data.provedores && data.provedores.length > 0) {
+                    data.provedores.forEach(prov => {
+                        const option = document.createElement("option");
+                        option.value = prov;
+                        option.textContent = prov;
+                        select.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Erro ao carregar provedores:', error));
+    }
+
+    function loadProvedoresIntoFilter() {
+        const select = document.getElementById('provedorFilter');
+        if (!select) return;
+
+        fetch("/api/provedores")
+            .then(response => response.json())
+            .then(data => {
+                // Limpar options existentes (exceto a primeira "Todos os Provedores")
+                const firstOption = select.options[0];
+                select.innerHTML = '';
+                select.appendChild(firstOption);
+
+                if (data.provedores && data.provedores.length > 0) {
+                    data.provedores.forEach(prov => {
+                        const option = document.createElement("option");
+                        option.value = prov;
+                        option.textContent = prov;
+                        select.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Erro ao carregar provedores:', error));
+    }
+
+    // Enhanced modal handling
+    const originalShowModal = window.showModal || function(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    };
+
+    window.showModal = function(modalId) {
+        originalShowModal(modalId);
+        if (modalId === 'addDeviceModal') {
+            loadProvedoresIntoSelect();
+        }
+    };
+</script>
+{% endblock %}
+
+{% block main_container %}
+<div class="main-container">
+    <!-- Statistics Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ devices|length }}</h3>
+                <p>Total de Dispositivos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ devices|selectattr('active', 'equalto', True)|list|length }}</h3>
+                <p>Dispositivos Ativos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ devices|selectattr('active', 'equalto', False)|list|length }}</h3>
+                <p>Dispositivos Inativos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ devices|map(attribute='device_type')|unique|list|length }}</h3>
+                <p>Tipos Diferentes</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2>
+            <i class="fas fa-server"></i>
+            {{ 'Gerenciar Dispositivos' if current_user.role in ['admin', 'operator'] else 'Dispositivos' }}
+        </h2>
+        {% if current_user.role in ['admin', 'operator'] %}
+        <div class="header-actions">
+            <button class="btn-modern success" onclick="showModal('addDeviceModal')">
+                <i class="fas fa-plus"></i>
+                Adicionar Dispositivo
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Filters and View Toggle -->
+    <div class="filters-section">
+        <i class="fas fa-filter" style="color: #667eea;"></i>
+        <input
+            type="text"
+            id="deviceSearch"
+            class="filter-input"
+            placeholder="🔍 Buscar por nome, IP ou tipo..."
+        >
+        <select id="provedorFilter" class="filter-input">
+            <option value="todos">Todos os Provedores</option>
+        </select>
+
+        <div class="view-toggle">
+            <button id="tableBtnToggle" class="active" onclick="toggleView('table')">
+                <i class="fas fa-list"></i> Tabela
+            </button>
+            <button id="cardsBtnToggle" onclick="toggleView('cards')">
+                <i class="fas fa-th-large"></i> Cards
+            </button>
+        </div>
+
+        <div style="flex: 1; text-align: right; color: #7f8c8d; font-size: 14px;">
+            <span id="deviceCount">Mostrando {{ devices|length }} de {{ devices|length }} dispositivos</span>
+        </div>
+    </div>
+
+    <!-- Table View (Default) -->
+    {% if devices %}
+    <div id="tableView" class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Endereço IP</th>
+                    <th>Provedor</th>
+                    <th>Tipo</th>
+                    <th>Protocolo</th>
+                    <th>Porta</th>
+                    <th>Status</th>
+                    {% if current_user.role in ['admin', 'operator'] %}
+                    <th style="text-align: right;">Ações</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody id="deviceTableBody">
+                {% for device in devices %}
+                <tr data-name="{{ device.name }}"
+                    data-ip="{{ device.ip_address }}"
+                    data-provedor="{{ device.provedor if device.provedor else 'Sem_Provedor' }}"
+                    data-type="{{ device.device_type }}">
+                    <td>
+                        <div class="device-name-cell">
+                            <span class="status-dot {{ 'online' if device.active else 'offline' }}"></span>
+                            <strong>{{ device.name }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ device.ip_address }}</td>
+                    <td>
+                        <span class="provider-tag">
+                            {{ device.provedor if device.provedor else 'Sem Provedor' }}
+                        </span>
+                    </td>
+                    <td>{{ device.device_type|title }}</td>
+                    <td>{{ device.protocol|upper }}</td>
+                    <td>{{ device.port }}</td>
+                    <td>
+                        <span class="badge {{ 'active' if device.active else 'inactive' }}">
+                            {{ 'Ativo' if device.active else 'Inativo' }}
+                        </span>
+                    </td>
+                    {% if current_user.role in ['admin', 'operator'] %}
+                    <td>
+                        <div class="action-buttons">
+                            <button onclick="backupDevice({{ device.id }})" class="btn-action" title="Fazer Backup">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button onclick="editDevice({{ device.id }})" class="btn-action" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteDevice({{ device.id }})" class="btn-action danger" title="Remover">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="pagination-container">
+            <div class="pagination-info" id="paginationInfo">
+                Mostrando 0-0 de 0 dispositivos
+            </div>
+            <div class="pagination-controls" id="paginationControls">
+                <!-- Botões de paginação serão inseridos aqui via JavaScript -->
+            </div>
+            <div class="page-size-selector">
+                <label>Itens por página:</label>
+                <select id="pageSizeSelect" onchange="changePageSize(this.value)">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards View (Optional) -->
+    <div id="cardsView" class="devices-grid">
+        {% for device in devices %}
+        <div class="device-card"
+             data-name="{{ device.name }}"
+             data-ip="{{ device.ip_address }}"
+             data-provedor="{{ device.provedor if device.provedor else 'Sem_Provedor' }}"
+             data-type="{{ device.device_type }}">
+
+            <div class="device-header">
+                <h3 class="device-name">
+                    <span class="status-indicator {{ 'online' if device.active else 'offline' }}"></span>
+                    {{ device.name }}
+                </h3>
+                <span class="badge {{ 'active' if device.active else 'inactive' }}">
+                    {{ 'Ativo' if device.active else 'Inativo' }}
+                </span>
+            </div>
+
+            <div class="device-info">
+                <div class="info-row">
+                    <i class="fas fa-network-wired"></i>
+                    <span>{{ device.ip_address }}</span>
+                </div>
+                <div class="info-row">
+                    <i class="fas fa-microchip"></i>
+                    <span>{{ device.device_type|title }}</span>
+                </div>
+                <div class="info-row">
+                    <i class="fas fa-plug"></i>
+                    <span>{{ device.protocol|upper }}:{{ device.port }}</span>
+                </div>
+                <div class="info-row">
+                    <i class="fas fa-building"></i>
+                    <span class="provider-tag">
+                        {{ device.provedor if device.provedor else 'Sem Provedor' }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="device-actions-card">
+                <button onclick="backupDevice({{ device.id }})" class="btn-action-card" title="Fazer Backup">
+                    <i class="fas fa-sync-alt"></i>
+                    Backup
+                </button>
+                <button onclick="editDevice({{ device.id }})" class="btn-action-card" title="Editar">
+                    <i class="fas fa-edit"></i>
+                    Editar
+                </button>
+                <button onclick="deleteDevice({{ device.id }})" class="btn-action-card danger" title="Remover">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-server"></i>
+        <h3>Nenhum dispositivo cadastrado</h3>
+        <p>Adicione seu primeiro dispositivo para começar a fazer backups automatizados</p>
+        <button class="btn-modern" onclick="showModal('addDeviceModal')" style="background: #f5f5f7;">
+            <i class="fas fa-plus"></i>
+            Adicionar Primeiro Dispositivo
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Device Modal -->
+<div id="addDeviceModal" class="modal">
+    <div class="modal-content" style="max-width: 650px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0; padding: 18px 25px;">
+            <h2 style="color: white; display: flex; align-items: center; gap: 10px; font-size: 20px; margin: 0;">
+                <i class="fas fa-plus-circle"></i> Adicionar Novo Dispositivo
+            </h2>
+            <span class="close" onclick="closeModal('addDeviceModal')" style="color: white; opacity: 0.9;">&times;</span>
+        </div>
+        <form id="addDeviceForm" style="padding: 25px;">
+            <!-- Informações Básicas -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #3498db; font-size: 14px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e3f2fd; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i> Informações Básicas
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-tag"></i> Nome *</label>
+                        <input type="text" name="name" required placeholder="Ex: Router Principal" style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-network-wired"></i> IP *</label>
+                        <input type="text" name="ip_address" required placeholder="192.168.1.1" style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-building"></i> Provedor</label>
+                        <select name="provedor" id="provedor" required style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                            <option value="Sem_Provedor" selected>Sem Provedor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-microchip"></i> Tipo *</label>
+                        <select name="device_type" required style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                            <option value="">Selecione...</option>
+                            <option value="ubiquiti_airos">Ubiquiti AirOS</option>
+                            <option value="mimosa">Mimosa</option>
+                            <option value="intelbras_radio">Intelbras Radio</option>
+                            <option value="cisco_ios">Cisco IOS</option>
+                            <option value="datacom">Datacom</option>
+                            <option value="datacom_dmos">Datacom DmOS</option>
+                            <option value="huawei">Huawei</option>
+                            <option value="mikrotik_routeros">MikroTik RouterOS</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Conexão -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #3498db; font-size: 14px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e3f2fd; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-plug"></i> Configurações de Conexão
+                </h4>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-exchange-alt"></i> Protocolo *</label>
+                        <select name="protocol" required style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                            <option value="ssh">SSH</option>
+                            <option value="http">HTTP</option>
+                            <option value="https">HTTPS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-ethernet"></i> Porta</label>
+                        <input type="number" name="port" value="22" placeholder="22" style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credenciais de Acesso -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #3498db; font-size: 14px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e3f2fd; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-key"></i> Credenciais de Acesso
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-user"></i> Usuário *</label>
+                        <input type="text" name="username" required placeholder="admin" style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #3498db; font-weight: 600; font-size: 13px;"><i class="fas fa-lock"></i> Senha *</label>
+                        <input type="password" name="password" required placeholder="••••••••" style="border: 2px solid #e3f2fd; padding: 10px; border-radius: 6px; font-size: 14px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão de Salvar -->
+            <button type="submit" class="btn-modern" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; font-size: 15px; font-weight: 600; border: none; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                <i class="fas fa-save"></i>
+                Salvar Dispositivo
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Device Modal -->
+<div id="editDeviceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit"></i> Editar Dispositivo</h2>
+            <span class="close" onclick="closeModal('editDeviceModal')">&times;</span>
+        </div>
+        <form id="editDeviceForm" style="padding: 25px;">
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label><i class="fas fa-tag"></i> Nome *</label>
+                <input type="text" id="editName" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-network-wired"></i> Endereço IP *</label>
+                <input type="text" id="editIp" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-building"></i> Provedor/Cliente</label>
+                <select id="editProvedor" class="form-control">
+                    <option value="">Sem Provedor</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-plug"></i> Protocolo *</label>
+                <select id="editProtocol" required>
+                    <option value="ssh">SSH</option>
+                    <option value="http">HTTP</option>
+                    <option value="https">HTTPS</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-ethernet"></i> Porta</label>
+                <input type="number" id="editPort" required>
+            </div>
+            <button type="submit" class="btn-modern" style="width: 100%; background: #f5f5f7;">
+                <i class="fas fa-check"></i>
+                Atualizar Dispositivo
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

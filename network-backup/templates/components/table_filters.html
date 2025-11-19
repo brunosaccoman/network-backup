@@ -1,0 +1,38 @@
+{#
+Reusable table filter component
+
+Usage:
+{% include 'components/table_filters.html' with context %}
+
+Required variables:
+- filter_id: Unique ID for this filter instance (e.g., 'backupFilter', 'deviceFilter')
+- provedores: List of provedores for the dropdown
+- show_provedor_filter: Boolean to show/hide provedor filter (default: true)
+- show_ip_search: Boolean to show/hide IP search (default: false)
+- ip_placeholder: Placeholder text for IP search (default: 'Buscar por IP...')
+#}
+
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    {% if show_provedor_filter|default(true) %}
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-filter" style="color: #7f8c8d;"></i>
+        <select id="{{ filter_id }}ProvedorFilter"
+            style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; background: white; cursor: pointer; min-width: 200px;">
+            <option value="">Todos os Provedores</option>
+            {% if provedores %}
+            {% for provedor in provedores %}
+            <option value="{{ provedor }}">{{ provedor }}</option>
+            {% endfor %}
+            {% endif %}
+        </select>
+    </div>
+    {% endif %}
+
+    {% if show_ip_search|default(false) %}
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-search" style="color: #7f8c8d;"></i>
+        <input type="text" id="{{ filter_id }}IpSearch" placeholder="{{ ip_placeholder|default('Buscar por IP...') }}"
+            style="padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; background: white; min-width: 180px;">
+    </div>
+    {% endif %}
+</div>

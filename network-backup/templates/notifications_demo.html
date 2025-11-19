@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Demonstração de Notificações{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <h2>🔔 Demonstração do Sistema de Notificações Visuais</h2>
+        <p>Clique nos botões abaixo para testar os diferentes tipos de notificações.</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="card">
+        <h3 style="color: #2563eb; margin-bottom: 1rem;">📱 Toast Notifications (Canto da Tela)</h3>
+        <p style="margin-bottom: 1rem; color: #666;">Notificações discretas que aparecem no canto superior direito e desaparecem automaticamente.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-success" onclick="testToastSuccess()">
+                ✓ Toast Sucesso
+            </button>
+            <button class="btn btn-danger" onclick="testToastError()">
+                ✕ Toast Erro
+            </button>
+            <button class="btn btn-warning" onclick="testToastWarning()">
+                ⚠ Toast Aviso
+            </button>
+            <button class="btn btn-info" onclick="testToastInfo()">
+                ℹ Toast Info
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner Notifications -->
+    <div class="card">
+        <h3 style="color: #2563eb; margin-bottom: 1rem;">📢 Alert Banners (Topo da Página)</h3>
+        <p style="margin-bottom: 1rem; color: #666;">Banners coloridos no topo da página, ideais para avisos importantes.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-success" onclick="testBannerSuccess()">
+                ✓ Banner Sucesso
+            </button>
+            <button class="btn btn-danger" onclick="testBannerError()">
+                ✕ Banner Erro
+            </button>
+            <button class="btn btn-warning" onclick="testBannerWarning()">
+                ⚠ Banner Aviso
+            </button>
+            <button class="btn btn-info" onclick="testBannerInfo()">
+                ℹ Banner Info
+            </button>
+        </div>
+    </div>
+
+    <!-- Notificações de Dispositivos -->
+    <div class="card">
+        <h3 style="color: #2563eb; margin-bottom: 1rem;">🖥️ Notificações de Dispositivos</h3>
+        <p style="margin-bottom: 1rem; color: #666;">Exemplos de notificações para operações com dispositivos.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-primary" onclick="testDeviceCreated()">
+                ➕ Dispositivo Criado
+            </button>
+            <button class="btn btn-primary" onclick="testDeviceUpdated()">
+                ✏️ Dispositivo Atualizado
+            </button>
+            <button class="btn btn-warning" onclick="testDeviceDeleted()">
+                🗑️ Dispositivo Removido
+            </button>
+        </div>
+    </div>
+
+    <!-- Notificações de Backup -->
+    <div class="card">
+        <h3 style="color: #2563eb; margin-bottom: 1rem;">💾 Notificações de Backup</h3>
+        <p style="margin-bottom: 1rem; color: #666;">Exemplos de notificações para operações de backup.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-info" onclick="testBackupStarted()">
+                ⏳ Backup Iniciado
+            </button>
+            <button class="btn btn-success" onclick="testBackupSuccess()">
+                ✓ Backup Sucesso
+            </button>
+            <button class="btn btn-danger" onclick="testBackupFailed()">
+                ✕ Backup Falhou
+            </button>
+        </div>
+    </div>
+
+    <!-- Notificações de Agendamento -->
+    <div class="card">
+        <h3 style="color: #2563eb; margin-bottom: 1rem;">📅 Notificações de Agendamento</h3>
+        <p style="margin-bottom: 1rem; color: #666;">Exemplos de notificações para operações de agendamento.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-primary" onclick="testScheduleCreated()">
+                ➕ Agendamento Criado
+            </button>
+            <button class="btn btn-primary" onclick="testScheduleUpdated()">
+                ✏️ Agendamento Atualizado
+            </button>
+            <button class="btn btn-warning" onclick="testScheduleDeleted()">
+                🗑️ Agendamento Removido
+            </button>
+        </div>
+    </div>
+
+    <!-- Teste de Múltiplas Notificações -->
+    <div class="card">
+        <h3 style="color: #2563eb; margin-bottom: 1rem;">🎯 Teste de Múltiplas Notificações</h3>
+        <p style="margin-bottom: 1rem; color: #666;">Teste o sistema com múltiplas notificações simultaneamente.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn" style="background: #8b5cf6; color: white;" onclick="testMultipleToasts()">
+                📚 Múltiplos Toasts
+            </button>
+            <button class="btn" style="background: #8b5cf6; color: white;" onclick="testMultipleBanners()">
+                📚 Múltiplos Banners
+            </button>
+            <button class="btn" style="background: #ec4899; color: white;" onclick="testFlood()">
+                🌊 Teste de Sobrecarga
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toast Tests
+    function testToastSuccess() {
+        notifications.toast('Operação realizada com sucesso!', 'success', 'Sucesso');
+    }
+
+    function testToastError() {
+        notifications.toast('Ocorreu um erro ao processar a operação.', 'error', 'Erro');
+    }
+
+    function testToastWarning() {
+        notifications.toast('Atenção: Esta ação requer confirmação.', 'warning', 'Aviso');
+    }
+
+    function testToastInfo() {
+        notifications.toast('Informação importante sobre o sistema.', 'info', 'Informação');
+    }
+
+    // Banner Tests
+    function testBannerSuccess() {
+        notifications.banner('Suas alterações foram salvas com sucesso!', 'success', 'Configuração Salva', true, 5000);
+    }
+
+    function testBannerError() {
+        notifications.banner('Falha na conexão com o banco de dados. Tente novamente.', 'error', 'Erro de Conexão', true, 0);
+    }
+
+    function testBannerWarning() {
+        notifications.banner('Você tem 5 backups pendentes de revisão.', 'warning', 'Atenção', true, 8000);
+    }
+
+    function testBannerInfo() {
+        notifications.banner('Nova atualização disponível. Versão 2.0.0', 'info', 'Atualização Disponível', true, 5000);
+    }
+
+    // Device Notifications
+    function testDeviceCreated() {
+        notifications.deviceCreated('ROUTER-RTR-PE-01');
+    }
+
+    function testDeviceUpdated() {
+        notifications.deviceUpdated('SWITCH-SW-CORE-01');
+    }
+
+    function testDeviceDeleted() {
+        notifications.deviceDeleted('ACCESS-POINT-AP-05');
+    }
+
+    // Backup Notifications
+    function testBackupStarted() {
+        notifications.backupStarted('HUAWEI-RTR-PE-RC-CEN-01');
+    }
+
+    function testBackupSuccess() {
+        notifications.backupSuccess('MIKROTIK-RTR-BNG-01');
+    }
+
+    function testBackupFailed() {
+        notifications.backupFailed('CISCO-SW-CORE-01', 'Connection timeout after 60 seconds');
+    }
+
+    // Schedule Notifications
+    function testScheduleCreated() {
+        notifications.scheduleCreated('Backup Diário - Todos os Dispositivos');
+    }
+
+    function testScheduleUpdated() {
+        notifications.scheduleUpdated('Backup Semanal - Roteadores');
+    }
+
+    function testScheduleDeleted() {
+        notifications.scheduleDeleted('Backup Mensal - Switches');
+    }
+
+    // Multiple Tests
+    function testMultipleToasts() {
+        setTimeout(() => notifications.success('Primeira operação concluída!'), 100);
+        setTimeout(() => notifications.info('Processando segunda operação...'), 500);
+        setTimeout(() => notifications.warning('Atenção na terceira operação!'), 900);
+        setTimeout(() => notifications.success('Todas as operações concluídas!'), 1300);
+    }
+
+    function testMultipleBanners() {
+        notifications.banner('Primeiro banner informativo', 'info', 'Info 1', true, 10000);
+        setTimeout(() => {
+            notifications.banner('Segundo banner de sucesso', 'success', 'Sucesso', true, 10000);
+        }, 500);
+        setTimeout(() => {
+            notifications.banner('Terceiro banner de aviso', 'warning', 'Atenção', true, 10000);
+        }, 1000);
+    }
+
+    function testFlood() {
+        if (!confirm('Isso vai gerar 10 notificações rapidamente. Continuar?')) return;
+
+        for (let i = 1; i <= 10; i++) {
+            setTimeout(() => {
+                const types = ['success', 'error', 'warning', 'info'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                notifications.toast(`Notificação ${i} de 10`, type, `Teste ${i}`);
+            }, i * 200);
+        }
+    }
+</script>
+{% endblock %}
