@@ -146,7 +146,7 @@ class BackupManager:
     
     def _backup_http(self, device):
         try:
-            if device['device_type'] == 'mimosa':
+            if device['device_type'] in ['mimosa', 'mimosa_c5c', 'mimosa_b5c', 'mimosa_b5', 'mimosa_a5c']:
                 return self._backup_mimosa_http(device)
             elif device['device_type'] == 'intelbras_radio':
                 return self._backup_intelbras_http(device)
@@ -156,70 +156,320 @@ class BackupManager:
             raise Exception(f"Erro HTTP: {str(e)}")
     
     def _backup_mimosa_http(self, device):
+        """
+        Backup de dispositivos Mimosa (C5c, B5c, B5, A5c, etc.) via HTTP/HTTPS.
+
+        Os equipamentos Mimosa usam uma interface web com API REST em /core/api/calls/.
+        O arquivo de configuração é o mimosa.conf.
+
+        Fluxo:
+        1. Autenticação via API ou formulário de login
+        2. Download do arquivo de configuração mimosa.conf
+        """
         protocol = device['protocol'].lower()
         port = device['port']
         base_url = f"{protocol}://{device['ip_address']}:{port}"
         session = requests.Session()
 
+        # Configurar retries automáticos para dispositivos lentos
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+
+        retry_strategy = Retry(
+            total=3,  # Número total de tentativas
+            backoff_factor=2,  # Espera 2s, 4s, 8s entre tentativas
+            status_forcelist=[500, 502, 503, 504],  # Retry em erros de servidor
+            allowed_methods=["GET", "POST"]  # Permitir retry em GET e POST
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+
+        # Desabilitar avisos de SSL para certificados auto-assinados
+        if not self.ssl_verify:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
         try:
-            login_url = f"{base_url}/login"
-            login_data = {'password': device['password']}
-            response = session.post(login_url, data=login_data, verify=self.ssl_ca_bundle, timeout=30)
+            logger.info(f"Iniciando backup Mimosa para {device['name']} ({device['ip_address']})")
 
-            if response.status_code == 200 or 'Set-Cookie' in response.headers:
-                config_endpoints = ['/api/v1/config', '/cgi-bin/export_config', '/api/config/export', '/backup.cgi', '/cgi-bin/config/export']
+            # Método 1: Autenticação via API REST com credenciais na URL
+            # Formato: https://user:pass@ip/endpoint
+            auth = (device['username'], device['password'])
 
-                for endpoint in config_endpoints:
-                    try:
-                        config_url = f"{base_url}{endpoint}"
-                        config_response = session.get(config_url, verify=self.ssl_ca_bundle, timeout=30)
-                        if config_response.status_code == 200 and len(config_response.content) > 100:
-                            return self._save_backup(device, config_response.text)
-                    except Exception as e:
-                        logger.debug(f"Endpoint {endpoint} falhou: {e}")
-                        continue
+            logged_in = False
 
-                config_response = session.get(f"{base_url}/config", verify=self.ssl_ca_bundle, timeout=30)
-                if config_response.status_code == 200:
-                    return self._save_backup(device, config_response.text)
+            # Método 2: Tentar login via formulário web
+            # IMPORTANTE: /login.php é o endpoint correto para Mimosa C5c e deve ser testado primeiro
+            login_attempts = [
+                # Formato correto para Mimosa C5c (retorna JSON com role quando sucesso)
+                ('/login.php', {'username': device['username'], 'password': device['password']}),
+                ('/login.php', {'password': device['password']}),
+                # Formatos alternativos para outros modelos
+                ('/?q=index.login', {'username': device['username'], 'password': device['password']}),
+                ('/?q=index.login', {'password': device['password']}),
+                ('/api/login', {'username': device['username'], 'password': device['password']}),
+                ('/login', {'username': device['username'], 'password': device['password']}),
+            ]
 
-                raise Exception("Não foi possível baixar a configuração após login")
-            else:
-                raise Exception(f"Falha no login: HTTP {response.status_code}")
+            for login_endpoint, login_data in login_attempts:
+                try:
+                    login_url = f"{base_url}{login_endpoint}"
+                    logger.info(f"Tentando login em: {login_url}")
+
+                    response = session.post(
+                        login_url,
+                        data=login_data,
+                        verify=self.ssl_ca_bundle,
+                        timeout=(30, 60),  # 30s conectar, 60s ler (para Mimosas lentas)
+                        allow_redirects=True
+                    )
+
+                    content_type = response.headers.get('Content-Type', '').lower()
+                    logger.info(f"Resposta login {login_endpoint}: HTTP {response.status_code}, Content-Type: {content_type}, Cookies: {len(session.cookies)}")
+
+                    # Verificar se login funcionou
+                    # Para /login.php, sucesso retorna JSON com "role" (não HTML)
+                    if response.status_code == 200:
+                        if 'application/json' in content_type:
+                            # Login bem-sucedido retorna JSON com dados da sessão
+                            try:
+                                json_response = response.json()
+                                if 'role' in json_response or 'version' in json_response:
+                                    logged_in = True
+                                    logger.info(f"Login bem-sucedido via {login_endpoint} (JSON response)")
+                                    break
+                            except:
+                                pass
+                        elif len(response.content) < 1000 and 'html' not in content_type:
+                            # Resposta pequena não-HTML pode indicar sucesso
+                            logged_in = True
+                            logger.info(f"Login possivelmente bem-sucedido via {login_endpoint}")
+                            break
+
+                except Exception as e:
+                    logger.debug(f"Login endpoint {login_endpoint} falhou: {e}")
+                    continue
+
+            # Se não conseguiu fazer login via formulário, continua mesmo assim
+            if not logged_in:
+                logger.info("Login não confirmado, tentando download com Basic Auth...")
+
+            # Endpoint principal de backup Mimosa (DESCOBERTO!)
+            # Este endpoint faz download direto do arquivo mimosa.conf
+            primary_endpoint = '/?q=preferences.configure&mimosa_action=download'
+
+            try:
+                config_url = f"{base_url}{primary_endpoint}"
+                logger.info(f"Tentando download de backup: {config_url}")
+
+                # Tenta com a sessão autenticada
+                # Timeout: (connect, read) - aumentado para Mimosas lentas
+                config_response = session.get(
+                    config_url,
+                    verify=self.ssl_ca_bundle,
+                    timeout=(30, 180),  # 30s para conectar, 180s para ler (3 min)
+                    stream=False  # Garante download completo
+                )
+
+                content_type = config_response.headers.get('Content-Type', '')
+                content_disposition = config_response.headers.get('Content-Disposition', '')
+
+                logger.info(f"Resposta: HTTP {config_response.status_code}, Content-Type: {content_type}, Disposition: {content_disposition}, Size: {len(config_response.content)} bytes")
+
+                if config_response.status_code == 200 and len(config_response.content) > 50:
+                    content = config_response.content.decode('utf-8', errors='ignore')
+
+                    # Verificar se é HTML (página de erro) ou configuração
+                    is_html_page = '<!DOCTYPE' in content[:100] or '<html' in content[:100].lower()
+
+                    # Se tem Content-Disposition com attachment, é o arquivo de backup
+                    is_attachment = 'attachment' in content_disposition or 'mimosa' in content_disposition.lower()
+
+                    if is_attachment:
+                        logger.info(f"Configuração obtida via download direto ({len(content)} bytes)")
+                        return self._save_backup(device, content)
+                    elif not is_html_page:
+                        # Não é HTML, provavelmente é o arquivo de configuração
+                        logger.info(f"Configuração obtida (não-HTML) ({len(content)} bytes)")
+                        return self._save_backup(device, content)
+                    else:
+                        logger.warning(f"Endpoint retornou HTML em vez do arquivo de backup")
+
+            except Exception as e:
+                logger.error(f"Erro no endpoint principal: {e}")
+
+            # Endpoints alternativos caso o principal falhe
+            config_endpoints = [
+                '/?q=backup.download',
+                '/backup/download',
+                '/config/backup',
+                '/api/backup',
+                '/core/api/config/backup',
+                '/core/api/calls/Backup.php',
+                '/cgi-bin/backup.cgi',
+                '/backup.cgi',
+                '/download/mimosa.conf',
+            ]
+
+            for endpoint in config_endpoints:
+                try:
+                    config_url = f"{base_url}{endpoint}"
+                    logger.debug(f"Tentando endpoint alternativo: {config_url}")
+
+                    config_response = session.get(
+                        config_url,
+                        verify=self.ssl_ca_bundle,
+                        timeout=(30, 180),  # 30s para conectar, 180s para ler
+                        auth=auth if not logged_in else None
+                    )
+
+                    if config_response.status_code == 200 and len(config_response.content) > 100:
+                        content = config_response.content.decode('utf-8', errors='ignore')
+                        content_disposition = config_response.headers.get('Content-Disposition', '')
+
+                        is_html = '<!DOCTYPE' in content[:100] or '<html' in content[:100].lower()
+                        is_attachment = 'attachment' in content_disposition
+
+                        if is_attachment or not is_html:
+                            logger.info(f"Configuração obtida via {endpoint} ({len(content)} bytes)")
+                            return self._save_backup(device, content)
+
+                except Exception as e:
+                    logger.debug(f"Endpoint {endpoint} falhou: {e}")
+                    continue
+
+            # Método 3: Tentar via API REST com parâmetros de autenticação na URL
+            # Formato documentado: https://ip/core/api/service/endpoint?username=X&password=Y
+            api_endpoints = [
+                f"/core/api/service/backup?username={device['username']}&password={device['password']}",
+                f"/core/api/service/config?username={device['username']}&password={device['password']}",
+            ]
+
+            for endpoint in api_endpoints:
+                try:
+                    api_url = f"{base_url}{endpoint}"
+                    response = session.get(api_url, verify=self.ssl_ca_bundle, timeout=(30, 180))
+
+                    if response.status_code == 200 and len(response.content) > 100:
+                        content = response.text if response.text else response.content.decode('utf-8', errors='ignore')
+                        logger.info(f"Configuração obtida via API REST ({len(content)} bytes)")
+                        return self._save_backup(device, content)
+
+                except Exception as e:
+                    logger.debug(f"API endpoint falhou: {e}")
+                    continue
+
+            raise Exception("Não foi possível baixar a configuração. Verifique se HTTPS está habilitado no dispositivo e se as credenciais estão corretas.")
+
         except Exception as e:
             raise Exception(f"Erro Mimosa: {str(e)}")
         finally:
             session.close()
     
     def _backup_intelbras_http(self, device):
+        """
+        Backup de rádios Intelbras (WOM 5A, etc) via HTTP.
+
+        Fluxo:
+        1. Login via POST com formNumber=201, user, password
+        2. Download do backup via GET com formNumber=100
+        3. Arquivo retornado: config.fmw (binário compactado)
+        """
         protocol = device['protocol'].lower()
         port = device['port']
         base_url = f"{protocol}://{device['ip_address']}:{port}"
         session = requests.Session()
 
+        # Desabilitar avisos de SSL
+        if not self.ssl_verify:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
         try:
-            auth = (device['username'], device['password'])
-            backup_urls = [
-                f"{base_url}/cgi-bin/luci/admin/config/backup",
-                f"{base_url}/backup.cgi",
-                f"{base_url}/cgi-bin/backup",
-                f"{base_url}/backup",
-                f"{base_url}/api/backup",
-                f"{base_url}/cgi-bin/export"
+            logger.info(f"Iniciando backup Intelbras HTTP para {device['name']} ({device['ip_address']})")
+
+            # Passo 1: Login via formulário
+            login_url = f"{base_url}/cgi-bin/firmware.cgi"
+            login_data = {
+                'formNumber': '201',
+                'user': device['username'],
+                'password': device['password'],
+            }
+
+            logger.info(f"Fazendo login em {login_url}")
+            login_response = session.post(
+                login_url,
+                data=login_data,
+                verify=self.ssl_ca_bundle,
+                timeout=(30, 60)
+            )
+
+            # Verificar se login funcionou (deve ter cookie de sessão)
+            if not session.cookies:
+                logger.warning("Login pode ter falhado - sem cookie de sessão")
+
+            logger.info(f"Login response: {login_response.status_code}, Cookies: {len(session.cookies)}")
+
+            # Passo 2: Download do backup via formNumber=100
+            backup_url = f"{base_url}/cgi-bin/firmware.cgi?formNumber=100"
+            logger.info(f"Baixando backup de {backup_url}")
+
+            backup_response = session.get(
+                backup_url,
+                verify=self.ssl_ca_bundle,
+                timeout=(30, 120)
+            )
+
+            content_disposition = backup_response.headers.get('Content-Disposition', '')
+            content_type = backup_response.headers.get('Content-Type', '')
+
+            logger.info(f"Backup response: {backup_response.status_code}, "
+                       f"Content-Type: {content_type}, "
+                       f"Disposition: {content_disposition}, "
+                       f"Size: {len(backup_response.content)} bytes")
+
+            # Verificar se é o arquivo de backup
+            if backup_response.status_code == 200:
+                if 'attachment' in content_disposition or 'octet-stream' in content_type:
+                    # É arquivo binário, salvar como está
+                    logger.info(f"Backup Intelbras obtido: {len(backup_response.content)} bytes")
+
+                    # Salvar arquivo binário diretamente
+                    return self._save_backup_binary(device, backup_response.content, '.fmw')
+                elif len(backup_response.content) > 100:
+                    # Pode ser texto
+                    content = backup_response.content.decode('utf-8', errors='ignore')
+                    if 'password' not in content.lower()[:500]:  # Não é página de login
+                        return self._save_backup(device, content)
+
+            # Se formNumber=100 não funcionou, tentar endpoints alternativos
+            logger.info("formNumber=100 não retornou backup, tentando endpoints alternativos...")
+
+            alternative_endpoints = [
+                '/cgi-bin/backup.cgi',
+                '/backup.cgi',
+                '/cgi-bin/export',
             ]
 
-            for url in backup_urls:
+            for endpoint in alternative_endpoints:
                 try:
-                    response = session.get(url, auth=auth, verify=self.ssl_ca_bundle, timeout=30)
+                    url = f"{base_url}{endpoint}"
+                    response = session.get(url, verify=self.ssl_ca_bundle, timeout=30)
                     if response.status_code == 200 and len(response.content) > 100:
-                        return self._save_backup(device, response.text)
+                        content_disp = response.headers.get('Content-Disposition', '')
+                        if 'attachment' in content_disp:
+                            return self._save_backup_binary(device, response.content, '.fmw')
+                        else:
+                            return self._save_backup(device, response.text)
                 except Exception as e:
-                    logger.debug(f"URL {url} falhou: {e}")
+                    logger.debug(f"Endpoint {endpoint} falhou: {e}")
                     continue
 
-            raise Exception("Nenhum endpoint de backup funcionou.")
+            raise Exception("Não foi possível baixar o backup. Verifique as credenciais e se HTTP está habilitado.")
+
         except Exception as e:
-            raise Exception(f"Erro Intelbras: {str(e)}")
+            raise Exception(f"Erro Intelbras HTTP: {str(e)}")
         finally:
             session.close()
     
@@ -228,11 +478,18 @@ class BackupManager:
             'ubiquiti_airos': 'ubiquiti_edgerouter',
             'intelbras_radio': 'linux',
             'mimosa': 'linux',
+            'mimosa_c5c': 'linux',
+            'mimosa_b5c': 'linux',
+            'mimosa_b5': 'linux',
+            'mimosa_a5c': 'linux',
             'datacom': 'cisco_ios',
             'datacom_dmos': 'cisco_ios'
         }
 
         netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
+
+        # Timeout maior para Intelbras (radios podem ser lentos)
+        connect_timeout = 60 if device['device_type'] == 'intelbras_radio' else 30
 
         device_config = {
             'device_type': netmiko_type,
@@ -240,7 +497,7 @@ class BackupManager:
             'username': device['username'],
             'password': device['password'],
             'port': device['port'],
-            'timeout': 30,
+            'timeout': connect_timeout,
         }
 
         if device['enable_password']:
@@ -257,8 +514,32 @@ class BackupManager:
             backup_command = device['backup_command'] if device['backup_command'] else self._get_default_command(device['device_type'])
             logger.info(f"Executando comando: {backup_command}")
 
+            # Intelbras radio needs multiple commands to collect full info
+            if device['device_type'] == 'intelbras_radio':
+                logger.info("Coletando backup Intelbras com múltiplos comandos")
+                output = "=== INTELBRAS RADIO BACKUP ===\n\n"
+
+                intelbras_commands = [
+                    ('SYSTEM INFO', 'uname -a'),
+                    ('NETWORK INTERFACES', 'ifconfig -a'),
+                    ('ROUTING TABLE', 'route -n'),
+                    ('WIRELESS INFO', 'iwinfo wlan0 info'),
+                    ('CONNECTED CLIENTS', 'iwinfo wlan0 assoclist'),
+                    ('ARP TABLE', 'cat /proc/net/arp'),
+                    ('DNS CONFIG', 'cat /var/etc/resolv.conf'),
+                ]
+
+                for section, cmd in intelbras_commands:
+                    try:
+                        result = connection.send_command(cmd, read_timeout=30)
+                        output += f"=== {section} ===\n{result}\n\n"
+                    except Exception as e:
+                        output += f"=== {section} ===\nErro: {e}\n\n"
+
+                output += "=== BACKUP END ==="
+                logger.info(f"Backup Intelbras coletado: {len(output)} bytes")
             # Mikrotik /export needs timing-based approach instead of expect-based
-            if device['device_type'] == 'mikrotik_routeros' and 'export' in backup_command.lower():
+            elif device['device_type'] == 'mikrotik_routeros' and 'export' in backup_command.lower():
                 output = connection.send_command_timing(backup_command, delay_factor=4, max_loops=500)
                 logger.info(f"Usou send_command_timing para Mikrotik")
             else:
@@ -283,33 +564,65 @@ class BackupManager:
             'ubiquiti_airos': 'ubiquiti_edgerouter',
             'intelbras_radio': 'linux',
             'mimosa': 'linux',
+            'mimosa_c5c': 'linux',
+            'mimosa_b5c': 'linux',
+            'mimosa_b5': 'linux',
+            'mimosa_a5c': 'linux',
             'datacom': 'cisco_ios',
             'datacom_dmos': 'cisco_ios'
         }
 
         netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
-        
+
+        # Timeout maior para Intelbras (radios podem ser lentos)
+        connect_timeout = 60 if device['device_type'] == 'intelbras_radio' else 30
+
         device_config = {
             'device_type': netmiko_type + '_telnet',
             'host': device['ip_address'],
             'username': device['username'],
             'password': device['password'],
             'port': device['port'],
-            'timeout': 30,
+            'timeout': connect_timeout,
         }
-        
+
         if device['enable_password']:
             device_config['secret'] = device['enable_password']
-        
+
         try:
             connection = ConnectHandler(**device_config)
             if device['enable_password']:
                 connection.enable()
-            
+
             backup_command = device['backup_command'] if device['backup_command'] else self._get_default_command(device['device_type'])
-            output = connection.send_command(backup_command, read_timeout=60)
+
+            # Intelbras radio needs multiple commands to collect full info
+            if device['device_type'] == 'intelbras_radio':
+                output = "=== INTELBRAS RADIO BACKUP ===\n\n"
+
+                intelbras_commands = [
+                    ('SYSTEM INFO', 'uname -a'),
+                    ('NETWORK INTERFACES', 'ifconfig -a'),
+                    ('ROUTING TABLE', 'route -n'),
+                    ('WIRELESS INFO', 'iwinfo wlan0 info'),
+                    ('CONNECTED CLIENTS', 'iwinfo wlan0 assoclist'),
+                    ('ARP TABLE', 'cat /proc/net/arp'),
+                    ('DNS CONFIG', 'cat /var/etc/resolv.conf'),
+                ]
+
+                for section, cmd in intelbras_commands:
+                    try:
+                        result = connection.send_command(cmd, read_timeout=30)
+                        output += f"=== {section} ===\n{result}\n\n"
+                    except Exception as e:
+                        output += f"=== {section} ===\nErro: {e}\n\n"
+
+                output += "=== BACKUP END ==="
+            else:
+                output = connection.send_command(backup_command, read_timeout=60)
+
             connection.disconnect()
-            
+
             return self._save_backup(device, output)
         except Exception as e:
             raise Exception(f"Erro Telnet: {str(e)}")
@@ -332,7 +645,12 @@ class BackupManager:
             'ubiquiti_airos': 'cat /tmp/system.cfg',
             'ubiquiti_edge': 'show configuration',
             'intelbras_radio': 'cat /etc/config/*',
+            # Mimosa - comando SSH (caso tenha acesso SSH)
             'mimosa': 'cat /etc/persistent/mimosa.cfg',
+            'mimosa_c5c': 'cat /etc/persistent/mimosa.cfg',
+            'mimosa_b5c': 'cat /etc/persistent/mimosa.cfg',
+            'mimosa_b5': 'cat /etc/persistent/mimosa.cfg',
+            'mimosa_a5c': 'cat /etc/persistent/mimosa.cfg',
         }
         return commands.get(device_type, 'show running-config')
     
@@ -369,7 +687,41 @@ class BackupManager:
         logger.info(f"Backup registrado no banco de dados")
 
         return {'success': True, 'filename': filename, 'size': file_size, 'path': file_path}
-    
+
+    def _save_backup_binary(self, device, binary_data, extension='.bin'):
+        """Salva backup em formato binário (para arquivos compactados como Intelbras .fmw)"""
+        logger.info(f"_save_backup_binary chamado para {device['name']}")
+        logger.info(f"Tamanho dos dados binários: {len(binary_data)} bytes")
+
+        now = datetime.now(self.timezone)
+        timestamp = now.strftime('%Y%m%d_%H%M%S')
+
+        # Usar nova estrutura com provedor
+        device_dir = self._get_device_backup_dir(device)
+        logger.info(f"Diretório de backup: {device_dir}")
+
+        # Nome do arquivo com extensão customizada
+        filename = f"{device['ip_address']}_{timestamp}{extension}"
+        file_path = os.path.join(device_dir, filename)
+        logger.info(f"Caminho completo do arquivo: {file_path}")
+
+        logger.info(f"Escrevendo {len(binary_data)} bytes no arquivo binário...")
+        with open(file_path, 'wb') as f:
+            f.write(binary_data)
+
+        file_size = os.path.getsize(file_path)
+        logger.info(f"Tamanho do arquivo após salvar: {file_size} bytes")
+
+        if file_size == 0:
+            logger.error(f"ERRO: Arquivo salvo com 0 bytes!")
+        elif file_size != len(binary_data):
+            logger.warning(f"AVISO: Tamanho do arquivo ({file_size}) diferente dos dados ({len(binary_data)})")
+
+        self.db.add_backup(device['id'], filename, file_path, file_size, 'success')
+        logger.info(f"Backup binário registrado no banco de dados")
+
+        return {'success': True, 'filename': filename, 'size': file_size, 'path': file_path}
+
     def backup_all_devices(self):
         """Executa backup sequencial de todos os dispositivos ativos (modo legado)."""
         devices = self.db.get_all_devices(active_only=True)
