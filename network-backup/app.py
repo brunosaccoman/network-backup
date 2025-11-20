@@ -465,14 +465,26 @@ def backup_all():
 @app.route('/backups')
 @login_required
 def backups():
-    """Lista de backups."""
+    """Lista de backups (paginação client-side via JavaScript)."""
+    # Filtro opcional por device
     device_id = request.args.get('device_id', type=int)
-    all_backups = database_manager.get_backups(device_id=device_id)
-    total_backups = database_manager.count_backups(device_id=device_id)
+
+    # Query base com eager loading - sem limite para permitir paginação client-side
+    query = Backup.query.options(db.joinedload(Backup.device))
+
+    if device_id:
+        query = query.filter_by(device_id=device_id)
+
+    # Buscar todos os backups (JavaScript faz a paginação)
+    all_backups = query.order_by(Backup.backup_date.desc()).all()
+
+    # Contadores totais
+    total_backups = Backup.query.count()
+
     provedores = database_manager.get_provedores()
 
     return render_template('backups.html',
-        recent_backups=all_backups,
+        recent_backups=[b.to_dict() for b in all_backups],
         total_backups=total_backups,
         provedores=provedores
     )
