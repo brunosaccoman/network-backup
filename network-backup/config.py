@@ -151,17 +151,17 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
 
-    # Força HTTPS
-    SESSION_COOKIE_SECURE = True
-    REMEMBER_COOKIE_SECURE = True
-    PREFERRED_URL_SCHEME = 'https'
+    # HTTPS - lê do ambiente para permitir HTTP em redes internas
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+    REMEMBER_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+    PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME', 'https')
 
-    # CSRF mais restrito
-    WTF_CSRF_SSL_STRICT = True
+    # CSRF - lê do ambiente
+    WTF_CSRF_SSL_STRICT = os.environ.get('WTF_CSRF_SSL_STRICT', 'True').lower() == 'true'
 
-    # SSL obrigatório
-    SSL_VERIFY = True
-    FORCE_HTTPS = True
+    # SSL - lê do ambiente
+    SSL_VERIFY = os.environ.get('SSL_VERIFY', 'True').lower() == 'true'
+    FORCE_HTTPS = os.environ.get('FORCE_HTTPS', 'True').lower() == 'true'
 
     @staticmethod
     def init_app(app):
