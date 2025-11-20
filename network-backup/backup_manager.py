@@ -257,10 +257,19 @@ class BackupManager:
                             break
 
                         # Verificar se tem cookies de sessão (indica login bem-sucedido)
+                        # Para /?q=index.login que retorna HTML
                         if session.cookies and len(session.cookies) > 0:
-                            logged_in = True
-                            logger.info(f"Login bem-sucedido via {login_endpoint} (cookie de sessão recebido)")
-                            break
+                            # Verificar se não é página de erro
+                            response_text = response.text.lower() if response.text else ''
+                            error_indicators = ['invalid', 'failed', 'error', 'incorrect', 'denied']
+                            has_error = any(err in response_text for err in error_indicators)
+
+                            if not has_error:
+                                logged_in = True
+                                logger.info(f"Login bem-sucedido via {login_endpoint} (cookie de sessão: {list(session.cookies.keys())})")
+                                break
+                            else:
+                                logger.debug(f"Login {login_endpoint} retornou página com erro")
 
                 except Exception as e:
                     logger.debug(f"Login endpoint {login_endpoint} falhou: {e}")
