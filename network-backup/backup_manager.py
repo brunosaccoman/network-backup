@@ -393,12 +393,11 @@ class BackupManager:
     
     def _backup_intelbras_http(self, device):
         """
-        Backup de rádios Intelbras (WOM 5A, etc) via HTTP.
+        Backup de rádios Intelbras (WOM 5A, APC 5A, WOM 5A MiMo, etc) via HTTP.
 
-        Fluxo:
-        1. Login via POST com formNumber=201, user, password
-        2. Download do backup via GET com formNumber=100
-        3. Arquivo retornado: config.fmw (binário compactado)
+        Suporta múltiplos métodos de autenticação:
+        - Modelos novos: Basic Auth + endpoints /System/configBackup ou /cgi-bin/
+        - Modelos antigos: Login via formNumber=201 + formNumber=100
         """
         protocol = device['protocol'].lower()
         port = device['port']
@@ -413,6 +412,74 @@ class BackupManager:
         try:
             logger.info(f"Iniciando backup Intelbras HTTP para {device['name']} ({device['ip_address']})")
 
+            # ================================================================
+            # MÉTODO 1: Basic Auth (modelos mais novos - WOM 5A MiMo, APC 5A, etc)
+            # ================================================================
+            logger.info("Tentando método Basic Auth (modelos novos)...")
+
+            basic_auth = (device['username'], device['password'])
+
+            # Endpoints para modelos novos
+            new_model_endpoints = [
+                '/System/configBackup',
+                '/cgi-bin/luci/admin/system/backup',
+                '/cgi-bin/luci/admin/system/flashops',
+                '/cgi-bin/backup',
+                '/backup',
+            ]
+
+            for endpoint in new_model_endpoints:
+                try:
+                    url = f"{base_url}{endpoint}"
+                    logger.debug(f"Tentando Basic Auth em {url}")
+
+                    response = session.get(
+                        url,
+                        auth=basic_auth,
+                        verify=self.ssl_ca_bundle,
+                        timeout=(30, 120),
+                        allow_redirects=True
+                    )
+
+                    content_disposition = response.headers.get('Content-Disposition', '')
+                    content_type = response.headers.get('Content-Type', '')
+
+                    logger.debug(f"Response {endpoint}: status={response.status_code}, "
+                               f"type={content_type}, size={len(response.content)}")
+
+                    if response.status_code == 200 and len(response.content) > 100:
+                        # Verificar se é arquivo de backup
+                        if ('attachment' in content_disposition or
+                            'octet-stream' in content_type or
+                            'application/x-tar' in content_type or
+                            'application/gzip' in content_type):
+
+                            # Determinar extensão
+                            if '.tar.gz' in content_disposition or 'gzip' in content_type:
+                                ext = '.tar.gz'
+                            elif '.fmw' in content_disposition:
+                                ext = '.fmw'
+                            else:
+                                ext = '.cfg'
+
+                            logger.info(f"Backup Intelbras (Basic Auth) obtido via {endpoint}: {len(response.content)} bytes")
+                            return self._save_backup_binary(device, response.content, ext)
+
+                        # Pode ser texto/config
+                        content = response.content.decode('utf-8', errors='ignore')
+                        if 'password' not in content.lower()[:500] and len(content) > 100:
+                            logger.info(f"Backup Intelbras (Basic Auth) obtido via {endpoint}: {len(content)} chars")
+                            return self._save_backup(device, content)
+
+                except Exception as e:
+                    logger.debug(f"Basic Auth endpoint {endpoint} falhou: {e}")
+                    continue
+
+            # ================================================================
+            # MÉTODO 2: Form Login (modelos antigos - WOM 5A original)
+            # ================================================================
+            logger.info("Tentando método Form Login (modelos antigos)...")
+
             # Passo 1: Login via formulário
             login_url = f"{base_url}/cgi-bin/firmware.cgi"
             login_data = {
@@ -421,7 +488,7 @@ class BackupManager:
                 'password': device['password'],
             }
 
-            logger.info(f"Fazendo login em {login_url}")
+            logger.debug(f"Fazendo login em {login_url}")
             login_response = session.post(
                 login_url,
                 data=login_data,
@@ -429,15 +496,11 @@ class BackupManager:
                 timeout=(30, 60)
             )
 
-            # Verificar se login funcionou (deve ter cookie de sessão)
-            if not session.cookies:
-                logger.warning("Login pode ter falhado - sem cookie de sessão")
-
-            logger.info(f"Login response: {login_response.status_code}, Cookies: {len(session.cookies)}")
+            logger.debug(f"Login response: {login_response.status_code}, Cookies: {len(session.cookies)}")
 
             # Passo 2: Download do backup via formNumber=100
             backup_url = f"{base_url}/cgi-bin/firmware.cgi?formNumber=100"
-            logger.info(f"Baixando backup de {backup_url}")
+            logger.debug(f"Baixando backup de {backup_url}")
 
             backup_response = session.get(
                 backup_url,
@@ -448,7 +511,7 @@ class BackupManager:
             content_disposition = backup_response.headers.get('Content-Disposition', '')
             content_type = backup_response.headers.get('Content-Type', '')
 
-            logger.info(f"Backup response: {backup_response.status_code}, "
+            logger.debug(f"Backup response: {backup_response.status_code}, "
                        f"Content-Type: {content_type}, "
                        f"Disposition: {content_disposition}, "
                        f"Size: {len(backup_response.content)} bytes")
@@ -456,24 +519,23 @@ class BackupManager:
             # Verificar se é o arquivo de backup
             if backup_response.status_code == 200:
                 if 'attachment' in content_disposition or 'octet-stream' in content_type:
-                    # É arquivo binário, salvar como está
-                    logger.info(f"Backup Intelbras obtido: {len(backup_response.content)} bytes")
-
-                    # Salvar arquivo binário diretamente
+                    logger.info(f"Backup Intelbras (Form) obtido: {len(backup_response.content)} bytes")
                     return self._save_backup_binary(device, backup_response.content, '.fmw')
                 elif len(backup_response.content) > 100:
-                    # Pode ser texto
                     content = backup_response.content.decode('utf-8', errors='ignore')
-                    if 'password' not in content.lower()[:500]:  # Não é página de login
+                    if 'password' not in content.lower()[:500]:
                         return self._save_backup(device, content)
 
-            # Se formNumber=100 não funcionou, tentar endpoints alternativos
-            logger.info("formNumber=100 não retornou backup, tentando endpoints alternativos...")
+            # ================================================================
+            # MÉTODO 3: Endpoints alternativos com sessão
+            # ================================================================
+            logger.info("Tentando endpoints alternativos com sessão...")
 
             alternative_endpoints = [
                 '/cgi-bin/backup.cgi',
                 '/backup.cgi',
                 '/cgi-bin/export',
+                '/cgi-bin/config.cgi?action=backup',
             ]
 
             for endpoint in alternative_endpoints:
@@ -482,15 +544,18 @@ class BackupManager:
                     response = session.get(url, verify=self.ssl_ca_bundle, timeout=30)
                     if response.status_code == 200 and len(response.content) > 100:
                         content_disp = response.headers.get('Content-Disposition', '')
-                        if 'attachment' in content_disp:
+                        if 'attachment' in content_disp or 'octet-stream' in response.headers.get('Content-Type', ''):
                             return self._save_backup_binary(device, response.content, '.fmw')
                         else:
-                            return self._save_backup(device, response.text)
+                            content = response.content.decode('utf-8', errors='ignore')
+                            if 'password' not in content.lower()[:500]:
+                                return self._save_backup(device, content)
                 except Exception as e:
                     logger.debug(f"Endpoint {endpoint} falhou: {e}")
                     continue
 
-            raise Exception("Não foi possível baixar o backup. Verifique as credenciais e se HTTP está habilitado.")
+            raise Exception("Não foi possível baixar o backup. Verifique as credenciais e se HTTP está habilitado. "
+                          "Para modelos novos, certifique-se que o usuário tem permissão de backup.")
 
         except Exception as e:
             raise Exception(f"Erro Intelbras HTTP: {str(e)}")
