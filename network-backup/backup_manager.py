@@ -413,9 +413,64 @@ class BackupManager:
             logger.info(f"Iniciando backup Intelbras HTTP para {device['name']} ({device['ip_address']})")
 
             # ================================================================
-            # MÉTODO 1: Digest Auth + endpoints APC (APC 5A-90 v2.0)
+            # MÉTODO 1: Xavante/JSON Session (APC 5A-90 v2.0 e similares)
             # ================================================================
-            logger.info("Tentando método Digest Auth (APC 5A-90 v2.0)...")
+            logger.info("Tentando método Xavante JSON Session (APC 5A-90 v2.0)...")
+
+            try:
+                # Passo 1: Login via JSON para obter token de sessão
+                login_url = f"{base_url}/cgi-bin/main.cgi/login"
+                login_payload = {
+                    'username': device['username'],
+                    'password': device['password']
+                }
+
+                logger.info(f"Fazendo login JSON em {login_url}")
+                login_response = session.post(
+                    login_url,
+                    json=login_payload,
+                    verify=self.ssl_ca_bundle,
+                    timeout=(30, 60)
+                )
+
+                # Verificar se login foi bem sucedido
+                if login_response.status_code == 200:
+                    try:
+                        login_data = login_response.json()
+                        if login_data.get('status') == True:
+                            logger.info("Login Xavante bem sucedido, baixando backup...")
+
+                            # Passo 2: Download do backup usando cookies de sessão
+                            backup_url = f"{base_url}/cgi-bin/main.cgi/backup"
+                            backup_response = session.get(
+                                backup_url,
+                                verify=self.ssl_ca_bundle,
+                                timeout=(30, 120)
+                            )
+
+                            content_disposition = backup_response.headers.get('Content-Disposition', '')
+                            content_type = backup_response.headers.get('Content-Type', '')
+
+                            logger.info(f"Backup response: status={backup_response.status_code}, "
+                                       f"type={content_type}, size={len(backup_response.content)}")
+
+                            if backup_response.status_code == 200 and len(backup_response.content) > 100:
+                                if 'attachment' in content_disposition or len(backup_response.content) > 500:
+                                    ext = '.cfg'
+                                    logger.info(f"Backup Intelbras (Xavante) obtido: {len(backup_response.content)} bytes")
+                                    return self._save_backup_binary(device, backup_response.content, ext)
+                        else:
+                            logger.warning(f"Login Xavante falhou: {login_data.get('message', 'Erro desconhecido')}")
+                    except Exception as e:
+                        logger.debug(f"Erro ao processar resposta de login: {e}")
+
+            except Exception as e:
+                logger.debug(f"Método Xavante falhou: {e}")
+
+            # ================================================================
+            # MÉTODO 2: Digest Auth + endpoints alternativos
+            # ================================================================
+            logger.info("Tentando método Digest Auth...")
 
             from requests.auth import HTTPDigestAuth
             basic_auth = (device['username'], device['password'])
@@ -427,22 +482,17 @@ class BackupManager:
                 'User-Agent': 'Mozilla/5.0',
             }
 
-            # Endpoints específicos para APC 5A-90 v2.0 e similares
-            apc_endpoints = [
-                '/goform/getBackupFile',
-                '/goform/getSysBackup',
-                '/cgi-bin/config_backup.cgi',
+            # Endpoints alternativos
+            alt_endpoints = [
                 '/cgi-bin/backup.cgi',
                 '/backup.cgi',
                 '/System/configBackup',
-                '/config/backup',
             ]
 
-            # Tentar com Digest Auth primeiro (comum em APC)
-            for endpoint in apc_endpoints:
+            for endpoint in alt_endpoints:
                 try:
                     url = f"{base_url}{endpoint}"
-                    logger.info(f"Tentando Digest GET em {url}")
+                    logger.debug(f"Tentando Digest GET em {url}")
 
                     response = session.get(
                         url,
@@ -453,20 +503,10 @@ class BackupManager:
                         allow_redirects=True
                     )
 
-                    content_disposition = response.headers.get('Content-Disposition', '')
-                    content_type = response.headers.get('Content-Type', '')
-
-                    logger.info(f"Digest {endpoint}: status={response.status_code}, "
-                               f"type={content_type}, size={len(response.content)}")
-
                     if response.status_code == 200 and len(response.content) > 100:
-                        if ('attachment' in content_disposition or
-                            'octet-stream' in content_type or
-                            'application/x-tar' in content_type or
-                            'application/gzip' in content_type or
-                            len(response.content) > 1000):
-
-                            ext = '.tar.gz' if 'gzip' in content_type else '.cfg'
+                        content_disposition = response.headers.get('Content-Disposition', '')
+                        if 'attachment' in content_disposition or len(response.content) > 500:
+                            ext = '.cfg'
                             logger.info(f"Backup Intelbras (Digest) obtido via {endpoint}: {len(response.content)} bytes")
                             return self._save_backup_binary(device, response.content, ext)
 
