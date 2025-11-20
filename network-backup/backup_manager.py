@@ -413,29 +413,36 @@ class BackupManager:
             logger.info(f"Iniciando backup Intelbras HTTP para {device['name']} ({device['ip_address']})")
 
             # ================================================================
-            # MÉTODO 1: Basic Auth (modelos mais novos - WOM 5A MiMo, APC 5A, etc)
+            # MÉTODO 1: LuCI POST (APC 5A-90 v2.0, modelos novos com OpenWrt/LuCI)
             # ================================================================
-            logger.info("Tentando método Basic Auth (modelos novos)...")
+            logger.info("Tentando método LuCI POST (APC 5A-90 v2.0 e similares)...")
 
             basic_auth = (device['username'], device['password'])
 
-            # Endpoints para modelos novos
-            new_model_endpoints = [
-                '/System/configBackup',
-                '/cgi-bin/luci/admin/system/backup',
-                '/cgi-bin/luci/admin/system/flashops',
-                '/cgi-bin/backup',
-                '/backup',
+            # Headers para LuCI
+            luci_headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/octet-stream, */*',
+            }
+
+            # Endpoints LuCI que precisam de POST
+            luci_post_endpoints = [
+                ('/cgi-bin/luci/admin/system/flashops/backup', {}),
+                ('/cgi-bin/luci/admin/system/backup', {'backup': '1'}),
+                ('/cgi-bin/luci/admin/system/flashops', {'backup': 'backup'}),
+                ('/cgi-bin/luci/;stok=/admin/system/flashops/backup', {}),
             ]
 
-            for endpoint in new_model_endpoints:
+            for endpoint, post_data in luci_post_endpoints:
                 try:
                     url = f"{base_url}{endpoint}"
-                    logger.debug(f"Tentando Basic Auth em {url}")
+                    logger.debug(f"Tentando POST em {url}")
 
-                    response = session.get(
+                    response = session.post(
                         url,
                         auth=basic_auth,
+                        data=post_data,
+                        headers=luci_headers,
                         verify=self.ssl_ca_bundle,
                         timeout=(30, 120),
                         allow_redirects=True
@@ -444,7 +451,7 @@ class BackupManager:
                     content_disposition = response.headers.get('Content-Disposition', '')
                     content_type = response.headers.get('Content-Type', '')
 
-                    logger.debug(f"Response {endpoint}: status={response.status_code}, "
+                    logger.debug(f"POST {endpoint}: status={response.status_code}, "
                                f"type={content_type}, size={len(response.content)}")
 
                     if response.status_code == 200 and len(response.content) > 100:
@@ -462,17 +469,72 @@ class BackupManager:
                             else:
                                 ext = '.cfg'
 
-                            logger.info(f"Backup Intelbras (Basic Auth) obtido via {endpoint}: {len(response.content)} bytes")
+                            logger.info(f"Backup Intelbras (LuCI POST) obtido via {endpoint}: {len(response.content)} bytes")
+                            return self._save_backup_binary(device, response.content, ext)
+
+                except Exception as e:
+                    logger.debug(f"LuCI POST endpoint {endpoint} falhou: {e}")
+                    continue
+
+            # ================================================================
+            # MÉTODO 2: Basic Auth GET (outros modelos novos)
+            # ================================================================
+            logger.info("Tentando método Basic Auth GET...")
+
+            # Endpoints para GET
+            get_endpoints = [
+                '/System/configBackup',
+                '/cgi-bin/luci/admin/system/backup',
+                '/cgi-bin/backup',
+                '/backup',
+                '/cgi-bin/luci/admin/system/flashops/backup',
+            ]
+
+            for endpoint in get_endpoints:
+                try:
+                    url = f"{base_url}{endpoint}"
+                    logger.debug(f"Tentando GET em {url}")
+
+                    response = session.get(
+                        url,
+                        auth=basic_auth,
+                        verify=self.ssl_ca_bundle,
+                        timeout=(30, 120),
+                        allow_redirects=True
+                    )
+
+                    content_disposition = response.headers.get('Content-Disposition', '')
+                    content_type = response.headers.get('Content-Type', '')
+
+                    logger.debug(f"GET {endpoint}: status={response.status_code}, "
+                               f"type={content_type}, size={len(response.content)}")
+
+                    if response.status_code == 200 and len(response.content) > 100:
+                        # Verificar se é arquivo de backup
+                        if ('attachment' in content_disposition or
+                            'octet-stream' in content_type or
+                            'application/x-tar' in content_type or
+                            'application/gzip' in content_type):
+
+                            # Determinar extensão
+                            if '.tar.gz' in content_disposition or 'gzip' in content_type:
+                                ext = '.tar.gz'
+                            elif '.fmw' in content_disposition:
+                                ext = '.fmw'
+                            else:
+                                ext = '.cfg'
+
+                            logger.info(f"Backup Intelbras (Basic Auth GET) obtido via {endpoint}: {len(response.content)} bytes")
                             return self._save_backup_binary(device, response.content, ext)
 
                         # Pode ser texto/config
                         content = response.content.decode('utf-8', errors='ignore')
                         if 'password' not in content.lower()[:500] and len(content) > 100:
-                            logger.info(f"Backup Intelbras (Basic Auth) obtido via {endpoint}: {len(content)} chars")
+                            logger.info(f"Backup Intelbras (Basic Auth GET) obtido via {endpoint}: {len(content)} chars")
                             return self._save_backup(device, content)
 
                 except Exception as e:
-                    logger.debug(f"Basic Auth endpoint {endpoint} falhou: {e}")
+                    logger.debug(f"GET endpoint {endpoint} falhou: {e}")
                     continue
 
             # ================================================================
