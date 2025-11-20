@@ -12,6 +12,332 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 logger = logging.getLogger(__name__)
 
 
+class BackupValidator:
+    """
+    Valida se o backup está completo baseado em marcadores específicos de cada tipo de dispositivo.
+
+    Verifica:
+    - Marcadores de início esperados
+    - Marcadores de fim esperados
+    - Tamanho mínimo do conteúdo
+    """
+
+    # Definição de marcadores para cada tipo de dispositivo
+    VALIDATION_RULES = {
+        # MikroTik RouterOS
+        'mikrotik_routeros': {
+            'start_markers': [
+                '/interface',      # Deve ter configuração de interface
+                '/ip address',     # Deve ter endereços IP
+            ],
+            'end_markers': [],     # MikroTik /export não tem marcador de fim fixo
+            'min_size': 500,       # Mínimo 500 bytes para um backup válido
+            'any_start': True,     # Qualquer um dos marcadores de início
+            'description': 'MikroTik RouterOS'
+        },
+
+        # Cisco IOS
+        'cisco_ios': {
+            'start_markers': [
+                'version',         # Começa com version
+                'hostname',        # Ou hostname
+            ],
+            'end_markers': [
+                'end',             # Deve terminar com "end"
+            ],
+            'min_size': 1000,
+            'any_start': True,
+            'description': 'Cisco IOS'
+        },
+
+        # Cisco NX-OS
+        'cisco_nxos': {
+            'start_markers': ['version', 'hostname'],
+            'end_markers': [],
+            'min_size': 1000,
+            'any_start': True,
+            'description': 'Cisco NX-OS'
+        },
+
+        # Cisco ASA
+        'cisco_asa': {
+            'start_markers': ['ASA Version', 'hostname'],
+            'end_markers': ['end'],
+            'min_size': 1000,
+            'any_start': True,
+            'description': 'Cisco ASA'
+        },
+
+        # Cisco XR
+        'cisco_xr': {
+            'start_markers': ['hostname', 'interface'],
+            'end_markers': ['end'],
+            'min_size': 1000,
+            'any_start': True,
+            'description': 'Cisco IOS-XR'
+        },
+
+        # Juniper JunOS
+        'juniper_junos': {
+            'start_markers': ['version', 'system'],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Juniper JunOS'
+        },
+
+        # Arista EOS
+        'arista_eos': {
+            'start_markers': ['hostname', 'interface'],
+            'end_markers': ['end'],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Arista EOS'
+        },
+
+        # Huawei
+        'huawei': {
+            'start_markers': ['sysname', 'interface'],
+            'end_markers': ['return'],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Huawei VRP'
+        },
+
+        # Huawei VRPv8
+        'huawei_vrpv8': {
+            'start_markers': ['sysname', 'interface'],
+            'end_markers': ['return'],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Huawei VRPv8'
+        },
+
+        # Datacom
+        'datacom': {
+            'start_markers': ['hostname', 'interface'],
+            'end_markers': ['end'],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Datacom'
+        },
+
+        # Datacom DMOS
+        'datacom_dmos': {
+            'start_markers': ['hostname', 'interface'],
+            'end_markers': ['end'],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Datacom DMOS'
+        },
+
+        # Ubiquiti AirOS
+        'ubiquiti_airos': {
+            'start_markers': [
+                'radio.1.status',   # Configuração de rádio
+                'wireless.',        # Configuração wireless
+                'netconf.',         # Configuração de rede
+            ],
+            'end_markers': [],
+            'min_size': 1000,
+            'any_start': True,
+            'description': 'Ubiquiti AirOS'
+        },
+
+        # Ubiquiti EdgeOS
+        'ubiquiti_edge': {
+            'start_markers': ['firewall', 'interfaces', 'system'],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Ubiquiti EdgeOS'
+        },
+
+        # Mimosa (todos os modelos)
+        'mimosa': {
+            'start_markers': [
+                'general.',         # Configurações gerais
+                'network.',         # Configuração de rede
+                'wireless.',        # Configuração wireless
+                'mimosa.',          # Prefixo Mimosa
+            ],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Mimosa'
+        },
+        'mimosa_c5c': {
+            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Mimosa C5c'
+        },
+        'mimosa_b5c': {
+            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Mimosa B5c'
+        },
+        'mimosa_b5': {
+            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Mimosa B5'
+        },
+        'mimosa_a5c': {
+            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'end_markers': [],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Mimosa A5c'
+        },
+
+        # Intelbras Radio (SSH/Telnet)
+        'intelbras_radio': {
+            'start_markers': [
+                '=== INTELBRAS RADIO BACKUP ===',  # Nosso header
+                'SYSTEM INFO',
+            ],
+            'end_markers': [
+                '=== BACKUP END ===',
+            ],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'Intelbras Radio'
+        },
+
+        # HP Comware
+        'hp_comware': {
+            'start_markers': ['version', 'sysname'],
+            'end_markers': ['return'],
+            'min_size': 500,
+            'any_start': True,
+            'description': 'HP Comware'
+        },
+
+        # Palo Alto
+        'paloalto_panos': {
+            'start_markers': ['config', 'deviceconfig'],
+            'end_markers': [],
+            'min_size': 1000,
+            'any_start': True,
+            'description': 'Palo Alto PAN-OS'
+        },
+    }
+
+    @classmethod
+    def validate(cls, content, device_type, is_binary=False):
+        """
+        Valida se o backup está completo.
+
+        Args:
+            content: Conteúdo do backup (str para texto, bytes para binário)
+            device_type: Tipo do dispositivo
+            is_binary: Se True, é arquivo binário (não valida marcadores)
+
+        Returns:
+            dict: {
+                'valid': bool,
+                'status': str ('complete', 'incomplete', 'unknown'),
+                'message': str,
+                'checks': {
+                    'start_marker': bool,
+                    'end_marker': bool,
+                    'min_size': bool
+                }
+            }
+        """
+        # Se é binário, validar apenas por tamanho
+        if is_binary:
+            content_size = len(content) if content else 0
+            min_size = 100  # Mínimo para arquivos binários
+
+            return {
+                'valid': content_size >= min_size,
+                'status': 'complete' if content_size >= min_size else 'incomplete',
+                'message': f'Arquivo binário: {content_size} bytes' if content_size >= min_size else f'Arquivo muito pequeno: {content_size} bytes (mínimo: {min_size})',
+                'checks': {
+                    'start_marker': True,  # N/A para binário
+                    'end_marker': True,    # N/A para binário
+                    'min_size': content_size >= min_size
+                }
+            }
+
+        # Se não tem regra para o tipo, retorna unknown
+        if device_type not in cls.VALIDATION_RULES:
+            return {
+                'valid': True,  # Assume válido se não tem regra
+                'status': 'unknown',
+                'message': f'Sem regras de validação para {device_type}',
+                'checks': {
+                    'start_marker': True,
+                    'end_marker': True,
+                    'min_size': True
+                }
+            }
+
+        rules = cls.VALIDATION_RULES[device_type]
+        content_lower = content.lower() if content else ''
+        content_size = len(content) if content else 0
+
+        # Verificar tamanho mínimo
+        min_size_ok = content_size >= rules['min_size']
+
+        # Verificar marcadores de início
+        start_ok = False
+        if rules['start_markers']:
+            if rules.get('any_start', False):
+                # Qualquer marcador de início
+                start_ok = any(marker.lower() in content_lower for marker in rules['start_markers'])
+            else:
+                # Todos os marcadores de início
+                start_ok = all(marker.lower() in content_lower for marker in rules['start_markers'])
+        else:
+            start_ok = True  # Sem marcador de início = OK
+
+        # Verificar marcadores de fim
+        end_ok = False
+        if rules['end_markers']:
+            # Verificar se o marcador de fim está nas últimas 500 caracteres
+            last_500 = content_lower[-500:] if len(content_lower) > 500 else content_lower
+            end_ok = any(marker.lower() in last_500 for marker in rules['end_markers'])
+        else:
+            end_ok = True  # Sem marcador de fim = OK
+
+        # Determinar resultado
+        all_ok = min_size_ok and start_ok and end_ok
+
+        # Construir mensagem
+        issues = []
+        if not min_size_ok:
+            issues.append(f'tamanho muito pequeno ({content_size}/{rules["min_size"]} bytes)')
+        if not start_ok:
+            issues.append('marcador de início não encontrado')
+        if not end_ok:
+            issues.append('marcador de fim não encontrado (backup pode estar incompleto/cortado)')
+
+        if all_ok:
+            message = f'Backup {rules["description"]} válido ({content_size} bytes)'
+            status = 'complete'
+        else:
+            message = f'Backup {rules["description"]} incompleto: {", ".join(issues)}'
+            status = 'incomplete'
+
+        return {
+            'valid': all_ok,
+            'status': status,
+            'message': message,
+            'checks': {
+                'start_marker': start_ok,
+                'end_marker': end_ok,
+                'min_size': min_size_ok
+            }
+        }
+
+
 class BackupManager:
     def __init__(self, backup_dir='backups', ssl_verify=True, ssl_ca_bundle=None, retention_count=5, max_workers=50, app=None):
         """
@@ -934,10 +1260,34 @@ class BackupManager:
         elif file_size != len(config_data):
             logger.warning(f"AVISO: Tamanho do arquivo ({file_size}) diferente do tamanho dos dados ({len(config_data)})")
 
-        self.db.add_backup(device['id'], filename, file_path, file_size, 'success')
-        logger.info(f"Backup registrado no banco de dados")
+        # Validar conteúdo do backup
+        validation = BackupValidator.validate(config_data, device['device_type'], is_binary=False)
+        validation_status = validation['status']
+        validation_message = validation['message']
 
-        return {'success': True, 'filename': filename, 'size': file_size, 'path': file_path}
+        if validation['valid']:
+            logger.info(f"Validação OK: {validation_message}")
+            status = 'success'
+        else:
+            logger.warning(f"Validação FALHOU: {validation_message}")
+            status = 'incomplete'
+
+        # Registrar no banco com status de validação
+        self.db.add_backup(
+            device['id'], filename, file_path, file_size, status,
+            error_message=None if validation['valid'] else validation_message,
+            validation_status=validation_status,
+            validation_message=validation_message
+        )
+        logger.info(f"Backup registrado no banco de dados (status: {status}, validação: {validation_status})")
+
+        return {
+            'success': True,
+            'filename': filename,
+            'size': file_size,
+            'path': file_path,
+            'validation': validation
+        }
 
     def _save_backup_binary(self, device, binary_data, extension='.bin'):
         """Salva backup em formato binário (para arquivos compactados como Intelbras .fmw)"""
@@ -968,10 +1318,34 @@ class BackupManager:
         elif file_size != len(binary_data):
             logger.warning(f"AVISO: Tamanho do arquivo ({file_size}) diferente dos dados ({len(binary_data)})")
 
-        self.db.add_backup(device['id'], filename, file_path, file_size, 'success')
-        logger.info(f"Backup binário registrado no banco de dados")
+        # Validar conteúdo binário (apenas por tamanho)
+        validation = BackupValidator.validate(binary_data, device['device_type'], is_binary=True)
+        validation_status = validation['status']
+        validation_message = validation['message']
 
-        return {'success': True, 'filename': filename, 'size': file_size, 'path': file_path}
+        if validation['valid']:
+            logger.info(f"Validação OK: {validation_message}")
+            status = 'success'
+        else:
+            logger.warning(f"Validação FALHOU: {validation_message}")
+            status = 'incomplete'
+
+        # Registrar no banco com status de validação
+        self.db.add_backup(
+            device['id'], filename, file_path, file_size, status,
+            error_message=None if validation['valid'] else validation_message,
+            validation_status=validation_status,
+            validation_message=validation_message
+        )
+        logger.info(f"Backup binário registrado no banco de dados (status: {status}, validação: {validation_status})")
+
+        return {
+            'success': True,
+            'filename': filename,
+            'size': file_size,
+            'path': file_path,
+            'validation': validation
+        }
 
     def backup_all_devices(self):
         """Executa backup sequencial de todos os dispositivos ativos (modo legado)."""

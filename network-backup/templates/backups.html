@@ -227,6 +227,54 @@
         color: #721c24;
     }
 
+    .badge-incomplete {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-validation {
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-complete {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-validation-incomplete {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-unknown {
+        background: #e9ecef;
+        color: #6c757d;
+    }
+
+    .validation-tooltip {
+        cursor: help;
+        position: relative;
+    }
+
+    .validation-tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        white-space: nowrap;
+        z-index: 1000;
+        margin-bottom: 5px;
+    }
+
     .page-btn {
         width: 32px;
         height: 32px;
@@ -376,6 +424,17 @@
                             <option value="">Todos</option>
                             <option value="success">Sucesso</option>
                             <option value="failed">Falhou</option>
+                            <option value="incomplete">Incompleto</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterValidation"><i class="fas fa-check-circle"></i> Validação:</label>
+                        <select id="filterValidation" class="filter-select">
+                            <option value="">Todos</option>
+                            <option value="complete">Completo</option>
+                            <option value="incomplete">Incompleto</option>
+                            <option value="unknown">Desconhecido</option>
                         </select>
                     </div>
                 </div>
@@ -405,6 +464,7 @@
                     <th>Data/Hora</th>
                     <th>Tamanho</th>
                     <th>Status</th>
+                    <th>Validação</th>
                     <th style="text-align: right;">Ações</th>
                 </tr>
             </thead>
@@ -412,6 +472,7 @@
                 {% for backup in recent_backups %}
                 <tr data-provedor="{{ backup.provedor if backup.provedor else 'sem_provedor' }}"
                     data-status="{{ backup.status }}"
+                    data-validation="{{ backup.validation_status if backup.validation_status else 'unknown' }}"
                     data-device-id="{{ backup.device_id }}">
                     <td>
                         <input type="checkbox" class="backup-checkbox" value="{{ backup.id }}"
@@ -425,8 +486,21 @@
                     <td>{{ backup.backup_date | datetime_br }}</td>
                     <td>{{ (backup.file_size / 1024) | round(2) }} KB</td>
                     <td>
-                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else 'failed' }}">
-                            {{ 'Sucesso' if backup.status == 'success' else 'Falhou' }}
+                        <span class="badge-status badge-{{ 'success' if backup.status == 'success' else ('incomplete' if backup.status == 'incomplete' else 'failed') }}">
+                            {{ 'Sucesso' if backup.status == 'success' else ('Incompleto' if backup.status == 'incomplete' else 'Falhou') }}
+                        </span>
+                    </td>
+                    <td>
+                        {% set val_status = backup.validation_status if backup.validation_status else 'unknown' %}
+                        <span class="badge-validation badge-{{ 'complete' if val_status == 'complete' else ('validation-incomplete' if val_status == 'incomplete' else 'unknown') }} validation-tooltip"
+                              data-tooltip="{{ backup.validation_message if backup.validation_message else 'Sem informação de validação' }}">
+                            {% if val_status == 'complete' %}
+                                <i class="fas fa-check"></i> OK
+                            {% elif val_status == 'incomplete' %}
+                                <i class="fas fa-exclamation-triangle"></i> Incompleto
+                            {% else %}
+                                <i class="fas fa-question"></i> N/A
+                            {% endif %}
                         </span>
                     </td>
                     <td style="text-align: right;">
@@ -481,16 +555,19 @@
     function applyFilters() {
         const provedorFilter = document.getElementById("filterProvedor").value.toLowerCase();
         const statusFilter = document.getElementById("filterStatus").value.toLowerCase();
+        const validationFilter = document.getElementById("filterValidation").value.toLowerCase();
         const searchFilter = document.getElementById("searchDevice").value.toLowerCase();
 
         rows.forEach(row => {
             const provedor = row.getAttribute("data-provedor")?.toLowerCase() || "sem_provedor";
             const status = row.getAttribute("data-status")?.toLowerCase() || "";
-            const deviceName = row.children[1].textContent.toLowerCase();
+            const validation = row.getAttribute("data-validation")?.toLowerCase() || "unknown";
+            const deviceName = row.children[2].textContent.toLowerCase();
 
             const match =
                 (!provedorFilter || provedor === provedorFilter) &&
                 (!statusFilter || status === statusFilter) &&
+                (!validationFilter || validation === validationFilter) &&
                 (!searchFilter || deviceName.includes(searchFilter));
 
             row.dataset.visible = match ? "1" : "0";
@@ -596,6 +673,7 @@
 
     document.getElementById("filterProvedor").addEventListener("change", applyFilters);
     document.getElementById("filterStatus").addEventListener("change", applyFilters);
+    document.getElementById("filterValidation").addEventListener("change", applyFilters);
     document.getElementById("searchDevice").addEventListener("input", applyFilters);
 
     // Função para atualizar botão de comparar

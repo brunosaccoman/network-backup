@@ -266,10 +266,13 @@ class Backup(db.Model):
     compressed = db.Column(db.Boolean, default=False)  # Se foi comprimido (Fase 3)
     is_delta = db.Column(db.Boolean, default=False)  # Se é backup incremental (Fase 3)
     parent_backup_id = db.Column(db.Integer, db.ForeignKey('backups.id'))  # Para deltas (Fase 3)
-    status = db.Column(db.String(20), default='success', nullable=False, index=True)  # success, failed
+    status = db.Column(db.String(20), default='success', nullable=False, index=True)  # success, failed, incomplete
     error_message = db.Column(db.Text)
     backup_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     duration_seconds = db.Column(db.Float)  # Tempo que levou o backup (Fase 2)
+    # Campos de validação (Fase 2.1)
+    validation_status = db.Column(db.String(20), default='unknown')  # complete, incomplete, unknown
+    validation_message = db.Column(db.Text)  # Mensagem detalhada da validação
 
     # Auto-referência para backups incrementais
     parent_backup = db.relationship('Backup', remote_side=[id], backref='child_backups')
@@ -291,7 +294,9 @@ class Backup(db.Model):
             'status': self.status,
             'error_message': self.error_message,
             'backup_date': self.backup_date.isoformat() if self.backup_date else None,
-            'duration_seconds': self.duration_seconds
+            'duration_seconds': self.duration_seconds,
+            'validation_status': self.validation_status,
+            'validation_message': self.validation_message
         }
 
     def __repr__(self):

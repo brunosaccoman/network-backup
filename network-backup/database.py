@@ -286,7 +286,7 @@ class Database:
     # BACKUPS
     # ========================================================================
 
-    def add_backup(self, device_id, filename, file_path, file_size, status='success', error_message=None):
+    def add_backup(self, device_id, filename, file_path, file_size, status='success', error_message=None, validation_status='unknown', validation_message=None):
         """
         Adiciona um registro de backup.
 
@@ -295,8 +295,10 @@ class Database:
             filename: Nome do arquivo
             file_path: Caminho completo do arquivo
             file_size: Tamanho em bytes
-            status: Status (success, failed)
+            status: Status (success, failed, incomplete)
             error_message: Mensagem de erro se falhou
+            validation_status: Status da validação (complete, incomplete, unknown)
+            validation_message: Mensagem detalhada da validação
 
         Returns:
             ID do backup criado
@@ -311,13 +313,15 @@ class Database:
                 file_size=file_size,
                 status=status,
                 error_message=error_message,
-                backup_date=now
+                backup_date=now,
+                validation_status=validation_status,
+                validation_message=validation_message
             )
 
             db.session.add(backup)
             db.session.commit()
 
-            logger.info(f"Backup registrado: {filename} ({status})")
+            logger.info(f"Backup registrado: {filename} ({status}, validação: {validation_status})")
             return backup.id
 
         except Exception as e:
