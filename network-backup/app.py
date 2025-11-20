@@ -252,11 +252,7 @@ def index():
 @app.route('/devices')
 @login_required
 def devices():
-    """Lista de dispositivos com paginação."""
-    # Paginação para suportar milhares de devices
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)  # 50 devices por página
-
+    """Lista de dispositivos (paginação client-side via JavaScript)."""
     # Filtro opcional por provedor
     provedor_id = request.args.get('provedor_id', type=int)
 
@@ -266,21 +262,16 @@ def devices():
     if provedor_id:
         query = query.filter_by(provedor_id=provedor_id)
 
-    # Paginação (provedor é uma coluna, não precisa de joinedload)
-    pagination = query.order_by(Device.name).paginate(
-        page=page,
-        per_page=per_page,
-        error_out=False
-    )
+    # Buscar todos os dispositivos (JavaScript faz a paginação)
+    all_devices = query.order_by(Device.name).all()
 
-    # Contadores totais (não paginados)
+    # Contadores totais
     total_devices = Device.query.count()
     active_devices = Device.query.filter_by(active=True).count()
     inactive_devices = Device.query.filter_by(active=False).count()
 
     return render_template('devices.html',
-                         devices=[d.to_dict() for d in pagination.items],
-                         pagination=pagination,
+                         devices=[d.to_dict() for d in all_devices],
                          total_devices=total_devices,
                          active_devices=active_devices,
                          inactive_devices=inactive_devices)
