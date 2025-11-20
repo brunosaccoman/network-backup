@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Página Não Encontrada - Network Backup{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Página Não Encontrada
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Oops! Página não encontrada (404)</h5>
+                    <p class="card-text">
+                        A página que você está procurando não existe ou foi movida.
+                    </p>
+                    <hr>
+                    <p class="text-muted">
+                        <strong>O que você pode fazer:</strong>
+                    </p>
+                    <ul>
+                        <li>Verifique se o endereço digitado está correto</li>
+                        <li>Volte para o <a href="{{ url_for('index') }}">dashboard</a></li>
+                        <li>Use o menu de navegação para encontrar o que procura</li>
+                    </ul>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="bi bi-house-door"></i> Voltar ao Dashboard
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
