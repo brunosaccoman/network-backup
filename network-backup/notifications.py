@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from enum import Enum
 import os
+from config import NOTIFICATION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -372,7 +373,7 @@ Please check the system health endpoint for more details.
             self.config.webhook_url,
             json=payload,
             headers=self.config.webhook_headers,
-            timeout=10
+            timeout=NOTIFICATION_TIMEOUT
         )
         response.raise_for_status()
 

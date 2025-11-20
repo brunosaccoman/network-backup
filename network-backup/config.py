@@ -8,9 +8,46 @@ configurações para diferentes ambientes (dev, staging, prod).
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import pytz
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
+
+# =============================================================================
+# CONSTANTES GLOBAIS
+# =============================================================================
+
+# Timezone padrão do sistema
+DEFAULT_TIMEZONE = os.environ.get('TIMEZONE', 'America/Porto_Velho')
+
+# Provedor padrão para dispositivos sem provedor definido
+DEFAULT_PROVEDOR = os.environ.get('DEFAULT_PROVEDOR', 'Sem_Provedor')
+
+# Porta SSH padrão
+DEFAULT_SSH_PORT = int(os.environ.get('DEFAULT_SSH_PORT', 22))
+
+# Timeouts de conexão (em segundos)
+SSH_CONNECT_TIMEOUT = int(os.environ.get('SSH_CONNECT_TIMEOUT', 30))
+SSH_READ_TIMEOUT = int(os.environ.get('SSH_READ_TIMEOUT', 30))
+SSH_COMMAND_TIMEOUT = int(os.environ.get('SSH_COMMAND_TIMEOUT', 60))
+HTTP_TIMEOUT = int(os.environ.get('HTTP_TIMEOUT', 30))
+NOTIFICATION_TIMEOUT = int(os.environ.get('NOTIFICATION_TIMEOUT', 10))
+
+# Timeout especial para dispositivos Intelbras (mais lentos)
+INTELBRAS_CONNECT_TIMEOUT = int(os.environ.get('INTELBRAS_CONNECT_TIMEOUT', 60))
+
+# Tamanho máximo de upload (em MB)
+MAX_UPLOAD_SIZE_MB = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 16))
+
+
+def get_timezone():
+    """
+    Retorna o objeto timezone configurado.
+
+    Returns:
+        pytz.timezone: Objeto timezone do pytz
+    """
+    return pytz.timezone(DEFAULT_TIMEZONE)
 
 
 class Config:
@@ -92,7 +129,7 @@ class Config:
     TIMEZONE = os.environ.get('TIMEZONE', 'America/Porto_Velho')
 
     # File Upload
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB max file size
+    MAX_CONTENT_LENGTH = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # Configurável via MAX_UPLOAD_SIZE_MB
 
     # Flask-Login
     REMEMBER_COOKIE_DURATION = timedelta(days=7)

@@ -17,7 +17,12 @@ cd network-backup
 flask run                              # Start dev server
 flask db upgrade                       # Apply migrations
 python manage.py create-admin          # Create admin user
+python manage.py create-user           # Create operator/viewer user
 python manage.py list-users            # List all users
+python manage.py activate-user <name>  # Activate user
+python manage.py deactivate-user <name># Deactivate user
+python manage.py init-db               # Initialize database tables
+python manage.py migrate-from-sqlite   # Migrate SQLite to PostgreSQL
 
 # Testing individual components
 python crypto_manager.py               # Test encryption system
@@ -27,7 +32,9 @@ python check_scheduler.py              # Check scheduler status
 
 # Diagnostics
 python diagnostico_login.py            # Debug login issues
+python diagnostico_csrf.py             # Debug CSRF token issues
 python diagnostico_mimosa.py           # Debug Mimosa device backups
+python verificar_backup_mimosa.py      # Verify Mimosa backup content
 
 # Production
 gunicorn -c gunicorn_config.py app:app
@@ -46,6 +53,9 @@ docker-compose exec app python manage.py create-admin
 - `crypto_manager.py` - AES-256 credential encryption with PBKDF2
 - `scheduler.py` - APScheduler for automated backups
 - `validators.py` - Input validation and sanitization
+- `health.py` - Health check system (liveness/readiness probes)
+- `notifications.py` - Email/Webhook notification system
+- `structured_logging.py` - JSON structured logging
 
 ## Project Overview
 
@@ -57,6 +67,7 @@ Network device backup management system built with Flask. Automates configuratio
 - PostgreSQL/SQLite support via SQLAlchemy ORM
 - Email/Webhook notifications
 - 50 parallel backup workers
+- Health checks (Kubernetes/Docker compatible)
 
 ## Core Architecture
 
@@ -103,7 +114,7 @@ Auto-cleanup keeps N most recent backups per device (`BACKUP_RETENTION_COUNT`).
 
 **HTTP/HTTPS**: `mimosa`, `mimosa_c5c`, `mimosa_b5c`, `mimosa_b5`, `mimosa_a5c`, `intelbras_radio`
 
-Default commands and Netmiko mappings defined in `backup_manager.py:_get_default_command()` and device_type_map. Custom commands can be set per device.
+Default commands and Netmiko mappings defined in `backup_manager.py:_get_default_command()` and device_type_map.
 
 ### Backup Data Flow
 
@@ -118,15 +129,26 @@ Environment-based configs in `config.py`: `DevelopmentConfig`, `TestingConfig`, 
 
 Selected via `FLASK_ENV` environment variable.
 
-## Key Routes
+## Key Routes & API
 
-All routes defined in `app.py`. Key endpoints:
-
+### Web Routes (in `app.py`)
 - `/auth/login`, `/auth/logout` - Authentication
 - `/devices`, `/backups`, `/schedules`, `/provedores` - CRUD pages
 - `/users`, `/audit-logs` - Admin only
 - `POST /backup/<id>`, `POST /backup/all` - Run backups (operator+)
-- `/health`, `/health/ready`, `/health/detailed` - Health probes
+- `/backups/compare` - Compare two backup files
+
+### API Endpoints
+- `GET /api/stats` - Dashboard statistics (JSON)
+- `GET /api/charts` - Chart data for dashboards
+- `GET /api/provedores` - List providers (paginated)
+- `GET /api/provedores/all` - All providers (no pagination)
+- `GET /api/audit-logs` - Audit logs data
+
+### Health Probes
+- `GET /health` - Liveness probe (is app running?)
+- `GET /health/ready` - Readiness probe (can receive traffic?)
+- `GET /health/detailed` - Full system status with metrics
 
 ## Setup & Deployment
 
@@ -160,6 +182,7 @@ flask db downgrade                 # Revert
 docker-compose up -d
 docker-compose exec app python manage.py create-admin
 docker-compose exec app flask db upgrade
+docker-compose logs -f app  # View logs
 ```
 
 ## Working with the Code
@@ -186,6 +209,15 @@ def new_route():
 3. Review migration in `migrations/versions/`
 4. `flask db upgrade`
 
+### Sending Notifications
+```python
+from notifications import get_notification_manager
+
+notification_manager = get_notification_manager()
+notification_manager.send_backup_success(device_name, backup_file)
+notification_manager.send_backup_failure(device_name, error_message)
+```
+
 ## Environment Variables
 
 **Required**:
@@ -201,6 +233,10 @@ def new_route():
 - `TIMEZONE` - System timezone (default: America/Porto_Velho)
 - `BACKUP_RETENTION_COUNT` - Backups per device (default: 5)
 - `BACKUP_MAX_WORKERS` - Concurrent workers (default: 50)
+
+**Session/Security**:
+- `SESSION_COOKIE_SECURE` - True for HTTPS (default: True in production)
+- `WTF_CSRF_TIME_LIMIT` - CSRF token expiration in seconds (default: 3600)
 
 **Notifications** (see `.env.notifications.example`):
 - `NOTIFICATION_EMAIL_ENABLED`, `NOTIFICATION_EMAIL_SMTP_HOST`, etc.
@@ -218,6 +254,11 @@ def new_route():
 
 **"relation does not exist"**
 - Run `flask db upgrade`
+
+**Login 400 Bad Request**
+- See `TROUBLESHOOTING_LOGIN.md` for detailed guide
+- Run `python diagnostico_login.py` and `python diagnostico_csrf.py`
+- Common causes: missing SECRET_KEY, SESSION_COOKIE_SECURE=True with HTTP
 
 **HTTP backup failures (Mimosa/Intelbras)**
 - Verify HTTPS enabled on device, correct port (80/443)
@@ -245,6 +286,7 @@ All docs in `network-backup/`:
 - `ESCALABILIDADE.md` - Scalability for 1,000-3,000+ devices
 - `NOTIFICACOES.md` - Email/Webhook notifications
 - `INSTALL_DEBIAN.md` - Debian/Ubuntu installation
+- `TROUBLESHOOTING_LOGIN.md` - Login issues troubleshooting
 
 ## Performance
 

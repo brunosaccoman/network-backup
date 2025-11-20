@@ -9,7 +9,7 @@ from models import db, Device, Backup, Schedule, Provedor, User
 from crypto_manager import CredentialManager
 from validators import InputValidator, ValidationError
 from datetime import datetime
-import pytz
+from config import get_timezone, DEFAULT_PROVEDOR, DEFAULT_SSH_PORT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class Database:
 
     def __init__(self):
         """Inicializa o gerenciador de banco de dados."""
-        self.timezone = pytz.timezone('America/Porto_Velho')
+        self.timezone = get_timezone()
         self.crypto_manager = CredentialManager()
         self.validator = InputValidator()
         logger.info("Database manager inicializado")
@@ -53,7 +53,7 @@ class Database:
     # ========================================================================
 
     def add_device(self, name, ip_address, device_type, protocol, username, password,
-                   port=22, enable_password=None, backup_command=None, provedor='Sem_Provedor'):
+                   port=DEFAULT_SSH_PORT, enable_password=None, backup_command=None, provedor=DEFAULT_PROVEDOR):
         """
         Adiciona um novo dispositivo.
 

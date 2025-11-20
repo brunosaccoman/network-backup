@@ -2,12 +2,19 @@ import paramiko
 import os
 import requests
 from datetime import datetime
-import pytz
 from netmiko import ConnectHandler
 from database import Database
 import re
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from config import (
+    get_timezone,
+    SSH_CONNECT_TIMEOUT,
+    SSH_READ_TIMEOUT,
+    SSH_COMMAND_TIMEOUT,
+    HTTP_TIMEOUT,
+    INTELBRAS_CONNECT_TIMEOUT
+)
 
 logger = logging.getLogger(__name__)
 
@@ -352,7 +359,7 @@ class BackupManager:
         """
         self.backup_dir = backup_dir
         self.db = Database()
-        self.timezone = pytz.timezone('America/Porto_Velho')
+        self.timezone = get_timezone()
         self.ssl_verify = ssl_verify
         self.ssl_ca_bundle = ssl_ca_bundle if ssl_ca_bundle else ssl_verify
         self.retention_count = retention_count
@@ -1028,7 +1035,7 @@ class BackupManager:
             for endpoint in alternative_endpoints:
                 try:
                     url = f"{base_url}{endpoint}"
-                    response = session.get(url, verify=self.ssl_ca_bundle, timeout=30)
+                    response = session.get(url, verify=self.ssl_ca_bundle, timeout=HTTP_TIMEOUT)
                     if response.status_code == 200 and len(response.content) > 100:
                         content_disp = response.headers.get('Content-Disposition', '')
                         if 'attachment' in content_disp or 'octet-stream' in response.headers.get('Content-Type', ''):
@@ -1065,7 +1072,7 @@ class BackupManager:
         netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
 
         # Timeout maior para Intelbras (radios podem ser lentos)
-        connect_timeout = 60 if device['device_type'] == 'intelbras_radio' else 30
+        connect_timeout = INTELBRAS_CONNECT_TIMEOUT if device['device_type'] == 'intelbras_radio' else SSH_CONNECT_TIMEOUT
 
         device_config = {
             'device_type': netmiko_type,
@@ -1107,7 +1114,7 @@ class BackupManager:
 
                 for section, cmd in intelbras_commands:
                     try:
-                        result = connection.send_command(cmd, read_timeout=30)
+                        result = connection.send_command(cmd, read_timeout=SSH_READ_TIMEOUT)
                         output += f"=== {section} ===\n{result}\n\n"
                     except Exception as e:
                         output += f"=== {section} ===\nErro: {e}\n\n"
@@ -1119,7 +1126,7 @@ class BackupManager:
                 output = connection.send_command_timing(backup_command, delay_factor=4, max_loops=500)
                 logger.info(f"Usou send_command_timing para Mikrotik")
             else:
-                output = connection.send_command(backup_command, read_timeout=60)
+                output = connection.send_command(backup_command, read_timeout=SSH_COMMAND_TIMEOUT)
             logger.info(f"Comando executado. Output recebido: {len(output)} caracteres, {len(output.splitlines())} linhas")
 
             if len(output) > 0:
@@ -1151,7 +1158,7 @@ class BackupManager:
         netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
 
         # Timeout maior para Intelbras (radios podem ser lentos)
-        connect_timeout = 60 if device['device_type'] == 'intelbras_radio' else 30
+        connect_timeout = INTELBRAS_CONNECT_TIMEOUT if device['device_type'] == 'intelbras_radio' else SSH_CONNECT_TIMEOUT
 
         device_config = {
             'device_type': netmiko_type + '_telnet',
@@ -1188,14 +1195,14 @@ class BackupManager:
 
                 for section, cmd in intelbras_commands:
                     try:
-                        result = connection.send_command(cmd, read_timeout=30)
+                        result = connection.send_command(cmd, read_timeout=SSH_READ_TIMEOUT)
                         output += f"=== {section} ===\n{result}\n\n"
                     except Exception as e:
                         output += f"=== {section} ===\nErro: {e}\n\n"
 
                 output += "=== BACKUP END ==="
             else:
-                output = connection.send_command(backup_command, read_timeout=60)
+                output = connection.send_command(backup_command, read_timeout=SSH_COMMAND_TIMEOUT)
 
             connection.disconnect()
 

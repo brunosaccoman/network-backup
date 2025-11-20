@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 import psutil
-import pytz
+from config import get_timezone
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class HealthChecker:
         self.app = app
         self.db = db
         self.scheduler = scheduler
-        self.timezone = pytz.timezone('America/Porto_Velho')
+        self.timezone = get_timezone()
         self.start_time = datetime.now(self.timezone)
 
     def liveness(self) -> Dict[str, Any]:

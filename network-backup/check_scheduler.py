@@ -1,8 +1,8 @@
 from datetime import datetime
-import pytz
+from config import get_timezone
 from app import scheduler
 
-tz = pytz.timezone('America/Porto_Velho')
+tz = get_timezone()
 now = datetime.now(tz)
 print(f'Hora atual: {now.strftime("%H:%M:%S")}')
 print(f'\nScheduler rodando: {scheduler.scheduler.running}')
