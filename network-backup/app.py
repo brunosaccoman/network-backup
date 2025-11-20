@@ -197,6 +197,11 @@ def index():
 
         # Tamanho total
         total_size = db.session.query(db.func.sum(Backup.file_size)).scalar() or 0
+        # Formatar tamanho: MB se < 1GB, senão GB
+        if total_size < 1024**3:  # Menos de 1 GB
+            total_size_formatted = f"{round(total_size / (1024**2), 2)} MB"
+        else:
+            total_size_formatted = f"{round(total_size / (1024**3), 2)} GB"
         total_size_gb = round(total_size / (1024**3), 2)
 
         # Backups recentes (com eager loading para evitar N+1 queries)
@@ -226,7 +231,7 @@ def index():
             total_devices=total_devices,
             successful_backups=successful_backups,
             failed_backups=failed_backups,
-            total_size_gb=total_size_gb,
+            total_size_formatted=total_size_formatted,
             recent_backups=[b.to_dict() for b in recent_backups],
             total_backups=total_backups,
             devices=[d.to_dict() for d in recent_devices],  # Apenas 100 devices mais recentes
@@ -237,7 +242,7 @@ def index():
         logger.error(f"Erro no dashboard: {e}")
         flash('Erro ao carregar dashboard.', 'danger')
         return render_template('dashboard.html', total_devices=0, successful_backups=0,
-                             failed_backups=0, total_size_gb=0, recent_backups=[],
+                             failed_backups=0, total_size_formatted="0 MB", recent_backups=[],
                              total_backups=0, devices=[], provedores=[], last_errors=[])
 
 # ============================================================================
