@@ -205,9 +205,13 @@ class Device(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
 
-    # Relações
-    backups = db.relationship('Backup', backref='device', lazy='dynamic', cascade='all, delete-orphan')
-    schedules = db.relationship('Schedule', backref='device', lazy='dynamic')
+    # Soft delete
+    deleted_at = db.Column(db.DateTime, nullable=True, index=True)
+    deleted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    # Relações - removido cascade para preservar backups
+    backups = db.relationship('Backup', backref='device', lazy='dynamic')
+    schedules = db.relationship('Schedule', backref='device', lazy='dynamic', cascade='all, delete-orphan')
 
     def to_dict(self, include_credentials=False):
         """
@@ -228,6 +232,7 @@ class Device(db.Model):
             'active': self.active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
             'backup_count': self.backups.count()
         }
 
@@ -258,7 +263,7 @@ class Backup(db.Model):
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=False, index=True)
+    device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=True, index=True)  # Nullable para devices excluídos
     filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.Text, nullable=False)
     file_size = db.Column(db.BigInteger)  # Em bytes
@@ -274,17 +279,35 @@ class Backup(db.Model):
     validation_status = db.Column(db.String(20), default='unknown')  # complete, incomplete, unknown
     validation_message = db.Column(db.Text)  # Mensagem detalhada da validação
 
+    # Cache do nome do device para quando for excluído
+    device_name_cached = db.Column(db.String(100))  # Nome do device no momento do backup
+    device_ip_cached = db.Column(db.String(45))  # IP do device no momento do backup
+    device_provedor_cached = db.Column(db.String(100))  # Provedor do device no momento do backup
+
     # Auto-referência para backups incrementais
     parent_backup = db.relationship('Backup', remote_side=[id], backref='child_backups')
 
     def to_dict(self):
         """Converte para dicionário."""
+        # Usa dados do device se existir, senão usa cache
+        if self.device:
+            device_name = self.device.name
+            device_ip = self.device.ip_address
+            device_provedor = self.device.provedor
+            device_deleted = self.device.deleted_at is not None
+        else:
+            device_name = self.device_name_cached
+            device_ip = self.device_ip_cached
+            device_provedor = self.device_provedor_cached
+            device_deleted = True
+
         return {
             'id': self.id,
             'device_id': self.device_id,
-            'device_name': self.device.name if self.device else None,
-            'device_ip': self.device.ip_address if self.device else None,
-            'provedor': self.device.provedor if self.device else None,
+            'device_name': device_name,
+            'device_ip': device_ip,
+            'provedor': device_provedor,
+            'device_deleted': device_deleted,
             'filename': self.filename,
             'file_path': self.file_path,
             'file_size': self.file_size,

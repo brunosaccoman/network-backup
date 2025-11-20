@@ -891,13 +891,12 @@
     }
 
     async function deleteDevice(deviceId) {
-        if (!confirm('Tem certeza que deseja remover este dispositivo permanentemente?')) return;
+        if (!confirm('Deseja arquivar este dispositivo?\n\nO dispositivo será movido para "Arquivados" e os backups serão preservados.\nVocê poderá restaurá-lo depois se necessário.')) return;
         try {
-            const deviceName = document.querySelector(`tr[data-id="${deviceId}"]`)?.dataset?.name || 'Dispositivo';
             const response = await fetch('/devices/' + deviceId + '/delete', { method: 'POST' });
             const data = await response.json();
             if (data.success) {
-                showAlert('Dispositivo removido com sucesso!', 'success');
+                showAlert('Dispositivo arquivado com sucesso! Os backups foram preservados.', 'success');
                 setTimeout(() => location.reload(), 1500);
             } else {
                 showAlert('Erro: ' + data.error, 'danger');
@@ -1137,6 +1136,12 @@
         </h2>
         {% if current_user.role in ['admin', 'operator'] %}
         <div class="header-actions">
+            {% if archived_count and archived_count > 0 %}
+            <a href="{{ url_for('devices_archived') }}" class="btn-modern secondary" style="text-decoration: none;">
+                <i class="fas fa-archive"></i>
+                Arquivados ({{ archived_count }})
+            </a>
+            {% endif %}
             <button class="btn-modern success" onclick="showModal('addDeviceModal')">
                 <i class="fas fa-plus"></i>
                 Adicionar Dispositivo

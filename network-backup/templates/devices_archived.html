@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% block title %}Dispositivos Arquivados - Sistema de Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main container */
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Page Header */
+    .page-header {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 25px;
+        border: 1px solid #e0e6ed;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Modern buttons */
+    .btn-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: 1px solid #e3e3e7;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-modern:hover {
+        background: #e9e9ec;
+        transform: scale(0.98);
+    }
+
+    .btn-modern.primary {
+        background: #f5f5f7;
+        border: 1px solid #e3e3e7;
+        color: #333;
+    }
+
+    .btn-modern.secondary {
+        background: white;
+        color: #667eea;
+        border: 1px solid #667eea;
+    }
+
+    .btn-modern.secondary:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    /* Info banner */
+    .info-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #856404;
+    }
+
+    .info-banner i {
+        font-size: 20px;
+    }
+
+    /* Table container */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f8f9fa;
+    }
+
+    .data-table th {
+        padding: 12px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table td {
+        padding: 14px 20px;
+        font-size: 13px;
+        color: #555;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table tbody tr {
+        transition: background 0.2s;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8f9fb;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .device-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #95a5a6;
+    }
+
+    .provider-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        background: #e3f2fd;
+        color: #3498db;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #555;
+        font-size: 12px;
+    }
+
+    .btn-action:hover {
+        border-color: #667eea;
+        color: #667eea;
+        background: #f0f8ff;
+    }
+
+    .btn-action.success:hover {
+        border-color: #27ae60;
+        color: #27ae60;
+        background: #f0fff4;
+    }
+
+    .btn-action.danger:hover {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: #fff5f5;
+    }
+
+    .deleted-info {
+        font-size: 11px;
+        color: #95a5a6;
+    }
+
+    /* Empty state */
+    .empty-state {
+        background: white;
+        border-radius: 8px;
+        padding: 60px 20px;
+        text-align: center;
+        border: 2px dashed #e0e6ed;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #e0e6ed;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        color: #7f8c8d;
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        color: #95a5a6;
+        margin-bottom: 20px;
+    }
+
+    /* Stats info */
+    .stats-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .stats-info span {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .stats-info strong {
+        color: #2c3e50;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function restoreDevice(deviceId) {
+        if (!confirm('Deseja restaurar este dispositivo?\n\nO dispositivo voltará para a lista principal e ficará disponível para backups.')) return;
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/devices/' + deviceId + '/restore', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo restaurado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+
+    async function deleteDevicePermanent(deviceId, deviceName) {
+        const confirmation = prompt(`ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\nDigite o nome do dispositivo para confirmar a exclusão permanente:\n\n${deviceName}`);
+
+        if (confirmation !== deviceName) {
+            if (confirmation !== null) {
+                showAlert('Nome do dispositivo incorreto. Exclusão cancelada.', 'warning');
+            }
+            return;
+        }
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/devices/' + deviceId + '/delete-permanent', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('Dispositivo excluído permanentemente!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Erro: ' + data.error, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro: ' + error.message, 'danger');
+        }
+    }
+</script>
+{% endblock %}
+
+{% block main_container %}
+<div class="main-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2>
+            <i class="fas fa-archive"></i>
+            Dispositivos Arquivados
+        </h2>
+        <div class="header-actions">
+            <a href="{{ url_for('devices') }}" class="btn-modern secondary">
+                <i class="fas fa-arrow-left"></i>
+                Voltar para Dispositivos
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            <strong>Dispositivos arquivados</strong> - Os backups destes dispositivos foram preservados e continuam disponíveis para consulta.
+            Você pode restaurar um dispositivo a qualquer momento para voltar a fazer backups.
+        </div>
+    </div>
+
+    {% if devices %}
+    <!-- Stats -->
+    <div class="stats-info">
+        <span>Total de dispositivos arquivados: <strong>{{ devices|length }}</strong></span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Endereço IP</th>
+                    <th>Provedor</th>
+                    <th>Tipo</th>
+                    <th>Arquivado em</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td>
+                        <div class="device-name-cell">
+                            <span class="status-dot"></span>
+                            <strong>{{ device.name }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ device.ip_address }}</td>
+                    <td>
+                        <span class="provider-tag">
+                            {{ device.provedor if device.provedor else 'Sem Provedor' }}
+                        </span>
+                    </td>
+                    <td>{{ device.device_type|title }}</td>
+                    <td>
+                        <span class="deleted-info">
+                            {{ device.deleted_at.strftime('%d/%m/%Y %H:%M') if device.deleted_at else '-' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button onclick="restoreDevice({{ device.id }})" class="btn-action success" title="Restaurar dispositivo">
+                                <i class="fas fa-undo"></i>
+                                Restaurar
+                            </button>
+                            <button onclick="deleteDevicePermanent({{ device.id }}, '{{ device.name }}')" class="btn-action danger" title="Excluir permanentemente">
+                                <i class="fas fa-trash-alt"></i>
+                                Excluir
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-archive"></i>
+        <h3>Nenhum dispositivo arquivado</h3>
+        <p>Quando você arquivar um dispositivo, ele aparecerá aqui com seus backups preservados.</p>
+        <a href="{{ url_for('devices') }}" class="btn-modern primary">
+            <i class="fas fa-arrow-left"></i>
+            Voltar para Dispositivos
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

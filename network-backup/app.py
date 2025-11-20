@@ -290,6 +290,8 @@ def devices():
     ).outerjoin(
         backup_counts,
         Device.id == backup_counts.c.device_id
+    ).filter(
+        Device.deleted_at.is_(None)  # Excluir devices arquivados
     )
 
     if provedor_id:
@@ -317,18 +319,22 @@ def devices():
         }
         devices_list.append(device_dict)
 
-    # Contadores em uma única query
+    # Contadores em uma única query (excluindo arquivados)
     counts = db.session.query(
         func.count(Device.id).label('total'),
         func.sum(db.case((Device.active == True, 1), else_=0)).label('active'),
         func.sum(db.case((Device.active == False, 1), else_=0)).label('inactive')
-    ).first()
+    ).filter(Device.deleted_at.is_(None)).first()
+
+    # Contar devices arquivados
+    archived_count = Device.query.filter(Device.deleted_at.isnot(None)).count()
 
     return render_template('devices.html',
                          devices=devices_list,
                          total_devices=counts.total or 0,
                          active_devices=counts.active or 0,
-                         inactive_devices=counts.inactive or 0)
+                         inactive_devices=counts.inactive or 0,
+                         archived_count=archived_count)
 
 @app.route('/devices/add', methods=['POST'])
 @login_required
@@ -406,23 +412,106 @@ def update_device(device_id):
 @app.route('/devices/<int:device_id>/delete', methods=['POST'])
 @login_required
 @admin_required
+def delete_device_soft(device_id):
+    """Soft delete - marca dispositivo como excluído mas preserva backups."""
+    try:
+        device = Device.query.get(device_id)
+        if not device:
+            return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
+
+        if device.deleted_at:
+            return jsonify({'success': False, 'error': 'Dispositivo já está excluído'}), 400
+
+        device_name = device.name
+
+        # Cache dos dados do device nos backups antes de excluir
+        for backup in device.backups:
+            if not backup.device_name_cached:
+                backup.device_name_cached = device.name
+                backup.device_ip_cached = device.ip_address
+                backup.device_provedor_cached = device.provedor
+
+        # Soft delete
+        device.deleted_at = datetime.utcnow()
+        device.deleted_by = current_user.id
+        device.active = False
+
+        db.session.commit()
+
+        log_audit('soft_delete', 'device', device_id, {'name': device_name})
+        return jsonify({'success': True, 'message': f'Dispositivo {device_name} arquivado com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao arquivar device: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/devices/<int:device_id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def restore_device(device_id):
+    """Restaura um dispositivo arquivado."""
+    try:
+        device = Device.query.get(device_id)
+        if not device:
+            return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
+
+        if not device.deleted_at:
+            return jsonify({'success': False, 'error': 'Dispositivo não está arquivado'}), 400
+
+        device_name = device.name
+        device.deleted_at = None
+        device.deleted_by = None
+        device.active = True
+
+        db.session.commit()
+
+        log_audit('restore', 'device', device_id, {'name': device_name})
+        return jsonify({'success': True, 'message': f'Dispositivo {device_name} restaurado com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao restaurar device: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/devices/<int:device_id>/delete-permanent', methods=['POST'])
+@login_required
+@admin_required
 def delete_device_permanent(device_id):
-    """Deleta permanentemente um dispositivo."""
+    """Deleta permanentemente um dispositivo (irreversível)."""
     try:
         device = Device.query.get(device_id)
         if not device:
             return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
 
         device_name = device.name
+
+        # Garantir que os backups tenham o cache antes de deletar
+        for backup in device.backups:
+            if not backup.device_name_cached:
+                backup.device_name_cached = device.name
+                backup.device_ip_cached = device.ip_address
+                backup.device_provedor_cached = device.provedor
+            backup.device_id = None  # Remove referência ao device
+
         db.session.delete(device)
         db.session.commit()
 
-        log_audit('delete', 'device', device_id, {'name': device_name})
-        return jsonify({'success': True})
+        log_audit('permanent_delete', 'device', device_id, {'name': device_name})
+        return jsonify({'success': True, 'message': f'Dispositivo {device_name} excluído permanentemente'})
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Erro ao deletar device: {e}")
+        logger.error(f"Erro ao deletar device permanentemente: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/devices/archived')
+@login_required
+@admin_required
+def devices_archived():
+    """Lista dispositivos arquivados (soft deleted)."""
+    devices = Device.query.filter(Device.deleted_at.isnot(None)).order_by(Device.deleted_at.desc()).all()
+    return render_template('devices_archived.html', devices=devices)
 
 # ============================================================================
 # BACKUPS
