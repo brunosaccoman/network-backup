@@ -177,40 +177,45 @@ app.register_blueprint(auth_bp)
 @login_required
 def index():
     """Dashboard principal."""
-    try:
-        # Estatísticas - usar count() ao invés de carregar todos os devices
-        total_devices = Device.query.filter_by(active=True).count()
+    from sqlalchemy import func
 
-        # Backups dos últimos 30 dias
-        from datetime import datetime, timedelta
+    try:
+        # Todas as estatísticas em UMA única query
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
 
-        successful_backups = Backup.query.filter(
-            Backup.backup_date >= thirty_days_ago,
-            Backup.status == 'success'
-        ).count()
+        stats = db.session.query(
+            # Total de devices ativos
+            func.count(Device.id).filter(Device.active == True).label('total_devices'),
+        ).first()
 
-        failed_backups = Backup.query.filter(
-            Backup.backup_date >= thirty_days_ago,
-            Backup.status == 'failed'
-        ).count()
+        # Estatísticas de backup em uma query
+        backup_stats = db.session.query(
+            func.count(Backup.id).label('total_backups'),
+            func.sum(db.case((
+                db.and_(Backup.backup_date >= thirty_days_ago, Backup.status == 'success'), 1
+            ), else_=0)).label('successful_backups'),
+            func.sum(db.case((
+                db.and_(Backup.backup_date >= thirty_days_ago, Backup.status == 'failed'), 1
+            ), else_=0)).label('failed_backups'),
+            func.coalesce(func.sum(Backup.file_size), 0).label('total_size')
+        ).first()
 
-        # Tamanho total
-        total_size = db.session.query(db.func.sum(Backup.file_size)).scalar() or 0
+        total_devices = stats.total_devices or 0
+        total_backups = backup_stats.total_backups or 0
+        successful_backups = backup_stats.successful_backups or 0
+        failed_backups = backup_stats.failed_backups or 0
+        total_size = backup_stats.total_size or 0
+
         # Formatar tamanho: MB se < 1GB, senão GB
-        if total_size < 1024**3:  # Menos de 1 GB
+        if total_size < 1024**3:
             total_size_formatted = f"{round(total_size / (1024**2), 2)} MB"
         else:
             total_size_formatted = f"{round(total_size / (1024**3), 2)} GB"
-        total_size_gb = round(total_size / (1024**3), 2)
 
         # Backups recentes (com eager loading para evitar N+1 queries)
         recent_backups = Backup.query.options(
             db.joinedload(Backup.device)
         ).order_by(Backup.backup_date.desc()).limit(20).all()
-
-        # Total de backups
-        total_backups = Backup.query.count()
 
         # Últimos erros
         last_errors = Backup.query.options(
@@ -219,10 +224,23 @@ def index():
             Backup.backup_date.desc()
         ).limit(5).all()
 
-        # Devices recentes (limitado a 100 mais recentes para performance)
-        recent_devices = Device.query.filter_by(active=True).order_by(
+        # Devices recentes - SEM chamar to_dict() que causa N+1
+        recent_devices_query = Device.query.filter_by(active=True).order_by(
             Device.updated_at.desc()
         ).limit(100).all()
+
+        # Converter manualmente sem backup_count (não precisa no dashboard)
+        devices_list = [{
+            'id': d.id,
+            'name': d.name,
+            'ip_address': d.ip_address,
+            'device_type': d.device_type,
+            'protocol': d.protocol,
+            'port': d.port,
+            'provedor': d.provedor,
+            'active': d.active,
+            'updated_at': d.updated_at.isoformat() if d.updated_at else None
+        } for d in recent_devices_query]
 
         # Provedores
         provedores = database_manager.get_provedores()
@@ -234,7 +252,7 @@ def index():
             total_size_formatted=total_size_formatted,
             recent_backups=[b.to_dict() for b in recent_backups],
             total_backups=total_backups,
-            devices=[d.to_dict() for d in recent_devices],  # Apenas 100 devices mais recentes
+            devices=devices_list,
             provedores=provedores,
             last_errors=[e.to_dict() for e in last_errors]
         )
@@ -253,28 +271,64 @@ def index():
 @login_required
 def devices():
     """Lista de dispositivos (paginação client-side via JavaScript)."""
+    from sqlalchemy import func
+
     # Filtro opcional por provedor
     provedor_id = request.args.get('provedor_id', type=int)
 
-    # Query base
-    query = Device.query
+    # Query otimizada: buscar devices com contagem de backups em uma única query
+    # Subquery para contar backups por device
+    backup_counts = db.session.query(
+        Backup.device_id,
+        func.count(Backup.id).label('backup_count')
+    ).group_by(Backup.device_id).subquery()
+
+    # Query principal com LEFT JOIN para incluir devices sem backups
+    query = db.session.query(
+        Device,
+        func.coalesce(backup_counts.c.backup_count, 0).label('backup_count')
+    ).outerjoin(
+        backup_counts,
+        Device.id == backup_counts.c.device_id
+    )
 
     if provedor_id:
-        query = query.filter_by(provedor_id=provedor_id)
+        query = query.filter(Device.provedor_id == provedor_id)
 
-    # Buscar todos os dispositivos (JavaScript faz a paginação)
-    all_devices = query.order_by(Device.name).all()
+    # Buscar todos os dispositivos ordenados
+    results = query.order_by(Device.name).all()
 
-    # Contadores totais
-    total_devices = Device.query.count()
-    active_devices = Device.query.filter_by(active=True).count()
-    inactive_devices = Device.query.filter_by(active=False).count()
+    # Converter para dicionários (sem N+1 query)
+    devices_list = []
+    for device, backup_count in results:
+        device_dict = {
+            'id': device.id,
+            'name': device.name,
+            'ip_address': device.ip_address,
+            'device_type': device.device_type,
+            'protocol': device.protocol,
+            'port': device.port,
+            'username': device.username,
+            'provedor': device.provedor,
+            'active': device.active,
+            'created_at': device.created_at.isoformat() if device.created_at else None,
+            'updated_at': device.updated_at.isoformat() if device.updated_at else None,
+            'backup_count': backup_count
+        }
+        devices_list.append(device_dict)
+
+    # Contadores em uma única query
+    counts = db.session.query(
+        func.count(Device.id).label('total'),
+        func.sum(db.case((Device.active == True, 1), else_=0)).label('active'),
+        func.sum(db.case((Device.active == False, 1), else_=0)).label('inactive')
+    ).first()
 
     return render_template('devices.html',
-                         devices=[d.to_dict() for d in all_devices],
-                         total_devices=total_devices,
-                         active_devices=active_devices,
-                         inactive_devices=inactive_devices)
+                         devices=devices_list,
+                         total_devices=counts.total or 0,
+                         active_devices=counts.active or 0,
+                         inactive_devices=counts.inactive or 0)
 
 @app.route('/devices/add', methods=['POST'])
 @login_required
@@ -456,18 +510,22 @@ def backup_all():
 @app.route('/backups')
 @login_required
 def backups():
-    """Lista de backups (paginação client-side via JavaScript)."""
+    """Lista de backups (com limite para performance)."""
     # Filtro opcional por device
     device_id = request.args.get('device_id', type=int)
 
-    # Query base com eager loading - sem limite para permitir paginação client-side
+    # Limite de backups a carregar (para performance com muitos devices)
+    # JavaScript faz paginação client-side sobre esses dados
+    BACKUP_DISPLAY_LIMIT = 5000
+
+    # Query base com eager loading
     query = Backup.query.options(db.joinedload(Backup.device))
 
     if device_id:
         query = query.filter_by(device_id=device_id)
 
-    # Buscar todos os backups (JavaScript faz a paginação)
-    all_backups = query.order_by(Backup.backup_date.desc()).all()
+    # Buscar backups com limite para evitar sobrecarga
+    all_backups = query.order_by(Backup.backup_date.desc()).limit(BACKUP_DISPLAY_LIMIT).all()
 
     # Contadores totais
     total_backups = Backup.query.count()
