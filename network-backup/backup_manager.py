@@ -413,11 +413,71 @@ class BackupManager:
             logger.info(f"Iniciando backup Intelbras HTTP para {device['name']} ({device['ip_address']})")
 
             # ================================================================
-            # MÉTODO 1: LuCI POST (APC 5A-90 v2.0, modelos novos com OpenWrt/LuCI)
+            # MÉTODO 1: Digest Auth + endpoints APC (APC 5A-90 v2.0)
             # ================================================================
-            logger.info("Tentando método LuCI POST (APC 5A-90 v2.0 e similares)...")
+            logger.info("Tentando método Digest Auth (APC 5A-90 v2.0)...")
 
+            from requests.auth import HTTPDigestAuth
             basic_auth = (device['username'], device['password'])
+            digest_auth = HTTPDigestAuth(device['username'], device['password'])
+
+            # Headers comuns
+            common_headers = {
+                'Accept': 'application/octet-stream, */*',
+                'User-Agent': 'Mozilla/5.0',
+            }
+
+            # Endpoints específicos para APC 5A-90 v2.0 e similares
+            apc_endpoints = [
+                '/goform/getBackupFile',
+                '/goform/getSysBackup',
+                '/cgi-bin/config_backup.cgi',
+                '/cgi-bin/backup.cgi',
+                '/backup.cgi',
+                '/System/configBackup',
+                '/config/backup',
+            ]
+
+            # Tentar com Digest Auth primeiro (comum em APC)
+            for endpoint in apc_endpoints:
+                try:
+                    url = f"{base_url}{endpoint}"
+                    logger.info(f"Tentando Digest GET em {url}")
+
+                    response = session.get(
+                        url,
+                        auth=digest_auth,
+                        headers=common_headers,
+                        verify=self.ssl_ca_bundle,
+                        timeout=(30, 120),
+                        allow_redirects=True
+                    )
+
+                    content_disposition = response.headers.get('Content-Disposition', '')
+                    content_type = response.headers.get('Content-Type', '')
+
+                    logger.info(f"Digest {endpoint}: status={response.status_code}, "
+                               f"type={content_type}, size={len(response.content)}")
+
+                    if response.status_code == 200 and len(response.content) > 100:
+                        if ('attachment' in content_disposition or
+                            'octet-stream' in content_type or
+                            'application/x-tar' in content_type or
+                            'application/gzip' in content_type or
+                            len(response.content) > 1000):
+
+                            ext = '.tar.gz' if 'gzip' in content_type else '.cfg'
+                            logger.info(f"Backup Intelbras (Digest) obtido via {endpoint}: {len(response.content)} bytes")
+                            return self._save_backup_binary(device, response.content, ext)
+
+                except Exception as e:
+                    logger.debug(f"Digest endpoint {endpoint} falhou: {e}")
+                    continue
+
+            # ================================================================
+            # MÉTODO 2: LuCI POST (modelos com OpenWrt/LuCI)
+            # ================================================================
+            logger.info("Tentando método LuCI POST...")
 
             # Headers para LuCI
             luci_headers = {
