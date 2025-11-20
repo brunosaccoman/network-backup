@@ -212,6 +212,15 @@ class BackupManager:
                 ('/login', {'username': device['username'], 'password': device['password']}),
             ]
 
+            # Headers para simular navegador (alguns firmwares Mimosa exigem)
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Origin': base_url,
+                'Referer': f'{base_url}/',
+            })
+
             for login_endpoint, login_data in login_attempts:
                 try:
                     login_url = f"{base_url}{login_endpoint}"
@@ -235,9 +244,9 @@ class BackupManager:
                             # Login bem-sucedido retorna JSON com dados da sessão
                             try:
                                 json_response = response.json()
-                                if 'role' in json_response or 'version' in json_response:
+                                if 'role' in json_response or 'version' in json_response or 'success' in json_response:
                                     logged_in = True
-                                    logger.info(f"Login bem-sucedido via {login_endpoint} (JSON response)")
+                                    logger.info(f"Login bem-sucedido via {login_endpoint} (JSON response: {list(json_response.keys())})")
                                     break
                             except:
                                 pass
@@ -245,6 +254,12 @@ class BackupManager:
                             # Resposta pequena não-HTML pode indicar sucesso
                             logged_in = True
                             logger.info(f"Login possivelmente bem-sucedido via {login_endpoint}")
+                            break
+
+                        # Verificar se tem cookies de sessão (indica login bem-sucedido)
+                        if session.cookies and len(session.cookies) > 0:
+                            logged_in = True
+                            logger.info(f"Login bem-sucedido via {login_endpoint} (cookie de sessão recebido)")
                             break
 
                 except Exception as e:
