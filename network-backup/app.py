@@ -273,9 +273,17 @@ def devices():
         error_out=False
     )
 
+    # Contadores totais (não paginados)
+    total_devices = Device.query.count()
+    active_devices = Device.query.filter_by(active=True).count()
+    inactive_devices = Device.query.filter_by(active=False).count()
+
     return render_template('devices.html',
                          devices=[d.to_dict() for d in pagination.items],
-                         pagination=pagination)
+                         pagination=pagination,
+                         total_devices=total_devices,
+                         active_devices=active_devices,
+                         inactive_devices=inactive_devices)
 
 @app.route('/devices/add', methods=['POST'])
 @login_required
