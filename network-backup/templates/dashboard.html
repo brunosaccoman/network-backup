@@ -721,7 +721,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for backup in last_backups %}
+                    {% for backup in recent_backups[:10] %}
                     <tr>
                         <td>#{{ backup.id }}</td>
                         <td>{{ backup.device_name }}</td>
