@@ -42,6 +42,9 @@ services:
       FLASK_ENV: production
       DEBUG: "False"
 
+      # Gunicorn - 1 worker para scheduler funcionar corretamente
+      GUNICORN_WORKERS: "1"
+
       # Security (GENERATE NEW KEYS!)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       SECRET_KEY: ${SECRET_KEY}
@@ -49,12 +52,16 @@ services:
       # Database
       DATABASE_URL: postgresql://backup_user:${POSTGRES_PASSWORD:-backup_password_CHANGE_ME}@postgres:5432/network_backup
 
-      # Session
-      SESSION_COOKIE_SECURE: "True"
+      # Session - False para permitir HTTP em rede interna
+      SESSION_COOKIE_SECURE: "False"
       SESSION_COOKIE_HTTPONLY: "True"
+
+      # CSRF - False para permitir HTTP sem SSL
+      WTF_CSRF_SSL_STRICT: "False"
 
       # SSL
       SSL_VERIFY: "True"
+      FORCE_HTTPS: "False"
 
       # Timezone
       TIMEZONE: America/Porto_Velho
