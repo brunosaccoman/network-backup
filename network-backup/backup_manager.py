@@ -156,10 +156,9 @@ class BackupValidator:
         # Mimosa (todos os modelos)
         'mimosa': {
             'start_markers': [
-                'general.',         # Configurações gerais
-                'network.',         # Configuração de rede
-                'wireless.',        # Configuração wireless
-                'mimosa.',          # Prefixo Mimosa
+                '<WirelessConfig>',   # Configuração wireless
+                '<Ethernet>',         # Configuração de rede
+                'Checksum=',          # Header do arquivo
             ],
             'end_markers': [],
             'min_size': 500,
@@ -167,28 +166,28 @@ class BackupValidator:
             'description': 'Mimosa'
         },
         'mimosa_c5c': {
-            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'start_markers': ['<WirelessConfig>', '<Ethernet>', 'Checksum='],
             'end_markers': [],
             'min_size': 500,
             'any_start': True,
             'description': 'Mimosa C5c'
         },
         'mimosa_b5c': {
-            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'start_markers': ['<WirelessConfig>', '<Ethernet>', 'Checksum='],
             'end_markers': [],
             'min_size': 500,
             'any_start': True,
             'description': 'Mimosa B5c'
         },
         'mimosa_b5': {
-            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'start_markers': ['<WirelessConfig>', '<Ethernet>', 'Checksum='],
             'end_markers': [],
             'min_size': 500,
             'any_start': True,
             'description': 'Mimosa B5'
         },
         'mimosa_a5c': {
-            'start_markers': ['general.', 'network.', 'wireless.', 'mimosa.'],
+            'start_markers': ['<WirelessConfig>', '<Ethernet>', 'Checksum='],
             'end_markers': [],
             'min_size': 500,
             'any_start': True,
