@@ -1231,12 +1231,14 @@ class BackupManager:
 
             file_buffer = io.BytesIO()
             file_found = False
+            actual_filename = backup_filename  # Para rastrear o nome real do arquivo
 
             for remote_path in possible_paths:
                 try:
                     logger.info(f"Tentando baixar: {remote_path}")
                     sftp.getfo(remote_path, file_buffer)
                     file_found = True
+                    actual_filename = remote_path.split('/')[-1]
                     logger.info(f"Arquivo encontrado em: {remote_path}")
                     break
                 except FileNotFoundError:
@@ -1246,17 +1248,35 @@ class BackupManager:
                     continue
 
             if not file_found:
-                # Tentar listar e encontrar qualquer arquivo .ddb recente
+                # Tentar encontrar arquivo de backup do Dude mais recente
+                # Procurar por arquivos que contenham 'dude' ou 'DUDE' ou 'banco' no nome
                 try:
                     all_files = sftp.listdir('/')
-                    ddb_files = [f for f in all_files if f.endswith('.ddb')]
-                    if ddb_files:
-                        remote_path = f"/{ddb_files[-1]}"
-                        logger.info(f"Encontrado arquivo .ddb: {remote_path}")
+                    # Filtrar arquivos que parecem ser backup do Dude
+                    dude_files = [f for f in all_files if
+                                  'dude' in f.lower() or
+                                  'banco' in f.lower() or
+                                  f.endswith('.ddb')]
+                    # Remover diretórios conhecidos
+                    dude_files = [f for f in dude_files if f not in ['dude']]
+
+                    logger.info(f"Arquivos de backup do Dude encontrados: {dude_files}")
+
+                    if dude_files:
+                        # Pegar o arquivo com nome que começa com dude_backup (nosso backup)
+                        our_backup = [f for f in dude_files if f.startswith('dude_backup')]
+                        if our_backup:
+                            remote_path = f"/{our_backup[-1]}"
+                        else:
+                            # Senão, pegar qualquer um
+                            remote_path = f"/{dude_files[-1]}"
+
+                        logger.info(f"Baixando arquivo: {remote_path}")
                         sftp.getfo(remote_path, file_buffer)
                         file_found = True
+                        actual_filename = remote_path.split('/')[-1]
                 except Exception as e:
-                    logger.error(f"Erro ao buscar arquivos .ddb: {e}")
+                    logger.error(f"Erro ao buscar arquivos do Dude: {e}")
 
             if not file_found:
                 raise FileNotFoundError(
