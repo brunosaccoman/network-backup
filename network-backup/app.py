@@ -460,7 +460,50 @@ def test_device_connectivity(device_id):
         'port_check': {'success': False, 'message': ''}
     }
 
-    # Teste de Ping
+    # Teste de Ping - com fallback para containers sem ping
+    def tcp_ping_fallback():
+        """Fallback usando TCP quando ping não está disponível"""
+        # Primeiro tenta a porta do próprio dispositivo
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            test_result = sock.connect_ex((device.ip_address, device.port))
+            sock.close()
+            if test_result == 0:
+                results['ping']['success'] = True
+                results['ping']['message'] = f'Host acessível (via TCP/{device.port})'
+                return
+        except:
+            pass
+
+        # Tenta porta 80
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            test_result = sock.connect_ex((device.ip_address, 80))
+            sock.close()
+            if test_result == 0:
+                results['ping']['success'] = True
+                results['ping']['message'] = 'Host acessível (via TCP/80)'
+                return
+        except:
+            pass
+
+        # Tenta porta 443
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            test_result = sock.connect_ex((device.ip_address, 443))
+            sock.close()
+            if test_result == 0:
+                results['ping']['success'] = True
+                results['ping']['message'] = 'Host acessível (via TCP/443)'
+                return
+        except:
+            pass
+
+        results['ping']['message'] = 'Host não acessível nas portas testadas'
+
     try:
         # Detecta o sistema operacional para usar o comando correto
         param = '-n' if platform.system().lower() == 'windows' else '-c'
@@ -484,35 +527,15 @@ def test_device_connectivity(device_id):
 
     except subprocess.TimeoutExpired:
         results['ping']['message'] = 'Ping timeout - Sem resposta'
-    except FileNotFoundError:
+    except (FileNotFoundError, OSError) as e:
         # Ping não disponível no container - usar socket como fallback
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(3)
-            # Tenta conectar em uma porta comum para verificar se host está acessível
-            test_result = sock.connect_ex((device.ip_address, 80))
-            sock.close()
-
-            if test_result == 0:
-                results['ping']['success'] = True
-                results['ping']['message'] = 'Host acessível (via TCP/80)'
-            else:
-                # Tenta porta 443
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(3)
-                test_result = sock.connect_ex((device.ip_address, 443))
-                sock.close()
-
-                if test_result == 0:
-                    results['ping']['success'] = True
-                    results['ping']['message'] = 'Host acessível (via TCP/443)'
-                else:
-                    # Se a porta principal está aberta, considera o host acessível
-                    results['ping']['message'] = 'Ping indisponível - verificar porta principal'
-        except Exception as e:
-            results['ping']['message'] = f'Ping indisponível: {str(e)}'
+        tcp_ping_fallback()
     except Exception as e:
-        results['ping']['message'] = f'Erro no ping: {str(e)}'
+        # Qualquer outro erro - tentar fallback
+        if 'No such file' in str(e) or 'Errno 2' in str(e):
+            tcp_ping_fallback()
+        else:
+            results['ping']['message'] = f'Erro no ping: {str(e)}'
 
     # Teste de Porta
     try:
