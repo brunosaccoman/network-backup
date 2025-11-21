@@ -341,8 +341,8 @@ def devices():
     if provedor_id:
         query = query.filter(Device.provedor_id == provedor_id)
 
-    # Buscar todos os dispositivos ordenados
-    results = query.order_by(Device.name).all()
+    # Buscar todos os dispositivos ordenados por data de cadastro (mais recentes primeiro)
+    results = query.order_by(Device.created_at.desc()).all()
 
     # Converter para dicionários (sem N+1 query)
     devices_list = []

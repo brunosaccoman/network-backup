@@ -51,17 +51,18 @@ docker-compose logs -f app             # Ver logs
 ## Arquivos Principais
 
 - `app.py` - Aplicação Flask (rotas, blueprints, error handlers)
-- `models.py` - Modelos SQLAlchemy ORM
-- `backup_manager.py` - Handlers de protocolo (SSH/Telnet/HTTP) e lógica de backup
-- `database.py` - Wrapper SQLAlchemy mantendo interface retrocompatível
+- `models.py` - Modelos SQLAlchemy ORM (User, Device, Backup, Schedule, Provedor, AuditLog)
+- `backup_manager.py` - Handlers de protocolo (SSH/Telnet/HTTP), lógica de backup e `BackupValidator`
+- `database.py` - Wrapper SQLAlchemy mantendo interface retrocompatível com criptografia automática
 - `auth.py` - Decorators de autenticação (`@admin_required`, `@operator_required`)
 - `config.py` - Configuração baseada em ambiente
 - `crypto_manager.py` - Criptografia AES-256 de credenciais com PBKDF2
 - `scheduler.py` - APScheduler para backups automatizados
-- `validators.py` - Validação e sanitização de entrada
+- `validators.py` - Validação e sanitização de entrada (whitelists de device types e comandos)
 - `health.py` - Sistema de health check (liveness/readiness probes)
 - `notifications.py` - Sistema de notificações Email/Webhook
 - `structured_logging.py` - Logging estruturado JSON
+- `manage.py` - CLI para gerenciamento (create-admin, create-user, list-users, etc.)
 
 ## Visão Geral do Projeto
 
@@ -85,6 +86,10 @@ Flask-Login com três roles em `models.py:User`:
 - **viewer**: Acesso somente leitura
 
 Decorators de `auth.py`: `@login_required`, `@admin_required`, `@operator_required`, `@role_required('admin', 'operator')`
+
+**Requisitos de senha para usuários** (definidos em `validators.py:validate_password_strength:140`):
+- Mínimo 8 caracteres
+- Pelo menos 1 maiúscula, 1 minúscula, 1 número, 1 caractere especial
 
 Todas as ações são logadas na tabela `audit_logs`.
 
@@ -140,7 +145,7 @@ Dispositivos suportam soft delete para preservar histórico de backups:
 
 **HTTP/HTTPS**: `mimosa`, `mimosa_c5c`, `mimosa_b5c`, `mimosa_b5`, `mimosa_a5c`, `intelbras_radio`
 
-Comandos padrão e mapeamentos Netmiko definidos em `backup_manager.py:_get_default_command()` e device_type_map. A whitelist completa de device types está em `validators.py:InputValidator.ALLOWED_DEVICE_TYPES`.
+Comandos padrão e mapeamentos Netmiko definidos em `backup_manager.py:_get_default_command():1385` e `device_type_map:1069`. A whitelist completa de device types está em `validators.py:InputValidator.ALLOWED_DEVICE_TYPES:36` e comandos permitidos em `ALLOWED_BACKUP_COMMANDS:47`.
 
 ### Fluxo de Dados do Backup
 
@@ -232,9 +237,12 @@ docker-compose logs -f app  # Ver logs
 ## Trabalhando com o Código
 
 ### Adicionando Novos Tipos de Dispositivos
-1. Adicionar comando de backup em `backup_manager.py:_get_default_command()`
-2. Adicionar ao `device_type_map` se Netmiko precisar de nome de tipo diferente
-3. Para dispositivos HTTP: implementar método como `_backup_mimosa_http()`
+1. Adicionar tipo à whitelist em `validators.py:InputValidator.ALLOWED_DEVICE_TYPES`
+2. Adicionar comandos permitidos em `validators.py:InputValidator.ALLOWED_BACKUP_COMMANDS`
+3. Adicionar comando padrão em `backup_manager.py:_get_default_command()`
+4. Adicionar ao `device_type_map` se Netmiko precisar de nome de tipo diferente
+5. Para dispositivos HTTP: implementar método como `_backup_mimosa_http()`
+6. Opcional: adicionar regras de validação em `backup_manager.py:BackupValidator.VALIDATION_RULES`
 
 ### Adicionando Novas Rotas
 ```python
