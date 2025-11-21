@@ -1191,8 +1191,8 @@ class BackupManager:
             backup_filename = f"dude_backup_{timestamp}"
 
             # Executar comando para exportar o banco do Dude
-            # O arquivo será criado em /dude/{backup_filename}.ddb
-            export_command = f'/dude export-db name="{backup_filename}"'
+            # Comando correto: /dude export-db backup-file=nome
+            export_command = f'/dude export-db backup-file="{backup_filename}"'
             logger.info(f"Executando: {export_command}")
 
             stdin, stdout, stderr = ssh_client.exec_command(export_command)
