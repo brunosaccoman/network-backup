@@ -1303,8 +1303,8 @@ class BackupManager:
             if file_size == 0:
                 raise Exception("Arquivo de backup do Dude está vazio")
 
-            # Salvar como arquivo binário sem extensão (formato original do Dude)
-            return self._save_backup_binary(device, binary_data, extension='.backup')
+            # Salvar como arquivo binário sem extensão (formato original do Dude type file)
+            return self._save_backup_binary(device, binary_data, extension='')
 
         except Exception as e:
             logger.error(f"Erro no backup Dude: {str(e)}")
