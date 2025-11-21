@@ -63,6 +63,11 @@
         overflow: hidden;
     }
 
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .table-header {
         padding: 20px 25px;
         border-bottom: 1px solid #e0e6ed;
@@ -85,6 +90,28 @@
     .data-table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    /* Larguras fixas para colunas */
+    .col-checkbox { width: 40px; }
+    .col-id { width: 60px; }
+    .col-device { width: 180px; min-width: 120px; }
+    .col-ip { width: 120px; }
+    .col-provedor { width: 120px; }
+    .col-date { width: 140px; }
+    .col-size { width: 80px; }
+    .col-status { width: 90px; }
+    .col-validation { width: 100px; }
+    .col-actions { width: 80px; min-width: 80px; }
+
+    /* Truncar texto longo */
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        display: block;
     }
 
     .data-table thead {
@@ -118,6 +145,47 @@
     .action-buttons {
         display: flex;
         gap: 6px;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+    }
+
+    /* Responsividade para telas menores */
+    @media screen and (max-width: 1200px) {
+        .col-device { width: 150px; }
+        .col-provedor { width: 100px; }
+        .col-date { width: 130px; }
+    }
+
+    @media screen and (max-width: 992px) {
+        .data-table th,
+        .data-table td {
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+
+        .col-device { width: 120px; }
+        .col-ip { width: 100px; }
+        .col-provedor { width: 90px; }
+    }
+
+    @media screen and (max-width: 768px) {
+        .table-filters-wrapper {
+            flex-direction: column;
+        }
+
+        .table-filters {
+            width: 100%;
+        }
+
+        .table-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .filter-input,
+        .filter-select {
+            min-width: 120px;
+        }
     }
 
     .btn-atualizar,
@@ -453,19 +521,20 @@
             </div>
         </div>
 
+        <div class="table-responsive">
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 40px;"><input type="checkbox" id="selectAll" title="Selecionar todos"></th>
-                    <th>ID</th>
-                    <th>Dispositivo</th>
-                    <th>Endereço IP</th>
-                    <th>Provedor</th>
-                    <th>Data/Hora</th>
-                    <th>Tamanho</th>
-                    <th>Status</th>
-                    <th>Validação</th>
-                    <th style="text-align: right;">Ações</th>
+                    <th class="col-checkbox"><input type="checkbox" id="selectAll" title="Selecionar todos"></th>
+                    <th class="col-id">ID</th>
+                    <th class="col-device">Dispositivo</th>
+                    <th class="col-ip">Endereço IP</th>
+                    <th class="col-provedor">Provedor</th>
+                    <th class="col-date">Data/Hora</th>
+                    <th class="col-size">Tamanho</th>
+                    <th class="col-status">Status</th>
+                    <th class="col-validation">Validação</th>
+                    <th class="col-actions" style="text-align: right;">Ações</th>
                 </tr>
             </thead>
             <tbody id="backupsTableBody">
@@ -480,9 +549,9 @@
                                onchange="updateCompareButton()">
                     </td>
                     <td><strong>#{{ backup.id }}</strong></td>
-                    <td>{{ backup.device_name }}</td>
-                    <td>{{ backup.device_ip }}</td>
-                    <td>{{ backup.provedor if backup.provedor else 'Sem Provedor' }}</td>
+                    <td><span class="text-truncate" title="{{ backup.device_name }}">{{ backup.device_name }}</span></td>
+                    <td><span class="text-truncate" title="{{ backup.device_ip }}">{{ backup.device_ip }}</span></td>
+                    <td><span class="text-truncate" title="{{ backup.provedor if backup.provedor else 'Sem Provedor' }}">{{ backup.provedor if backup.provedor else 'Sem Provedor' }}</span></td>
                     <td>{{ backup.backup_date | datetime_br }}</td>
                     <td>{{ (backup.file_size / 1024) | round(2) }} KB</td>
                     <td>
@@ -517,6 +586,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
 
         <div class="table-footer">
             <div id="footerInfo">Mostrando 0 de 0 backups</div>
