@@ -232,6 +232,15 @@ class BackupValidator:
             'any_start': True,
             'description': 'Palo Alto PAN-OS'
         },
+
+        # MikroTik Dude Server (banco de dados binário)
+        'mikrotik_dude': {
+            'start_markers': [],  # Arquivo binário, não valida marcadores
+            'end_markers': [],
+            'min_size': 10000,    # Dude DB geralmente é maior que 10KB
+            'any_start': True,
+            'description': 'MikroTik Dude Database'
+        },
     }
 
     @classmethod
@@ -1066,7 +1075,8 @@ class BackupManager:
             'mimosa_b5': 'linux',
             'mimosa_a5c': 'linux',
             'datacom': 'cisco_ios',
-            'datacom_dmos': 'cisco_ios'
+            'datacom_dmos': 'cisco_ios',
+            'mikrotik_dude': 'mikrotik_routeros'  # Usa mesmo driver do MikroTik
         }
 
         netmiko_type = device_type_map.get(device['device_type'], device['device_type'])
@@ -1121,6 +1131,13 @@ class BackupManager:
 
                 output += "=== BACKUP END ==="
                 logger.info(f"Backup Intelbras coletado: {len(output)} bytes")
+            # MikroTik Dude - backup especial do banco de dados via SFTP
+            elif device['device_type'] == 'mikrotik_dude':
+                logger.info("Iniciando backup especial do MikroTik Dude")
+                connection.disconnect()  # Fechar conexão Netmiko para usar Paramiko diretamente
+
+                # Usar Paramiko para SSH + SFTP
+                return self._backup_mikrotik_dude(device)
             # Mikrotik /export needs timing-based approach instead of expect-based
             elif device['device_type'] == 'mikrotik_routeros' and 'export' in backup_command.lower():
                 output = connection.send_command_timing(backup_command, delay_factor=4, max_loops=500)
@@ -1141,7 +1158,103 @@ class BackupManager:
         except Exception as e:
             logger.error(f"Erro no backup SSH: {str(e)}")
             raise Exception(f"Erro SSH: {str(e)}")
-    
+
+    def _backup_mikrotik_dude(self, device):
+        """
+        Backup especial do banco de dados do MikroTik Dude.
+
+        O Dude no RouterOS armazena seu banco de dados em /dude/dude.db
+        Este método:
+        1. Cria um backup do banco com /dude export-db
+        2. Baixa o arquivo .ddb gerado via SFTP
+        3. Salva localmente como arquivo binário
+        """
+        import io
+
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try:
+            logger.info(f"Conectando via Paramiko SSH para backup Dude: {device['ip_address']}")
+            ssh_client.connect(
+                hostname=device['ip_address'],
+                port=device['port'],
+                username=device['username'],
+                password=device['password'],
+                timeout=SSH_CONNECT_TIMEOUT,
+                allow_agent=False,
+                look_for_keys=False
+            )
+
+            # Gerar nome único para o arquivo de backup
+            timestamp = datetime.now(self.timezone).strftime('%Y%m%d_%H%M%S')
+            backup_filename = f"dude_backup_{timestamp}"
+
+            # Executar comando para exportar o banco do Dude
+            # O arquivo será criado em /dude/{backup_filename}.ddb
+            export_command = f'/dude export-db name="{backup_filename}"'
+            logger.info(f"Executando: {export_command}")
+
+            stdin, stdout, stderr = ssh_client.exec_command(export_command)
+            exit_status = stdout.channel.recv_exit_status()
+
+            # Aguardar um momento para o arquivo ser criado
+            import time
+            time.sleep(2)
+
+            # Verificar se o arquivo foi criado
+            check_command = f'/file print where name~"{backup_filename}"'
+            stdin, stdout, stderr = ssh_client.exec_command(check_command)
+            check_output = stdout.read().decode('utf-8')
+            logger.info(f"Verificação do arquivo: {check_output}")
+
+            # Baixar o arquivo via SFTP
+            sftp = ssh_client.open_sftp()
+
+            # MikroTik armazena arquivos de backup do Dude com extensão .ddb
+            remote_path = f"/{backup_filename}.ddb"
+
+            logger.info(f"Baixando arquivo {remote_path} via SFTP")
+
+            # Baixar para memória
+            file_buffer = io.BytesIO()
+            try:
+                sftp.getfo(remote_path, file_buffer)
+            except FileNotFoundError:
+                # Tentar caminho alternativo dentro do diretório dude
+                remote_path = f"/dude/{backup_filename}.ddb"
+                logger.info(f"Tentando caminho alternativo: {remote_path}")
+                sftp.getfo(remote_path, file_buffer)
+
+            binary_data = file_buffer.getvalue()
+            file_size = len(binary_data)
+            logger.info(f"Arquivo Dude baixado: {file_size} bytes")
+
+            # Remover arquivo temporário do RouterOS para não ocupar espaço
+            try:
+                remove_command = f'/file remove "{backup_filename}.ddb"'
+                ssh_client.exec_command(remove_command)
+                logger.info("Arquivo temporário removido do RouterOS")
+            except Exception as e:
+                logger.warning(f"Não foi possível remover arquivo temporário: {e}")
+
+            sftp.close()
+            ssh_client.close()
+
+            if file_size == 0:
+                raise Exception("Arquivo de backup do Dude está vazio")
+
+            # Salvar como arquivo binário com extensão .ddb
+            return self._save_backup_binary(device, binary_data, extension='.ddb')
+
+        except Exception as e:
+            logger.error(f"Erro no backup Dude: {str(e)}")
+            try:
+                ssh_client.close()
+            except:
+                pass
+            raise Exception(f"Erro ao fazer backup do Dude: {str(e)}")
+
     def _backup_telnet(self, device):
         device_type_map = {
             'ubiquiti_airos': 'ubiquiti_edgerouter',
@@ -1234,6 +1347,8 @@ class BackupManager:
             'mimosa_b5c': 'cat /etc/persistent/mimosa.cfg',
             'mimosa_b5': 'cat /etc/persistent/mimosa.cfg',
             'mimosa_a5c': 'cat /etc/persistent/mimosa.cfg',
+            # MikroTik Dude - comando especial (tratado separadamente via SFTP)
+            'mikrotik_dude': '/dude export-db',
         }
         return commands.get(device_type, 'show running-config')
     

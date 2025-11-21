@@ -1,158 +1,173 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Este arquivo fornece orientações ao Claude Code (claude.ai/code) ao trabalhar com código neste repositório.
 
-## CRITICAL: Working Directory
+## CRÍTICO: Diretório de Trabalho
 
-**ALL commands must be run from `network-backup/` subdirectory:**
+**TODOS os comandos devem ser executados no subdiretório `network-backup/`:**
 
 ```bash
 cd network-backup
 ```
 
-## Essential Commands
+## Comandos Essenciais
 
 ```bash
-# Development
-flask run                              # Start dev server
-flask db upgrade                       # Apply migrations
-python manage.py create-admin          # Create admin user
-python manage.py create-user           # Create operator/viewer user
-python manage.py list-users            # List all users
-python manage.py activate-user <name>  # Activate user
-python manage.py deactivate-user <name># Deactivate user
-python manage.py init-db               # Initialize database tables
-python manage.py migrate-from-sqlite   # Migrate SQLite to PostgreSQL
+# Desenvolvimento
+flask run                              # Iniciar servidor de desenvolvimento
+flask db upgrade                       # Aplicar migrações
+python manage.py create-admin          # Criar usuário administrador
+python manage.py create-user           # Criar usuário operator/viewer
+python manage.py list-users            # Listar todos os usuários
+python manage.py activate-user <nome>  # Ativar usuário
+python manage.py deactivate-user <nome># Desativar usuário
+python manage.py init-db               # Inicializar tabelas do banco
+python manage.py migrate-from-sqlite   # Migrar SQLite para PostgreSQL
 
-# Testing individual components
-python crypto_manager.py               # Test encryption system
-python validators.py                   # Test input validators
-python test_notifications.py           # Test notification system
-python check_scheduler.py              # Check scheduler status
+# Testar componentes individuais
+python crypto_manager.py               # Testar sistema de criptografia
+python validators.py                   # Testar validadores de entrada
+python test_notifications.py           # Testar sistema de notificações
+python check_scheduler.py              # Verificar status do scheduler
 
-# Diagnostics
-python diagnostico_login.py            # Debug login issues
-python diagnostico_csrf.py             # Debug CSRF token issues
-python diagnostico_mimosa.py           # Debug Mimosa device backups
-python verificar_backup_mimosa.py      # Verify Mimosa backup content
+# Diagnósticos
+python diagnostico_login.py            # Debug de problemas de login
+python diagnostico_csrf.py             # Debug de token CSRF
+python diagnostico_mimosa.py           # Debug de backups Mimosa
+python verificar_backup_mimosa.py      # Verificar conteúdo de backup Mimosa
 
-# Production
+# Produção
 gunicorn -c gunicorn_config.py app:app
 docker-compose up -d
 docker-compose exec app python manage.py create-admin
+docker-compose exec app flask db upgrade
+docker-compose logs -f app             # Ver logs
 ```
 
-## Key Files
+**IMPORTANTE**: Produção deve usar `GUNICORN_WORKERS=1` para o scheduler funcionar corretamente (evita jobs duplicados).
 
-- `app.py` - Flask application (routes, blueprints, error handlers)
-- `models.py` - SQLAlchemy ORM models
-- `backup_manager.py` - Protocol handlers (SSH/Telnet/HTTP) and backup logic
-- `database.py` - SQLAlchemy wrapper maintaining backward-compatible interface
-- `auth.py` - Authentication decorators (`@admin_required`, `@operator_required`)
-- `config.py` - Environment-based configuration
-- `crypto_manager.py` - AES-256 credential encryption with PBKDF2
-- `scheduler.py` - APScheduler for automated backups
-- `validators.py` - Input validation and sanitization
-- `health.py` - Health check system (liveness/readiness probes)
-- `notifications.py` - Email/Webhook notification system
-- `structured_logging.py` - JSON structured logging
+## Arquivos Principais
 
-## Project Overview
+- `app.py` - Aplicação Flask (rotas, blueprints, error handlers)
+- `models.py` - Modelos SQLAlchemy ORM
+- `backup_manager.py` - Handlers de protocolo (SSH/Telnet/HTTP) e lógica de backup
+- `database.py` - Wrapper SQLAlchemy mantendo interface retrocompatível
+- `auth.py` - Decorators de autenticação (`@admin_required`, `@operator_required`)
+- `config.py` - Configuração baseada em ambiente
+- `crypto_manager.py` - Criptografia AES-256 de credenciais com PBKDF2
+- `scheduler.py` - APScheduler para backups automatizados
+- `validators.py` - Validação e sanitização de entrada
+- `health.py` - Sistema de health check (liveness/readiness probes)
+- `notifications.py` - Sistema de notificações Email/Webhook
+- `structured_logging.py` - Logging estruturado JSON
 
-Network device backup management system built with Flask. Automates configuration backups for network equipment (routers, switches, access points) using SSH, Telnet, and HTTP/HTTPS protocols. Optimized for 1,000-3,000+ devices.
+## Visão Geral do Projeto
 
-**Key Features**:
-- Role-based access control (admin/operator/viewer)
-- AES-256 credential encryption with PBKDF2
-- PostgreSQL/SQLite support via SQLAlchemy ORM
-- Email/Webhook notifications
-- 50 parallel backup workers
-- Health checks (Kubernetes/Docker compatible)
+Sistema de gerenciamento de backup de dispositivos de rede construído com Flask. Automatiza backups de configuração para equipamentos de rede (roteadores, switches, access points) usando protocolos SSH, Telnet e HTTP/HTTPS. Otimizado para 1.000-3.000+ dispositivos.
 
-## Core Architecture
+**Funcionalidades Principais**:
+- Controle de acesso baseado em roles (admin/operator/viewer)
+- Criptografia AES-256 de credenciais com PBKDF2
+- Suporte PostgreSQL/SQLite via SQLAlchemy ORM
+- Notificações Email/Webhook
+- 50 workers paralelos de backup
+- Health checks (compatível com Kubernetes/Docker)
 
-### Authentication & Authorization
+## Arquitetura Principal
 
-Flask-Login with three roles in `models.py:User`:
-- **admin**: Full access (users, devices, backups, schedules)
-- **operator**: Manage devices and run backups
-- **viewer**: Read-only access
+### Autenticação e Autorização
 
-Decorators from `auth.py`: `@login_required`, `@admin_required`, `@operator_required`, `@role_required('admin', 'operator')`
+Flask-Login com três roles em `models.py:User`:
+- **admin**: Acesso completo (usuários, devices, backups, schedules)
+- **operator**: Gerenciar devices e executar backups
+- **viewer**: Acesso somente leitura
 
-All actions logged to `audit_logs` table.
+Decorators de `auth.py`: `@login_required`, `@admin_required`, `@operator_required`, `@role_required('admin', 'operator')`
 
-### Credential Encryption
+Todas as ações são logadas na tabela `audit_logs`.
 
-`crypto_manager.py:CredentialManager` encrypts device passwords at rest:
-- AES-256 via Fernet with PBKDF2-HMAC-SHA256 (100k iterations)
-- Master key derived from `ENCRYPTION_KEY` env var
+### Criptografia de Credenciais
 
-**Critical**: Changing `ENCRYPTION_KEY` invalidates all encrypted credentials.
+`crypto_manager.py:CredentialManager` criptografa senhas de dispositivos em repouso:
+- AES-256 via Fernet com PBKDF2-HMAC-SHA256 (100k iterações)
+- Chave mestre derivada da variável de ambiente `ENCRYPTION_KEY`
 
-### Database Layer
+**Crítico**: Alterar `ENCRYPTION_KEY` invalida todas as credenciais criptografadas.
 
-Two-layer architecture:
-- `models.py` - SQLAlchemy ORM models (User, Device, Backup, Schedule, Provedor, AuditLog)
-- `database.py` - Wrapper class providing backward-compatible dict-based interface with automatic encryption/decryption
+### Camada de Banco de Dados
 
-Supports SQLite (dev) and PostgreSQL (prod) via `DATABASE_URL`.
+Arquitetura de duas camadas:
+- `models.py` - Modelos SQLAlchemy ORM (User, Device, Backup, Schedule, Provedor, AuditLog)
+- `database.py` - Classe wrapper fornecendo interface retrocompatível baseada em dict com criptografia/descriptografia automática
 
-### Backup Storage & Protocols
+Suporta SQLite (dev) e PostgreSQL (prod) via `DATABASE_URL`.
 
-Storage structure: `backups/{Provedor}/{Device}/{IP}_{YYYYMMDD_HHMMSS}.txt`
+### Armazenamento e Protocolos de Backup
 
-`BackupManager` handles protocols:
-- **SSH/Telnet**: Via Netmiko with device type mapping
-- **HTTP/HTTPS**: Custom implementations for Mimosa and Intelbras devices
+Estrutura de armazenamento: `backups/{Provedor}/{Device}/{IP}_{YYYYMMDD_HHMMSS}.txt`
 
-Auto-cleanup keeps N most recent backups per device (`BACKUP_RETENTION_COUNT`).
+`BackupManager` gerencia protocolos:
+- **SSH/Telnet**: Via Netmiko com mapeamento de tipo de dispositivo
+- **HTTP/HTTPS**: Implementações customizadas para dispositivos Mimosa e Intelbras
 
-### Supported Device Types
+Limpeza automática mantém os N backups mais recentes por dispositivo (`BACKUP_RETENTION_COUNT`).
+
+**Validação de Backup**: Classe `BackupValidator` valida completude do backup usando marcadores específicos do dispositivo (marcadores início/fim, tamanho mínimo). Status: `complete`, `incomplete`, `unknown`.
+
+### Soft Delete
+
+Dispositivos suportam soft delete para preservar histórico de backups:
+- `deleted_at`: Timestamp de quando o device foi excluído
+- `deleted_by`: ID do usuário que excluiu
+- Backups mantêm info em cache do device (`device_name_cached`, `device_ip_cached`, `device_provedor_cached`)
+
+### Tipos de Dispositivos Suportados
 
 **SSH/Telnet** (via Netmiko): `cisco_ios`, `cisco_nxos`, `cisco_asa`, `cisco_xr`, `juniper_junos`, `mikrotik_routeros`, `huawei`, `arista_eos`, `ubiquiti_airos`, `ubiquiti_edge`, `datacom`, `datacom_dmos`, `intelbras_radio`
 
+**SSH + SFTP** (backup especial): `mikrotik_dude` - Backup do banco de dados do Dude rodando em RouterOS
+
 **HTTP/HTTPS**: `mimosa`, `mimosa_c5c`, `mimosa_b5c`, `mimosa_b5`, `mimosa_a5c`, `intelbras_radio`
 
-Default commands and Netmiko mappings defined in `backup_manager.py:_get_default_command()` and device_type_map.
+Comandos padrão e mapeamentos Netmiko definidos em `backup_manager.py:_get_default_command()` e device_type_map.
 
-### Backup Data Flow
+### Fluxo de Dados do Backup
 
-1. Request → Authentication → Fetch device(s) with decrypted credentials
-2. `ThreadPoolExecutor` with `BACKUP_MAX_WORKERS` (default: 50)
-3. Protocol handler routes to SSH/Telnet/HTTP method
-4. Save file → Cleanup old backups → Insert DB record → Notify → Audit log
+1. Request → Autenticação → Buscar device(s) com credenciais descriptografadas
+2. `ThreadPoolExecutor` com `BACKUP_MAX_WORKERS` (padrão: 50)
+3. Handler de protocolo roteia para método SSH/Telnet/HTTP
+4. Salvar arquivo → Limpar backups antigos → Inserir registro no BD → Notificar → Log de auditoria
 
-### Configuration
+### Configuração
 
-Environment-based configs in `config.py`: `DevelopmentConfig`, `TestingConfig`, `StagingConfig`, `ProductionConfig`
+Configs baseadas em ambiente em `config.py`: `DevelopmentConfig`, `TestingConfig`, `StagingConfig`, `ProductionConfig`
 
-Selected via `FLASK_ENV` environment variable.
+Selecionado via variável de ambiente `FLASK_ENV`.
 
-## Key Routes & API
+## Rotas e API Principais
 
-### Web Routes (in `app.py`)
-- `/auth/login`, `/auth/logout` - Authentication
-- `/devices`, `/backups`, `/schedules`, `/provedores` - CRUD pages
-- `/users`, `/audit-logs` - Admin only
-- `POST /backup/<id>`, `POST /backup/all` - Run backups (operator+)
-- `/backups/compare` - Compare two backup files
+### Rotas Web (em `app.py`)
+- `/auth/login`, `/auth/logout` - Autenticação
+- `/devices`, `/backups`, `/schedules`, `/provedores` - Páginas CRUD
+- `/users`, `/audit-logs` - Somente admin
+- `POST /backup/<id>`, `POST /backup/all` - Executar backups (operator+)
+- `/backups/compare` - Comparar dois arquivos de backup
 
-### API Endpoints
-- `GET /api/stats` - Dashboard statistics (JSON)
-- `GET /api/charts` - Chart data for dashboards
-- `GET /api/provedores` - List providers (paginated)
-- `GET /api/provedores/all` - All providers (no pagination)
-- `GET /api/audit-logs` - Audit logs data
+### Endpoints da API
+- `GET /api/stats` - Estatísticas do dashboard (JSON)
+- `GET /api/charts` - Dados de gráficos para dashboards
+- `GET /api/provedores` - Listar provedores (paginado)
+- `GET /api/provedores/all` - Todos os provedores (sem paginação)
+- `GET /api/audit-logs` - Dados de logs de auditoria
 
 ### Health Probes
-- `GET /health` - Liveness probe (is app running?)
-- `GET /health/ready` - Readiness probe (can receive traffic?)
-- `GET /health/detailed` - Full system status with metrics
+- `GET /health` - Liveness probe (app está rodando?)
+- `GET /health/ready` - Readiness probe (pode receber tráfego?)
+- `GET /health/detailed` - Status completo do sistema com métricas
 
-## Setup & Deployment
+## Setup e Deploy
 
-### Initial Setup
+### Setup Inicial
 ```bash
 cd network-backup
 python -m venv venv
@@ -161,20 +176,20 @@ venv\Scripts\activate  # Windows
 
 pip install -r requirements.txt
 
-# Generate keys
+# Gerar chaves
 python -c "import secrets; print('ENCRYPTION_KEY=' + secrets.token_urlsafe(32))"
 python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
 
-cp .env.example .env  # Edit with generated keys
+cp .env.example .env  # Editar com as chaves geradas
 flask db upgrade
 python manage.py create-admin
 ```
 
-### Database Migrations
+### Migrações de Banco
 ```bash
-flask db migrate -m "Description"  # Create
-flask db upgrade                   # Apply
-flask db downgrade                 # Revert
+flask db migrate -m "Descrição"  # Criar
+flask db upgrade                 # Aplicar
+flask db downgrade               # Reverter
 ```
 
 ### Docker
@@ -182,34 +197,34 @@ flask db downgrade                 # Revert
 docker-compose up -d
 docker-compose exec app python manage.py create-admin
 docker-compose exec app flask db upgrade
-docker-compose logs -f app  # View logs
+docker-compose logs -f app  # Ver logs
 ```
 
-## Working with the Code
+## Trabalhando com o Código
 
-### Adding New Device Types
-1. Add backup command in `backup_manager.py:_get_default_command()`
-2. Add to `device_type_map` if Netmiko needs different type name
-3. For HTTP devices: implement method like `_backup_mimosa_http()`
+### Adicionando Novos Tipos de Dispositivos
+1. Adicionar comando de backup em `backup_manager.py:_get_default_command()`
+2. Adicionar ao `device_type_map` se Netmiko precisar de nome de tipo diferente
+3. Para dispositivos HTTP: implementar método como `_backup_mimosa_http()`
 
-### Adding New Routes
+### Adicionando Novas Rotas
 ```python
 from auth import operator_required, log_audit
 
-@app.route('/new-route')
+@app.route('/nova-rota')
 @operator_required
-def new_route():
-    log_audit('action', 'resource_type', resource_id, {'key': 'value'})
+def nova_rota():
+    log_audit('acao', 'tipo_recurso', resource_id, {'chave': 'valor'})
     # ...
 ```
 
-### Schema Changes
-1. Modify `models.py`
-2. `flask db migrate -m "Description"`
-3. Review migration in `migrations/versions/`
+### Alterações de Schema
+1. Modificar `models.py`
+2. `flask db migrate -m "Descrição"`
+3. Revisar migração em `migrations/versions/`
 4. `flask db upgrade`
 
-### Sending Notifications
+### Enviando Notificações
 ```python
 from notifications import get_notification_manager
 
@@ -218,58 +233,66 @@ notification_manager.send_backup_success(device_name, backup_file)
 notification_manager.send_backup_failure(device_name, error_message)
 ```
 
-## Environment Variables
+## Variáveis de Ambiente
 
-**Required**:
-- `ENCRYPTION_KEY` - Master key for credential encryption (32+ chars)
-- `SECRET_KEY` - Flask session signing key (32+ chars)
+**Obrigatórias**:
+- `ENCRYPTION_KEY` - Chave mestre para criptografia de credenciais (32+ chars)
+- `SECRET_KEY` - Chave de assinatura de sessão Flask (32+ chars)
 
-**Database**:
-- `DATABASE_URL` - Connection string (default: `sqlite:///backups.db`)
-- `DB_POOL_SIZE` - Pool size (default: 50)
+**Banco de Dados**:
+- `DATABASE_URL` - String de conexão (padrão: `sqlite:///backups.db`)
+- `DB_POOL_SIZE` - Tamanho do pool (padrão: 50)
 
-**Application**:
-- `FLASK_ENV` - Environment: development/testing/staging/production
-- `TIMEZONE` - System timezone (default: America/Porto_Velho)
-- `BACKUP_RETENTION_COUNT` - Backups per device (default: 5)
-- `BACKUP_MAX_WORKERS` - Concurrent workers (default: 50)
+**Aplicação**:
+- `FLASK_ENV` - Ambiente: development/testing/staging/production
+- `TIMEZONE` - Timezone do sistema (padrão: America/Porto_Velho)
+- `BACKUP_RETENTION_COUNT` - Backups por dispositivo (padrão: 5)
+- `BACKUP_MAX_WORKERS` - Workers concorrentes (padrão: 50)
+- `GUNICORN_WORKERS` - Deve ser 1 para o scheduler (padrão: 1)
 
-**Session/Security**:
-- `SESSION_COOKIE_SECURE` - True for HTTPS (default: True in production)
-- `WTF_CSRF_TIME_LIMIT` - CSRF token expiration in seconds (default: 3600)
+**Timeouts** (segundos):
+- `SSH_CONNECT_TIMEOUT` - Conexão SSH (padrão: 30)
+- `SSH_READ_TIMEOUT` - Leitura SSH (padrão: 30)
+- `SSH_COMMAND_TIMEOUT` - Execução de comando SSH (padrão: 60)
+- `HTTP_TIMEOUT` - Requisições HTTP (padrão: 30)
+- `INTELBRAS_CONNECT_TIMEOUT` - Dispositivos Intelbras (padrão: 60, dispositivos mais lentos)
 
-**Notifications** (see `.env.notifications.example`):
+**Sessão/Segurança**:
+- `SESSION_COOKIE_SECURE` - True para HTTPS (padrão: True em produção)
+- `WTF_CSRF_TIME_LIMIT` - Expiração do token CSRF em segundos (padrão: 3600)
+
+**Notificações** (ver `.env.notifications.example`):
 - `NOTIFICATION_EMAIL_ENABLED`, `NOTIFICATION_EMAIL_SMTP_HOST`, etc.
 - `NOTIFICATION_WEBHOOK_ENABLED`, `NOTIFICATION_WEBHOOK_URL`
 
-**SSL**: `SSL_VERIFY` (default: True), `SSL_CA_BUNDLE`
+**SSL**: `SSL_VERIFY` (padrão: True), `SSL_CA_BUNDLE`
 
 ## Troubleshooting
 
 **"ENCRYPTION_KEY não configurada!"**
-- Set in `.env`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+- Configurar no `.env`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 
 **"cryptography.fernet.InvalidToken"**
-- ENCRYPTION_KEY changed; restore original or re-enter all device passwords
+- ENCRYPTION_KEY foi alterada; restaurar original ou reinserir todas as senhas dos dispositivos
 
 **"relation does not exist"**
-- Run `flask db upgrade`
+- Executar `flask db upgrade`
 
 **Login 400 Bad Request**
-- See `TROUBLESHOOTING_LOGIN.md` for detailed guide
-- Run `python diagnostico_login.py` and `python diagnostico_csrf.py`
-- Common causes: missing SECRET_KEY, SESSION_COOKIE_SECURE=True with HTTP
+- Ver `TROUBLESHOOTING_LOGIN.md` para guia detalhado
+- Executar `python diagnostico_login.py` e `python diagnostico_csrf.py`
+- Causas comuns: SECRET_KEY faltando, SESSION_COOKIE_SECURE=True com HTTP
 
-**HTTP backup failures (Mimosa/Intelbras)**
-- Verify HTTPS enabled on device, correct port (80/443)
-- Run `python diagnostico_mimosa.py`
-- Try `SSL_VERIFY=False` for self-signed certificates
+**Falhas de backup HTTP (Mimosa/Intelbras)**
+- Verificar se HTTPS está habilitado no dispositivo, porta correta (80/443)
+- Executar `python diagnostico_mimosa.py`
+- Tentar `SSL_VERIFY=False` para certificados auto-assinados
 
-**SSH/Telnet failures**
-- Verify port (SSH=22, Telnet=23), credentials, device type mapping
-- Check firewall allows connection
+**Falhas SSH/Telnet**
+- Verificar porta (SSH=22, Telnet=23), credenciais, mapeamento de tipo de dispositivo
+- Verificar se firewall permite conexão
 
-**Quick Health Check**:
+**Verificação Rápida de Saúde**:
 ```bash
 python -c "import flask, sqlalchemy, netmiko, paramiko, cryptography; print('OK')"
 python manage.py list-users
@@ -277,19 +300,19 @@ python check_scheduler.py
 curl http://localhost:5000/health/ready
 ```
 
-## Documentation
+## Documentação
 
-All docs in `network-backup/`:
-- `SETUP.md` - Detailed setup
-- `DEPLOY_PRODUCAO.md` - Production (Nginx, Gunicorn, PostgreSQL)
-- `DOCKER_QUICKSTART.md` - Docker quick start
-- `ESCALABILIDADE.md` - Scalability for 1,000-3,000+ devices
-- `NOTIFICACOES.md` - Email/Webhook notifications
-- `INSTALL_DEBIAN.md` - Debian/Ubuntu installation
-- `TROUBLESHOOTING_LOGIN.md` - Login issues troubleshooting
+Todos os docs em `network-backup/`:
+- `SETUP.md` - Setup detalhado
+- `DEPLOY_PRODUCAO.md` - Produção (Nginx, Gunicorn, PostgreSQL)
+- `DOCKER_QUICKSTART.md` - Quick start Docker
+- `ESCALABILIDADE.md` - Escalabilidade para 1.000-3.000+ dispositivos
+- `NOTIFICACOES.md` - Notificações Email/Webhook
+- `INSTALL_DEBIAN.md` - Instalação Debian/Ubuntu
+- `TROUBLESHOOTING_LOGIN.md` - Troubleshooting de problemas de login
 
 ## Performance
 
-Dashboard <100ms with 3,000 devices. For >3,000 devices, increase `BACKUP_MAX_WORKERS` (75-100).
+Dashboard <100ms com 3.000 dispositivos. Para >3.000 dispositivos, aumentar `BACKUP_MAX_WORKERS` (75-100).
 
-**Requirements**: 4+ cores, 8GB RAM, SSD, PostgreSQL max_connections=200+
+**Requisitos**: 4+ cores, 8GB RAM, SSD, PostgreSQL max_connections=200+

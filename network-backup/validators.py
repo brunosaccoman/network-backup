@@ -37,7 +37,7 @@ class InputValidator:
         'cisco_ios', 'cisco_nxos', 'cisco_asa', 'cisco_xr',
         'datacom', 'datacom_dmos',
         'juniper_junos', 'arista_eos', 'hp_comware',
-        'huawei', 'huawei_vrpv8', 'mikrotik_routeros',
+        'huawei', 'huawei_vrpv8', 'mikrotik_routeros', 'mikrotik_dude',
         'paloalto_panos', 'ubiquiti_airos', 'ubiquiti_edge',
         'intelbras_radio', 'mimosa', 'fortinet_fortios',
         'dell_force10', 'extreme', 'checkpoint'
@@ -99,6 +99,10 @@ class InputValidator:
             'export compact',
             'export verbose',
             '/export'
+        ],
+        'mikrotik_dude': [
+            '/dude export-db',
+            '/dude export-db name'
         ],
         'paloalto_panos': [
             'show config running',
