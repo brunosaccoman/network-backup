@@ -484,6 +484,33 @@ def test_device_connectivity(device_id):
 
     except subprocess.TimeoutExpired:
         results['ping']['message'] = 'Ping timeout - Sem resposta'
+    except FileNotFoundError:
+        # Ping não disponível no container - usar socket como fallback
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            # Tenta conectar em uma porta comum para verificar se host está acessível
+            test_result = sock.connect_ex((device.ip_address, 80))
+            sock.close()
+
+            if test_result == 0:
+                results['ping']['success'] = True
+                results['ping']['message'] = 'Host acessível (via TCP/80)'
+            else:
+                # Tenta porta 443
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(3)
+                test_result = sock.connect_ex((device.ip_address, 443))
+                sock.close()
+
+                if test_result == 0:
+                    results['ping']['success'] = True
+                    results['ping']['message'] = 'Host acessível (via TCP/443)'
+                else:
+                    # Se a porta principal está aberta, considera o host acessível
+                    results['ping']['message'] = 'Ping indisponível - verificar porta principal'
+        except Exception as e:
+            results['ping']['message'] = f'Ping indisponível: {str(e)}'
     except Exception as e:
         results['ping']['message'] = f'Erro no ping: {str(e)}'
 
