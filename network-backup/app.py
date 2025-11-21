@@ -52,6 +52,50 @@ limiter = Limiter(
 # Inicializar autenticação
 init_auth(app)
 
+# ============================================================================
+# SECURITY HEADERS
+# ============================================================================
+
+@app.after_request
+def set_security_headers(response):
+    """Adiciona headers de segurança HTTP em todas as respostas."""
+    # Proteção contra MIME type sniffing
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+
+    # Proteção contra clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+
+    # Proteção XSS (legacy browsers)
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    # HSTS - Força HTTPS por 1 ano
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+    # Política de referrer
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+    # Desabilita recursos perigosos
+    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(), payment=()'
+
+    # Previne carregamento cross-domain
+    response.headers['X-Permitted-Cross-Domain-Policies'] = 'none'
+
+    # Content Security Policy
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+        "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    response.headers['Content-Security-Policy'] = csp
+
+    return response
+
 # Filtro de data brasileiro
 @app.template_filter('datetime_br')
 def datetime_br_filter(value):
@@ -392,6 +436,91 @@ def get_device_data(device_id):
                 pass
         return jsonify(device_dict)
     return jsonify({'error': 'Not found'}), 404
+
+
+@app.route('/devices/<int:device_id>/test-connectivity', methods=['POST'])
+@login_required
+@limiter.limit("30 per minute")
+def test_device_connectivity(device_id):
+    """Testa conectividade com o dispositivo (ping e porta)."""
+    import socket
+    import subprocess
+    import platform
+
+    device = Device.query.get(device_id)
+    if not device:
+        return jsonify({'success': False, 'error': 'Dispositivo não encontrado'}), 404
+
+    results = {
+        'device_id': device_id,
+        'device_name': device.name,
+        'ip_address': device.ip_address,
+        'port': device.port,
+        'ping': {'success': False, 'message': ''},
+        'port_check': {'success': False, 'message': ''}
+    }
+
+    # Teste de Ping
+    try:
+        # Detecta o sistema operacional para usar o comando correto
+        param = '-n' if platform.system().lower() == 'windows' else '-c'
+        timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
+        timeout_value = '3000' if platform.system().lower() == 'windows' else '3'
+
+        command = ['ping', param, '2', timeout_param, timeout_value, device.ip_address]
+
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10
+        )
+
+        if result.returncode == 0:
+            results['ping']['success'] = True
+            results['ping']['message'] = 'Ping OK - Dispositivo acessível'
+        else:
+            results['ping']['message'] = 'Ping falhou - Dispositivo não responde'
+
+    except subprocess.TimeoutExpired:
+        results['ping']['message'] = 'Ping timeout - Sem resposta'
+    except Exception as e:
+        results['ping']['message'] = f'Erro no ping: {str(e)}'
+
+    # Teste de Porta
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+
+        result = sock.connect_ex((device.ip_address, device.port))
+
+        if result == 0:
+            results['port_check']['success'] = True
+            results['port_check']['message'] = f'Porta {device.port} aberta'
+        else:
+            results['port_check']['message'] = f'Porta {device.port} fechada ou filtrada'
+
+        sock.close()
+
+    except socket.timeout:
+        results['port_check']['message'] = f'Timeout ao conectar na porta {device.port}'
+    except socket.gaierror:
+        results['port_check']['message'] = 'Erro de DNS - IP inválido'
+    except Exception as e:
+        results['port_check']['message'] = f'Erro: {str(e)}'
+
+    # Resultado geral
+    results['success'] = results['ping']['success'] or results['port_check']['success']
+    results['overall_status'] = 'online' if (results['ping']['success'] and results['port_check']['success']) else 'partial' if results['success'] else 'offline'
+
+    log_audit('test_connectivity', 'device', device_id, {
+        'ip': device.ip_address,
+        'port': device.port,
+        'ping_success': results['ping']['success'],
+        'port_success': results['port_check']['success']
+    })
+
+    return jsonify(results)
 
 @app.route('/devices/<int:device_id>/update', methods=['POST'])
 @login_required

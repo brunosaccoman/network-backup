@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Este arquivo fornece orientações ao Claude Code (claude.ai/code) ao trabalhar com código neste repositório.
 
 ## CRÍTICO: Diretório de Trabalho
@@ -123,13 +125,22 @@ Dispositivos suportam soft delete para preservar histórico de backups:
 
 ### Tipos de Dispositivos Suportados
 
-**SSH/Telnet** (via Netmiko): `cisco_ios`, `cisco_nxos`, `cisco_asa`, `cisco_xr`, `juniper_junos`, `mikrotik_routeros`, `huawei`, `arista_eos`, `ubiquiti_airos`, `ubiquiti_edge`, `datacom`, `datacom_dmos`, `intelbras_radio`
+**SSH/Telnet** (via Netmiko):
+- Cisco: `cisco_ios`, `cisco_nxos`, `cisco_asa`, `cisco_xr`
+- Juniper: `juniper_junos`
+- MikroTik: `mikrotik_routeros`
+- Huawei: `huawei`, `huawei_vrpv8`
+- Arista: `arista_eos`
+- HP: `hp_comware`
+- Ubiquiti: `ubiquiti_airos`, `ubiquiti_edge`
+- Datacom: `datacom`, `datacom_dmos`
+- Outros: `paloalto_panos`, `fortinet_fortios`, `dell_force10`, `extreme`, `checkpoint`
 
 **SSH + SFTP** (backup especial): `mikrotik_dude` - Backup do banco de dados do Dude rodando em RouterOS
 
 **HTTP/HTTPS**: `mimosa`, `mimosa_c5c`, `mimosa_b5c`, `mimosa_b5`, `mimosa_a5c`, `intelbras_radio`
 
-Comandos padrão e mapeamentos Netmiko definidos em `backup_manager.py:_get_default_command()` e device_type_map.
+Comandos padrão e mapeamentos Netmiko definidos em `backup_manager.py:_get_default_command()` e device_type_map. A whitelist completa de device types está em `validators.py:InputValidator.ALLOWED_DEVICE_TYPES`.
 
 ### Fluxo de Dados do Backup
 
@@ -168,11 +179,29 @@ Selecionado via variável de ambiente `FLASK_ENV`.
 ## Setup e Deploy
 
 ### Setup Inicial
+
+**Windows:**
 ```bash
 cd network-backup
 python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate
+
+pip install -r requirements.txt
+
+# Gerar chaves
+python -c "import secrets; print('ENCRYPTION_KEY=' + secrets.token_urlsafe(32))"
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
+
+copy .env.example .env  # Editar com as chaves geradas
+flask db upgrade
+python manage.py create-admin
+```
+
+**Linux/Mac:**
+```bash
+cd network-backup
+python -m venv venv
+source venv/bin/activate
 
 pip install -r requirements.txt
 

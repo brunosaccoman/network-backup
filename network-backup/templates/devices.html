@@ -846,6 +846,59 @@
         }
     }
 
+    // Test connectivity function
+    async function testConnectivity(deviceId, button) {
+        // Save original button content
+        const originalContent = button.innerHTML;
+        const originalTitle = button.title;
+
+        // Show loading state
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        button.title = 'Testando...';
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/devices/' + deviceId + '/test-connectivity', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await response.json();
+
+            if (data.success !== undefined) {
+                // Build result message
+                let message = `<strong>${data.device_name}</strong> (${data.ip_address})<br><br>`;
+
+                // Ping result
+                const pingIcon = data.ping.success ? '✅' : '❌';
+                message += `${pingIcon} <strong>Ping:</strong> ${data.ping.message}<br>`;
+
+                // Port result
+                const portIcon = data.port_check.success ? '✅' : '❌';
+                message += `${portIcon} <strong>Porta ${data.port}:</strong> ${data.port_check.message}`;
+
+                // Determine alert type based on results
+                let alertType = 'danger';
+                if (data.ping.success && data.port_check.success) {
+                    alertType = 'success';
+                } else if (data.ping.success || data.port_check.success) {
+                    alertType = 'warning';
+                }
+
+                showAlert(message, alertType, 8000);
+            } else {
+                showAlert('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro ao testar conectividade: ' + error.message, 'danger');
+        } finally {
+            // Restore button
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            button.title = originalTitle;
+        }
+    }
+
     async function editDevice(id) {
         try {
             // Carregar provedores primeiro
@@ -1224,6 +1277,9 @@
                     {% if current_user.role in ['admin', 'operator'] %}
                     <td>
                         <div class="action-buttons">
+                            <button onclick="testConnectivity({{ device.id }}, this)" class="btn-action" title="Testar Conectividade">
+                                <i class="fas fa-network-wired"></i>
+                            </button>
                             <button onclick="backupDevice({{ device.id }})" class="btn-action" title="Fazer Backup">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
@@ -1300,6 +1356,10 @@
             </div>
 
             <div class="device-actions-card">
+                <button onclick="testConnectivity({{ device.id }}, this)" class="btn-action-card" title="Testar Conectividade">
+                    <i class="fas fa-network-wired"></i>
+                    Testar
+                </button>
                 <button onclick="backupDevice({{ device.id }})" class="btn-action-card" title="Fazer Backup">
                     <i class="fas fa-sync-alt"></i>
                     Backup

@@ -250,16 +250,21 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        function showAlert(message, type = 'success') {
+        function showAlert(message, type = 'success', duration = 5000) {
             const container = document.getElementById('alert-container');
 
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
-            alert.textContent = message;
+            alert.innerHTML = message;  // Use innerHTML to support HTML content
+            alert.style.cursor = 'pointer';
+            alert.title = 'Clique para fechar';
+
+            // Allow clicking to dismiss
+            alert.onclick = () => alert.remove();
 
             container.appendChild(alert);
 
-            setTimeout(() => alert.remove(), 5000);
+            setTimeout(() => alert.remove(), duration);
         }
 
         // Configure CSRF token for all fetch requests
