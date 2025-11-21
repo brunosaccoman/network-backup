@@ -461,48 +461,49 @@ def test_device_connectivity(device_id):
     }
 
     # Teste de Ping - com fallback para containers sem ping
+    import time
+
+    def tcp_ping_with_latency(port):
+        """Testa conexão TCP e retorna latência em ms"""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            start_time = time.time()
+            test_result = sock.connect_ex((device.ip_address, port))
+            end_time = time.time()
+            sock.close()
+
+            if test_result == 0:
+                latency_ms = round((end_time - start_time) * 1000, 1)
+                return True, latency_ms
+            return False, 0
+        except:
+            return False, 0
+
     def tcp_ping_fallback():
         """Fallback usando TCP quando ping não está disponível"""
         # Primeiro tenta a porta do próprio dispositivo
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(3)
-            test_result = sock.connect_ex((device.ip_address, device.port))
-            sock.close()
-            if test_result == 0:
-                results['ping']['success'] = True
-                results['ping']['message'] = f'Host acessível (via TCP/{device.port})'
-                return
-        except:
-            pass
+        success, latency = tcp_ping_with_latency(device.port)
+        if success:
+            results['ping']['success'] = True
+            results['ping']['message'] = f'Latência: {latency} ms'
+            return
 
         # Tenta porta 80
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(3)
-            test_result = sock.connect_ex((device.ip_address, 80))
-            sock.close()
-            if test_result == 0:
-                results['ping']['success'] = True
-                results['ping']['message'] = 'Host acessível (via TCP/80)'
-                return
-        except:
-            pass
+        success, latency = tcp_ping_with_latency(80)
+        if success:
+            results['ping']['success'] = True
+            results['ping']['message'] = f'Latência: {latency} ms'
+            return
 
         # Tenta porta 443
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(3)
-            test_result = sock.connect_ex((device.ip_address, 443))
-            sock.close()
-            if test_result == 0:
-                results['ping']['success'] = True
-                results['ping']['message'] = 'Host acessível (via TCP/443)'
-                return
-        except:
-            pass
+        success, latency = tcp_ping_with_latency(443)
+        if success:
+            results['ping']['success'] = True
+            results['ping']['message'] = f'Latência: {latency} ms'
+            return
 
-        results['ping']['message'] = 'Host não acessível nas portas testadas'
+        results['ping']['message'] = 'Host não responde'
 
     try:
         # Detecta o sistema operacional para usar o comando correto
@@ -520,13 +521,43 @@ def test_device_connectivity(device_id):
         )
 
         if result.returncode == 0:
+            # Extrair latência do output do ping
+            output = result.stdout.decode('utf-8', errors='ignore')
+            import re
+
+            # Padrão para Windows: "Média = 5ms" ou "Average = 5ms"
+            # Padrão para Linux: "rtt min/avg/max/mdev = 0.5/1.0/1.5/0.5 ms"
+            latency_ms = None
+
+            # Windows
+            match = re.search(r'[Mm][ée]dia\s*=\s*(\d+)\s*ms', output)
+            if not match:
+                match = re.search(r'[Aa]verage\s*=\s*(\d+)\s*ms', output)
+            if match:
+                latency_ms = match.group(1)
+
+            # Linux
+            if not latency_ms:
+                match = re.search(r'rtt.*=\s*[\d.]+/([\d.]+)/', output)
+                if match:
+                    latency_ms = round(float(match.group(1)), 1)
+
+            # Fallback - procurar qualquer padrão de tempo
+            if not latency_ms:
+                match = re.search(r'time[=<]\s*([\d.]+)\s*ms', output)
+                if match:
+                    latency_ms = round(float(match.group(1)), 1)
+
             results['ping']['success'] = True
-            results['ping']['message'] = 'Ping OK - Dispositivo acessível'
+            if latency_ms:
+                results['ping']['message'] = f'Latência: {latency_ms} ms'
+            else:
+                results['ping']['message'] = 'Ping OK'
         else:
-            results['ping']['message'] = 'Ping falhou - Dispositivo não responde'
+            results['ping']['message'] = 'Host não responde'
 
     except subprocess.TimeoutExpired:
-        results['ping']['message'] = 'Ping timeout - Sem resposta'
+        results['ping']['message'] = 'Timeout - Sem resposta'
     except (FileNotFoundError, OSError) as e:
         # Ping não disponível no container - usar socket como fallback
         tcp_ping_fallback()
@@ -535,7 +566,7 @@ def test_device_connectivity(device_id):
         if 'No such file' in str(e) or 'Errno 2' in str(e):
             tcp_ping_fallback()
         else:
-            results['ping']['message'] = f'Erro no ping: {str(e)}'
+            results['ping']['message'] = f'Erro: {str(e)}'
 
     # Teste de Porta
     try:
