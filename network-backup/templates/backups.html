@@ -95,14 +95,13 @@
 
     /* Larguras fixas para colunas */
     .col-checkbox { width: 40px; }
-    .col-id { width: 60px; }
-    .col-device { width: 180px; min-width: 120px; }
-    .col-ip { width: 120px; }
-    .col-provedor { width: 120px; }
-    .col-date { width: 140px; }
-    .col-size { width: 80px; }
-    .col-status { width: 90px; }
-    .col-validation { width: 100px; }
+    .col-device { width: 200px; min-width: 140px; }
+    .col-ip { width: 130px; }
+    .col-provedor { width: 130px; }
+    .col-date { width: 150px; }
+    .col-size { width: 90px; }
+    .col-status { width: 100px; }
+    .col-validation { width: 110px; }
     .col-actions { width: 80px; min-width: 80px; }
 
     /* Truncar texto longo */
@@ -472,7 +471,7 @@
                 <div class="table-filters">
                     <div class="filter-group">
                         <label for="searchDevice"><i class="fas fa-search"></i> Pesquisar:</label>
-                        <input type="text" id="searchDevice" placeholder="Dispositivo..." class="filter-input">
+                        <input type="text" id="searchDevice" placeholder="Nome ou IP..." class="filter-input">
                     </div>
 
                     <div class="filter-group">
@@ -526,7 +525,6 @@
             <thead>
                 <tr>
                     <th class="col-checkbox"><input type="checkbox" id="selectAll" title="Selecionar todos"></th>
-                    <th class="col-id">ID</th>
                     <th class="col-device">Dispositivo</th>
                     <th class="col-ip">Endereço IP</th>
                     <th class="col-provedor">Provedor</th>
@@ -548,7 +546,6 @@
                                data-device-id="{{ backup.device_id }}"
                                onchange="updateCompareButton()">
                     </td>
-                    <td><strong>#{{ backup.id }}</strong></td>
                     <td><span class="text-truncate" title="{{ backup.device_name }}">{{ backup.device_name }}</span></td>
                     <td><span class="text-truncate" title="{{ backup.device_ip }}">{{ backup.device_ip }}</span></td>
                     <td><span class="text-truncate" title="{{ backup.provedor if backup.provedor else 'Sem Provedor' }}">{{ backup.provedor if backup.provedor else 'Sem Provedor' }}</span></td>
@@ -632,13 +629,14 @@
             const provedor = row.getAttribute("data-provedor")?.toLowerCase() || "sem_provedor";
             const status = row.getAttribute("data-status")?.toLowerCase() || "";
             const validation = row.getAttribute("data-validation")?.toLowerCase() || "unknown";
-            const deviceName = row.children[2].textContent.toLowerCase();
+            const deviceName = row.children[1].textContent.toLowerCase();
+            const deviceIp = row.children[2].textContent.toLowerCase();
 
             const match =
                 (!provedorFilter || provedor === provedorFilter) &&
                 (!statusFilter || status === statusFilter) &&
                 (!validationFilter || validation === validationFilter) &&
-                (!searchFilter || deviceName.includes(searchFilter));
+                (!searchFilter || deviceName.includes(searchFilter) || deviceIp.includes(searchFilter));
 
             row.dataset.visible = match ? "1" : "0";
         });
