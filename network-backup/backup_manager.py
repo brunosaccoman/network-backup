@@ -1211,20 +1211,58 @@ class BackupManager:
             # Baixar o arquivo via SFTP
             sftp = ssh_client.open_sftp()
 
-            # MikroTik armazena arquivos de backup do Dude com extensão .ddb
-            remote_path = f"/{backup_filename}.ddb"
-
-            logger.info(f"Baixando arquivo {remote_path} via SFTP")
-
-            # Baixar para memória
-            file_buffer = io.BytesIO()
+            # Listar arquivos para debug
             try:
-                sftp.getfo(remote_path, file_buffer)
-            except FileNotFoundError:
-                # Tentar caminho alternativo dentro do diretório dude
-                remote_path = f"/dude/{backup_filename}.ddb"
-                logger.info(f"Tentando caminho alternativo: {remote_path}")
-                sftp.getfo(remote_path, file_buffer)
+                root_files = sftp.listdir('/')
+                logger.info(f"Arquivos na raiz: {[f for f in root_files if 'dude' in f.lower() or f.endswith('.ddb')]}")
+            except Exception as e:
+                logger.warning(f"Não foi possível listar arquivos: {e}")
+
+            # MikroTik armazena arquivos de backup do Dude com extensão .ddb
+            # Tentar múltiplos caminhos possíveis
+            possible_paths = [
+                f"/{backup_filename}.ddb",
+                f"{backup_filename}.ddb",
+                f"/dude/{backup_filename}.ddb",
+                f"/flash/{backup_filename}.ddb",
+                f"/disk1/{backup_filename}.ddb",
+            ]
+
+            file_buffer = io.BytesIO()
+            file_found = False
+
+            for remote_path in possible_paths:
+                try:
+                    logger.info(f"Tentando baixar: {remote_path}")
+                    sftp.getfo(remote_path, file_buffer)
+                    file_found = True
+                    logger.info(f"Arquivo encontrado em: {remote_path}")
+                    break
+                except FileNotFoundError:
+                    continue
+                except Exception as e:
+                    logger.warning(f"Erro ao tentar {remote_path}: {e}")
+                    continue
+
+            if not file_found:
+                # Tentar listar e encontrar qualquer arquivo .ddb recente
+                try:
+                    all_files = sftp.listdir('/')
+                    ddb_files = [f for f in all_files if f.endswith('.ddb')]
+                    if ddb_files:
+                        remote_path = f"/{ddb_files[-1]}"
+                        logger.info(f"Encontrado arquivo .ddb: {remote_path}")
+                        sftp.getfo(remote_path, file_buffer)
+                        file_found = True
+                except Exception as e:
+                    logger.error(f"Erro ao buscar arquivos .ddb: {e}")
+
+            if not file_found:
+                raise FileNotFoundError(
+                    f"Arquivo de backup do Dude não encontrado. "
+                    f"Verifique se o Dude está instalado e se o comando /dude export-db funcionou. "
+                    f"Caminhos tentados: {possible_paths}"
+                )
 
             binary_data = file_buffer.getvalue()
             file_size = len(binary_data)
