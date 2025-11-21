@@ -1218,14 +1218,15 @@ class BackupManager:
             except Exception as e:
                 logger.warning(f"Não foi possível listar arquivos: {e}")
 
-            # MikroTik armazena arquivos de backup do Dude com extensão .ddb
-            # Tentar múltiplos caminhos possíveis
+            # MikroTik armazena arquivos de backup do Dude
+            # Pode ser com ou sem extensão .ddb dependendo da versão
             possible_paths = [
-                f"/{backup_filename}.ddb",
+                f"/{backup_filename}",           # Sem extensão (versões mais novas)
+                f"{backup_filename}",            # Sem extensão, sem barra
+                f"/{backup_filename}.ddb",       # Com extensão .ddb
                 f"{backup_filename}.ddb",
                 f"/dude/{backup_filename}.ddb",
                 f"/flash/{backup_filename}.ddb",
-                f"/disk1/{backup_filename}.ddb",
             ]
 
             file_buffer = io.BytesIO()
